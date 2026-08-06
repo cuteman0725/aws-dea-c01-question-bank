@@ -10,11 +10,17 @@
 @media(prefers-color-scheme:light){:root{--bg:#f5f5f5;--card:#fff;--text:#333;--accent:#e8f0fe;--hl:#d32f2f;--green:#2e7d32;--orange:#f57c00;--border:#ddd;--qbg:#f0f4ff;--opt:#f9f9f9;--opt-c:#e8f5e9;--opt-w:#fce4ec;--zh-bg:#f8f8ff}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
-.topbar{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);padding:10px 16px}
-.topbar h1{font-size:18px;color:var(--hl);margin-bottom:8px}
-.search{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px;margin-bottom:8px}
-.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;align-items:center}
-.btn{padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--accent);color:var(--text);cursor:pointer;font-size:13px}
+.topbar{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);padding:6px 10px;transition:transform .25s ease;will-change:transform}
+.topbar.hide{transform:translateY(-100%)}
+.tbr{display:flex;align-items:center;gap:6px}
+.topbar h1{font-size:15px;color:var(--hl);margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsel{padding:5px 6px;border:1px solid var(--border);border-radius:6px;background:var(--accent);color:var(--text);font-size:13px;max-width:120px}
+.ib{flex-shrink:0;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--accent);color:var(--text);cursor:pointer;font-size:14px;line-height:1.2}
+.ib:hover,.ib.active{background:var(--hl);color:#fff}
+.search{display:none;width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:15px;margin-top:6px}
+.search.on{display:block}
+.controls{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
+.btn{padding:5px 11px;border:1px solid var(--border);border-radius:6px;background:var(--accent);color:var(--text);cursor:pointer;font-size:13px;line-height:1.3}
 .btn:hover,.btn.active{background:var(--hl);color:#fff}
 .nav{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .nav a{padding:4px 10px;border-radius:6px;background:var(--accent);color:var(--text);text-decoration:none;font-size:13px;white-space:nowrap}
@@ -66,20 +72,23 @@ body.mode-both .lang-en,body.mode-both .lang-zh{display:block}
 </style>
 </head>
 <body class="mode-both">
-<div class="topbar">
-  <h1>AWS DEA-C01 | Q101-Q150 (50)</h1>
-  <input type="text" class="search" placeholder="Search Q number, keyword, service..." oninput="filt(this.value)">
+<div class="topbar" id="tb">
+  <div class="tbr">
+    <h1>DEA-C01 · Q101-Q150 · 50</h1>
+    <select class="rsel" onchange="if(this.value)location.href=this.value"><option value="index.html">總覽</option><option value="Q001-050.html">Q1-Q50</option><option value="Q051-100.html">Q51-Q100</option><option value="Q101-150.html" selected>Q101-Q150</option><option value="Q151-200.html">Q151-Q200</option><option value="Q201-250.html">Q201-Q250</option><option value="Q251-300.html">Q251-Q300</option><option value="Q301-342.html">Q301-Q342</option></select>
+    <button class="ib ib-search" onclick="toggleSearch()" aria-label="Search">&#128269;</button>
+  </div>
+  <input type="text" class="search" placeholder="題號 / 關鍵字 / 服務名稱" oninput="filt(this.value)">
   
         <div class="controls">
-          <button class="btn btn-lang" data-lang="en" onclick="setLang('en')">English</button>
-          <button class="btn btn-lang" data-lang="zh" onclick="setLang('zh')">中文</button>
-          <button class="btn btn-lang" data-lang="both" onclick="setLang('both')">中英對照</button>
+          <button class="btn btn-lang" data-lang="en" onclick="setLang('en')">EN</button>
+          <button class="btn btn-lang" data-lang="zh" onclick="setLang('zh')">中</button>
+          <button class="btn btn-lang" data-lang="both" onclick="setLang('both')">雙語</button>
           <span style="flex:1"></span>
-          <button class="btn" onclick="expandAll(true)">Expand All</button>
-          <button class="btn" onclick="expandAll(false)">Collapse All</button>
-          <button class="btn btn-hl" onclick="setHighlight(document.body.classList.contains('kw-off'))">Highlight</button>
+          <button class="btn" onclick="expandAll(true)">展開</button>
+          <button class="btn" onclick="expandAll(false)">收合</button>
+          <button class="btn btn-hl" onclick="setHighlight(document.body.classList.contains('kw-off'))">高亮</button>
         </div>
-  <div class="nav"><a href="index.html">Overview</a><a href="Q001-050.html" class="">Q1-Q50</a><a href="Q051-100.html" class="">Q51-Q100</a><a href="Q101-150.html" class="active">Q101-Q150</a><a href="Q151-200.html" class="">Q151-Q200</a><a href="Q201-250.html" class="">Q201-Q250</a><a href="Q251-300.html" class="">Q251-Q300</a><a href="Q301-342.html" class="">Q301-Q342</a></div>
 </div>
 <div class="container">
   <div class="nores">No matching questions</div>
@@ -302,8 +311,10 @@ function tog(h){h.parentElement.classList.toggle("open")}
 function filt(q){q=q.toLowerCase().trim();var c=document.querySelectorAll(".card");var f=false;c.forEach(function(x){var n=x.getAttribute("data-qnum");var t=x.getAttribute("data-title").toLowerCase();var l=x.getAttribute("data-layer").toLowerCase();var k=x.getAttribute("data-kw").toLowerCase();var b=x.textContent.toLowerCase();if(!q||n.indexOf(q)>=0||t.indexOf(q)>=0||l.indexOf(q)>=0||k.indexOf(q)>=0||b.indexOf(q)>=0){x.style.display="";f=true}else{x.style.display="none"}});document.querySelector(".nores").style.display=f?"none":"block"}
 function expandAll(o){document.querySelectorAll(".card").forEach(function(c){if(c.style.display!=="none"){if(o)c.classList.add("open");else c.classList.remove("open")}})}
 function setLang(lang){if(["en","zh","both"].indexOf(lang)<0)lang="both";document.body.className="mode-"+lang;document.querySelectorAll(".btn-lang").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-lang")===lang)});try{localStorage.setItem("dea-lang",lang)}catch(e){}}
+function toggleSearch(){var s=document.querySelector(".search");if(!s)return;var on=s.classList.toggle("on");var b=document.querySelector(".ib-search");if(b)b.classList.toggle("active",on);if(on){s.focus()}else{s.value="";filt("")}}
 function setHighlight(on){document.body.classList.toggle("kw-off",!on);document.querySelectorAll(".btn-hl").forEach(function(b){b.classList.toggle("active",on)});try{localStorage.setItem("dea-hl",on?"on":"off")}catch(e){}}
 (function(){var saved="both";try{saved=localStorage.getItem("dea-lang")||"both"}catch(e){}setLang(saved);var hl="on";try{hl=localStorage.getItem("dea-hl")||"on"}catch(e){}setHighlight(hl==="on")})();
+(function(){var tb=document.getElementById("tb");if(!tb)return;var last=0;addEventListener("scroll",function(){var y=window.pageYOffset||document.documentElement.scrollTop;if(y>140&&y>last+4){tb.classList.add("hide")}else if(y<last-4||y<=140){tb.classList.remove("hide")}last=y},{passive:true})})();
 </script>
 </body>
 </html>

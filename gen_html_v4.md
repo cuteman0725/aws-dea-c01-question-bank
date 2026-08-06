@@ -301,3 +301,90 @@ stateDiagram-v2
 | 3. 分段 | 用 regex 把已標記區域 `\x00...\x01` 分開 |
 | 4. 替換 | 只在未標記段中做 case-insensitive 替換 |
 | 5. 轉換 | esc_html → Markdown → placeholder 換成 `<mark>` |
+
+## 手機版 topbar 瘦身（v4.2 新增）
+
+原本 topbar 在 360×740 手機上佔 279px（38% 螢幕），加上瀏覽器網址列後幾乎佔掉一半。
+
+### 優化前後對照
+
+| 區塊 | 優化前 | 優化後 |
+|------|--------|--------|
+| 標題 h1 | 29px（18px 字） | 29px（15px 字，與下拉選單同排） |
+| 搜尋框 | 39px 常駐 | 0px（改放大鏡圖示，點擊才展開） |
+| 按鈕列 | 68px（2 排，英文長標籤） | 29px（1 排，EN/中/雙語/展開/收合/高亮） |
+| 範圍導航 | 98px（8 個連結排 3 排） | 0px（改 `<select>` 下拉，併入標題排） |
+| padding | 45px | 19px |
+| **合計** | **279px（38%）** | **77px（10%）** |
+| **可視區** | 461px | **663px（+44%）** |
+
+再加上捲動自動隱藏，往下看題目時 topbar 完全消失，可視區達 100%。
+
+### 版面結構
+
+```mermaid
+graph TD
+    TB[topbar #tb]
+    TB --> R1[".tbr 第一排 29px"]
+    TB --> S[".search 隱藏 0px"]
+    TB --> R2[".controls 第二排 29px"]
+
+    R1 --> H1["h1 標題<br/>flex:1 + ellipsis"]
+    R1 --> SEL["select.rsel<br/>範圍下拉"]
+    R1 --> BTN["button.ib-search<br/>放大鏡"]
+
+    S --> INP["input.search<br/>.on 時才 display:block"]
+
+    R2 --> L["EN / 中 / 雙語"]
+    R2 --> SP["spacer flex:1"]
+    R2 --> E["展開 / 收合 / 高亮"]
+```
+
+### 捲動自動隱藏狀態機
+
+```mermaid
+stateDiagram-v2
+    [*] --> 顯示
+    顯示 --> 隱藏 : scrollY > 140 且往下捲 > 4px
+    隱藏 --> 顯示 : 往上捲 > 4px
+    隱藏 --> 顯示 : scrollY <= 140
+
+    state 顯示 {
+        [*] --> transform_none
+    }
+    state 隱藏 {
+        [*] --> translateY_minus100
+    }
+```
+
+實作重點：
+
+| 項目 | 說明 |
+|------|------|
+| 觸發門檻 | `scrollY > 140` 才開始隱藏，避免頂端抖動 |
+| 遲滯 | 位移需 > 4px 才動作，避免慣性捲動時閃爍 |
+| 動畫 | `transform:translateY(-100%)` + `transition .25s`，用 GPU 合成不觸發 reflow |
+| 效能 | `addEventListener(..., {passive:true})` 不阻塞捲動 |
+
+### 搜尋框展開/收合
+
+```mermaid
+sequenceDiagram
+    participant U as 使用者
+    participant B as 放大鏡按鈕
+    participant S as .search
+    participant F as filt()
+
+    U->>B: 點擊
+    B->>S: classList.toggle("on")
+    alt 展開
+        S->>S: display:block
+        S->>S: focus()
+    else 收合
+        S->>S: display:none
+        S->>S: value = ""
+        S->>F: filt("") 還原全部題目
+    end
+```
+
+收合時會清空搜尋字並呼叫 `filt("")`，避免題目還被篩選卻看不到搜尋框。
