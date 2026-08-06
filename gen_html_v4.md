@@ -249,3 +249,55 @@ body.mode-both .lang-en,body.mode-both .lang-zh{display:block}
 ```
 
 語言偏好以 `localStorage.dea-lang` 記憶，下次開啟自動套用。
+
+## 關鍵字高亮機制（v4.1 新增）
+
+題目展開後，最下方的 Keywords 標籤列中的關鍵字，會在題目情境和選項中被加粗 + 高亮。
+
+### 運作流程
+
+```mermaid
+flowchart TD
+    A[取得 Notion Keywords 列表] --> B[按長度降序排列]
+    B --> C[逐個關鍵字處理]
+    C --> D[用 placeholder 標記文字中的關鍵字]
+    D --> E[跳過已標記區域避免巢狀]
+    E --> F[esc_html 轉換]
+    F --> G[Markdown 轉換]
+    G --> H[placeholder 換成 mark tag]
+    H --> I[輸出含 kw-hl class 的 HTML]
+    C --> J{還有關鍵字?}
+    J -- 是 --> C
+    J -- 否 --> I
+```
+
+### CSS 切換
+
+```mermaid
+stateDiagram-v2
+    [*] --> hl_on : 預設 / localStorage = on
+    hl_on --> hl_off : 點 Highlight 按鈕
+    hl_off --> hl_on : 再點 Highlight 按鈕
+
+    state hl_on {
+        [*] --> 黃底黑字粗體
+    }
+    state hl_off {
+        [*] --> 繼承父層樣式
+    }
+```
+
+| body class | 高亮樣式 |
+|------------|---------|
+| （無 kw-off） | 黃底 `#fff59d`、黑字、粗體 600 |
+| `kw-off` | 背景透明、文字正常、非粗體 |
+
+### 關鍵字處理邏輯
+
+| 步驟 | 說明 |
+|------|------|
+| 1. 過濾 | 只保留長度 ≥ 3 的關鍵字 |
+| 2. 排序 | 按長度降序，避免短關鍵字破壞長關鍵字 |
+| 3. 分段 | 用 regex 把已標記區域 `\x00...\x01` 分開 |
+| 4. 替換 | 只在未標記段中做 case-insensitive 替換 |
+| 5. 轉換 | esc_html → Markdown → placeholder 換成 `<mark>` |

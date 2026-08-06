@@ -55,6 +55,8 @@ body.mode-both .opt-zh{font-size:13px;opacity:.7;margin-top:4px;padding-top:4px;
 .section code{background:var(--accent);padding:2px 6px;border-radius:4px;font-size:13px;word-break:break-all}
 .section strong{color:var(--hl)}
 .divider{border:0;border-top:1px dashed var(--border);margin:14px 0}
+.kw-hl{background:#fff59d;color:#000;font-weight:600;border-radius:3px;padding:0 2px}
+body.kw-off .kw-hl{background:inherit;color:inherit;font-weight:inherit;padding:0}
 .lang-en,.lang-zh{display:none}
 body.mode-en .lang-en{display:block}
 body.mode-zh .lang-zh{display:block}
@@ -70,6 +72,7 @@ body.mode-both .lang-en,body.mode-both .lang-zh{display:block}
     <button class="btn btn-lang" data-lang="en" onclick="setLang('en')">English</button>
     <button class="btn btn-lang" data-lang="zh" onclick="setLang('zh')">中文</button>
     <button class="btn btn-lang" data-lang="both" onclick="setLang('both')">中英對照</button>
+    <button class="btn btn-hl" onclick="setHighlight(document.body.classList.contains('kw-off'))">Highlight</button>
   </div>
   <div class="nav"><a href="index.html" class="active">Overview</a></div>
 </div>
@@ -97,7 +100,8 @@ function tog(h){h.parentElement.classList.toggle("open")}
 function filt(q){q=q.toLowerCase().trim();var c=document.querySelectorAll(".card");var f=false;c.forEach(function(x){var n=x.getAttribute("data-qnum");var t=x.getAttribute("data-title").toLowerCase();var l=x.getAttribute("data-layer").toLowerCase();var k=x.getAttribute("data-kw").toLowerCase();var b=x.textContent.toLowerCase();if(!q||n.indexOf(q)>=0||t.indexOf(q)>=0||l.indexOf(q)>=0||k.indexOf(q)>=0||b.indexOf(q)>=0){x.style.display="";f=true}else{x.style.display="none"}});document.querySelector(".nores").style.display=f?"none":"block"}
 function expandAll(o){document.querySelectorAll(".card").forEach(function(c){if(c.style.display!=="none"){if(o)c.classList.add("open");else c.classList.remove("open")}})}
 function setLang(lang){if(["en","zh","both"].indexOf(lang)<0)lang="both";document.body.className="mode-"+lang;document.querySelectorAll(".btn-lang").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-lang")===lang)});try{localStorage.setItem("dea-lang",lang)}catch(e){}}
-(function(){var saved="both";try{saved=localStorage.getItem("dea-lang")||"both"}catch(e){}setLang(saved)})();
+function setHighlight(on){document.body.classList.toggle("kw-off",!on);document.querySelectorAll(".btn-hl").forEach(function(b){b.classList.toggle("active",on)});try{localStorage.setItem("dea-hl",on?"on":"off")}catch(e){}}
+(function(){var saved="both";try{saved=localStorage.getItem("dea-lang")||"both"}catch(e){}setLang(saved);var hl="on";try{hl=localStorage.getItem("dea-hl")||"on"}catch(e){}setHighlight(hl==="on")})();
 </script>
 </body>
 </html>

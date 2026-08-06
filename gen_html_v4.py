@@ -139,11 +139,37 @@ def esc_html(s):
     return s
 
 
-def md_inline(s):
-    """Convert inline markdown to HTML."""
+def highlight_keywords(text, keywords):
+    """在 raw text 中用 \x00...\x01 placeholder 標記關鍵字，之後再轉成 <mark>。"""
+    if not text or not keywords:
+        return text
+    kws = sorted(
+        [k.strip().lstrip("- ") for k in keywords.split("\n") if k.strip() and len(k.strip()) >= 3],
+        key=len, reverse=True
+    )
+    if not kws:
+        return text
+    for kw in kws:
+        kw_esc = re.escape(kw)
+        # 把 text 按 \x00...\x01 分段，只對未標記段做替換
+        parts = re.split(r'(\x00.*?\x01)', text, flags=re.DOTALL)
+        for i, part in enumerate(parts):
+            if part.startswith('\x00'):
+                continue
+            parts[i] = re.sub(r'(' + kw_esc + r')', lambda m: '\x00' + m.group(0) + '\x01', part, flags=re.IGNORECASE)
+        text = ''.join(parts)
+    return text
+
+
+def md_inline(s, keywords=None):
+    """Convert inline markdown to HTML, optionally highlighting keywords."""
+    if keywords:
+        s = highlight_keywords(s, keywords)
     s = esc_html(s)
     s = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', s)
     s = re.sub(r'`([^`]+)`', r'<code>\1</code>', s)
+    if keywords:
+        s = s.replace('\x00', '<mark class="kw-hl">').replace('\x01', '</mark>')
     return s
 
 
@@ -214,6 +240,8 @@ body.mode-both .opt-zh{font-size:13px;opacity:.7;margin-top:4px;padding-top:4px;
 .section code{background:var(--accent);padding:2px 6px;border-radius:4px;font-size:13px;word-break:break-all}
 .section strong{color:var(--hl)}
 .divider{border:0;border-top:1px dashed var(--border);margin:14px 0}
+.kw-hl{background:#fff59d;color:#000;font-weight:600;border-radius:3px;padding:0 2px}
+body.kw-off .kw-hl{background:inherit;color:inherit;font-weight:inherit;padding:0}
 .lang-en,.lang-zh{display:none}
 body.mode-en .lang-en{display:block}
 body.mode-zh .lang-zh{display:block}
@@ -227,19 +255,20 @@ function tog(h){h.parentElement.classList.toggle("open")}
 function filt(q){q=q.toLowerCase().trim();var c=document.querySelectorAll(".card");var f=false;c.forEach(function(x){var n=x.getAttribute("data-qnum");var t=x.getAttribute("data-title").toLowerCase();var l=x.getAttribute("data-layer").toLowerCase();var k=x.getAttribute("data-kw").toLowerCase();var b=x.textContent.toLowerCase();if(!q||n.indexOf(q)>=0||t.indexOf(q)>=0||l.indexOf(q)>=0||k.indexOf(q)>=0||b.indexOf(q)>=0){x.style.display="";f=true}else{x.style.display="none"}});document.querySelector(".nores").style.display=f?"none":"block"}
 function expandAll(o){document.querySelectorAll(".card").forEach(function(c){if(c.style.display!=="none"){if(o)c.classList.add("open");else c.classList.remove("open")}})}
 function setLang(lang){if(["en","zh","both"].indexOf(lang)<0)lang="both";document.body.className="mode-"+lang;document.querySelectorAll(".btn-lang").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-lang")===lang)});try{localStorage.setItem("dea-lang",lang)}catch(e){}}
-(function(){var saved="both";try{saved=localStorage.getItem("dea-lang")||"both"}catch(e){}setLang(saved)})();
+function setHighlight(on){document.body.classList.toggle("kw-off",!on);document.querySelectorAll(".btn-hl").forEach(function(b){b.classList.toggle("active",on)});try{localStorage.setItem("dea-hl",on?"on":"off")}catch(e){}}
+(function(){var saved="both";try{saved=localStorage.getItem("dea-lang")||"both"}catch(e){}setLang(saved);var hl="on";try{hl=localStorage.getItem("dea-hl")||"on"}catch(e){}setHighlight(hl==="on")})();
 """
 
 
-def build_option_html(letter, opt_data, zh_opt_data, notion_reason, correct_answer):
+def build_option_html(letter, opt_data, zh_opt_data, notion_reason, correct_answer, keywords=None):
     """Build HTML for a single option."""
     is_correct = (letter == correct_answer)
     cls = "correct" if is_correct else "wrong"
 
-    en_text = md_inline(opt_data.get("text", ""))
+    en_text = md_inline(opt_data.get("text", ""), keywords)
     en_html = f'<div class="lang-en">{en_text}</div>' if en_text else ""
 
-    zh_text = md_inline(zh_opt_data["text"]) if (zh_opt_data and zh_opt_data.get("text")) else ""
+    zh_text = md_inline(zh_opt_data["text"], keywords) if (zh_opt_data and zh_opt_data.get("text")) else ""
     zh_html = f'<div class="opt-zh lang-zh">{zh_text}</div>' if zh_text else ""
 
     reason_html = ""
@@ -269,9 +298,9 @@ def build_card(q, notion_q, range_name):
     note = nq.get("note", "")
     other_reasons = nq.get("other_reasons", {})
 
-    # Scenario (English)
-    en_scenario = f'<div class="q-scenario lang-en"><strong>Q{qnum}.</strong> {md_inline(en_question)}</div>'
-    zh_scenario = f'<div class="q-scenario zh lang-zh"><strong>Q{qnum}.</strong> {md_inline(zh_question)}</div>'
+    # Scenario (English) — pass keywords for highlighting
+    en_scenario = f'<div class="q-scenario lang-en"><strong>Q{qnum}.</strong> {md_inline(en_question, keywords)}</div>'
+    zh_scenario = f'<div class="q-scenario zh lang-zh"><strong>Q{qnum}.</strong> {md_inline(zh_question, keywords)}</div>'
 
     # Options
     opts_html = '<div class="opts">'
@@ -280,7 +309,7 @@ def build_card(q, notion_q, range_name):
         en_opt = en_opts.get(letter, {})
         zh_opt = zh_opts.get(letter, {})
         reason = other_reasons.get(letter, "")
-        opts_html += build_option_html(letter, en_opt, zh_opt, reason, correct)
+        opts_html += build_option_html(letter, en_opt, zh_opt, reason, correct, keywords)
     opts_html += '</div>'
 
     # Answer banner
@@ -364,6 +393,7 @@ def main():
           <span style="flex:1"></span>
           <button class="btn" onclick="expandAll(true)">Expand All</button>
           <button class="btn" onclick="expandAll(false)">Collapse All</button>
+          <button class="btn btn-hl" onclick="setHighlight(document.body.classList.contains('kw-off'))">Highlight</button>
         </div>"""
 
         html = f"""<!DOCTYPE html>
@@ -420,6 +450,7 @@ def main():
     <button class="btn btn-lang" data-lang="en" onclick="setLang('en')">English</button>
     <button class="btn btn-lang" data-lang="zh" onclick="setLang('zh')">中文</button>
     <button class="btn btn-lang" data-lang="both" onclick="setLang('both')">中英對照</button>
+    <button class="btn btn-hl" onclick="setHighlight(document.body.classList.contains('kw-off'))">Highlight</button>
   </div>
   <div class="nav"><a href="index.html" class="active">Overview</a></div>
 </div>
