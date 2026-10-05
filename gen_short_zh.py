@@ -179,19 +179,34 @@ body.num .ch{display:none}
 #weak b{display:block;height:6px;border-radius:3px;background:var(--ng)}
 #weak b.g{background:var(--ok)}
 #weak b.y{background:var(--acc)}
+.c.a1{border-left:4px solid var(--ok)}
+.c.a0{border-left:4px solid var(--ng)}
+.c.last{outline:2px solid var(--acc)}
+.tag.l{display:none;background:var(--acc);color:#000}
+.c.last .tag.l{display:inline}
+.c.go{outline:2px dashed var(--acc)}
 """
 
 JS = """
 const LS='dea_short_zh_',$=id=>document.getElementById(id);
+history.scrollRestoration='manual';
 const res=JSON.parse(localStorage.getItem(LS+'res')||'{}');
 JSON.parse(localStorage.getItem(LS+'wrong')||'[]').forEach(n=>{if(!(n in res))res[n]=0});
 const star=new Set(JSON.parse(localStorage.getItem(LS+'star')||'[]'));
+let last=localStorage.getItem(LS+'last');
 const main=document.querySelector('main'),cards=[...document.querySelectorAll('.c')],heads=[...document.querySelectorAll('.ch')];
 let rnd=false;
 const save=()=>{localStorage.setItem(LS+'res',JSON.stringify(res));localStorage.removeItem(LS+'wrong');
   localStorage.setItem(LS+'star',JSON.stringify([...star]));stat();weak()};
 function stat(){const v=Object.values(res),w=v.filter(x=>!x).length,d=v.length;
-  $('stat').textContent=`已作答 ${d}｜答對率 ${d?Math.round((d-w)*100/d):0}%｜錯題 ${w}｜星號 ${star.size}｜顯示 ${cards.filter(c=>c.style.display!=='none').length} 題`}
+  $('stat').textContent=`已作答 ${d}｜答對率 ${d?Math.round((d-w)*100/d):0}%｜錯題 ${w}｜星號 ${star.size}｜顯示 ${cards.filter(c=>c.style.display!=='none').length} 題`+(last?`｜上次 Q${last}`:'')}
+function mark(c){const n=c.dataset.n;c.classList.toggle('a1',res[n]===1);c.classList.toggle('a0',res[n]===0);c.classList.toggle('last',n===last)}
+function resume(){
+  const vis=[...main.querySelectorAll('.c')].filter(c=>c.style.display!=='none'),i=vis.findIndex(c=>c.dataset.n===last),
+    t=vis.slice(i+1).find(c=>!(c.dataset.n in res))||vis.find(c=>!(c.dataset.n in res))||vis[i];
+  if(!t)return;
+  cards.forEach(c=>c.classList.toggle('go',c===t));
+  scrollTo(0,t.getBoundingClientRect().top+scrollY-document.querySelector('header').offsetHeight-6)}
 function weak(){
   const rows=heads.map(h=>{const c=h.dataset.c,cs=cards.filter(x=>x.dataset.c===c),
     d=cs.filter(x=>x.dataset.n in res).length,ok=cs.filter(x=>res[x.dataset.n]===1).length;
@@ -205,14 +220,15 @@ function judge(c){
   const need=c.dataset.a.length,picks=[...c.querySelectorAll('.o.pick')];
   if(picks.length<need)return;
   c.classList.add('done');
-  res[c.dataset.n]=picks.every(p=>p.classList.contains('ok'))?1:0;save()}
+  res[c.dataset.n]=picks.every(p=>p.classList.contains('ok'))?1:0;
+  last=c.dataset.n;localStorage.setItem(LS+'last',last);cards.forEach(mark);save()}
 function layout(){
   const num=$('ord').value==='num';document.body.classList.toggle('num',num);
   const key=rnd?(c=>+c.dataset.r):num?(c=>+c.dataset.n):(c=>+c.dataset.o);
   if(num){[...cards].sort((a,b)=>key(a)-key(b)).forEach(c=>main.appendChild(c))}
   else heads.forEach(h=>{main.appendChild(h);cards.filter(c=>c.dataset.c===h.dataset.c).sort((a,b)=>key(a)-key(b)).forEach(c=>main.appendChild(c))})}
 function apply(){
-  const v=$('flt').value;
+  const v=$('flt').value;localStorage.setItem(LS+'flt',v);
   cards.forEach(c=>{const n=c.dataset.n;let s=true;
     if(v==='wrong')s=res[n]===0;else if(v==='todo')s=!(n in res);else if(v==='star')s=star.has(n);
     else if(v==='multi')s=c.dataset.a.length>1;else if(v==='dis')s=!!c.dataset.d;
@@ -231,10 +247,15 @@ cards.forEach(c=>{
 $('show').onclick=e=>{document.body.classList.toggle('show');e.target.classList.toggle('on')};
 $('reset').onclick=()=>cards.forEach(c=>{c.classList.remove('done');c.querySelectorAll('.pick').forEach(p=>p.classList.remove('pick'))});
 $('flt').onchange=apply;
-$('ord').onchange=()=>{rnd=false;layout();scrollTo(0,0)};
+$('ord').onchange=()=>{localStorage.setItem(LS+'ord',$('ord').value);rnd=false;layout();scrollTo(0,0)};
+$('go').onclick=resume;
 $('shuf').onclick=()=>{rnd=true;cards.forEach(c=>c.dataset.r=Math.random());layout();scrollTo(0,0)};
 $('wk').onclick=e=>{$('weak').classList.toggle('on');e.target.classList.toggle('on')};
-layout();weak();stat();
+const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt');
+if(so)$('ord').value=so;
+if(sf&&[...$('flt').options].some(o=>o.value===sf))$('flt').value=sf;
+layout();weak();apply();cards.forEach(mark);
+if(last)resume();
 """
 
 
@@ -280,7 +301,7 @@ def render(data, meta):
             key += f"<br>※ {html.escape(NOTE[n])}"
         cards.append(
             f'<div class="c" data-n="{n}" data-a="{a}" data-c="{s.split(".")[0]}" data-o="{rank[n]}"{dis}>'
-            f'<div class="h"><b>Q{n}</b>{tag}'
+            f'<div class="h"><b>Q{n}</b>{tag}<span class="tag l">上次</span>'
             f'<span class="star">★</span></div><p class="q">{html.escape(it["q"])}</p>{opts}'
             f'<div class="k">答案 <b>{a}</b>｜{key}</div><button class="btn">看答案</button></div>')
     return f"""<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
@@ -292,7 +313,7 @@ def render(data, meta):
 <optgroup label="篩選"><option value="todo">只看未作答</option><option value="wrong">只看錯題</option>
 <option value="star">只看星號</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號">{ranges}</optgroup></select>
-<button id="wk">弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
+<button id="go">接續</button><button id="wk">弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
 <div id="stat"></div><div id="weak"></div></header>
 <main>{heads}{''.join(cards)}</main><script>{JS}</script></body></html>"""
 

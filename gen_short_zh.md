@@ -77,6 +77,8 @@ flowchart TD
 
 ```mermaid
 stateDiagram-v2
+    [*] --> 接續 : 有上次紀錄
+    接續 --> 未作答 : 捲到上次那題之後的第一個未作答
     [*] --> 選主題 : 依主題 / 篩選某章
     選主題 --> 未作答
     未作答 --> 選擇中 : 點選項
@@ -104,7 +106,10 @@ sequenceDiagram
     S->>S: 字數檢查 + 比對 Notion 答案
     S->>H: 依章節排序產生 HTML
     U->>H: 手機開啟，選章節作答
-    H->>L: dea_short_zh_res（每題對錯）
+    H->>L: dea_short_zh_res（每題對錯）、last（上次題號）
+    U->>H: 下次開啟（或點「接續」）
+    L-->>H: last、ord、flt（排序與篩選）
+    H-->>U: 還原排序與篩選，捲到下一個未作答
     U->>H: 點「弱項」
     L-->>H: 各章作答數 / 答對率
     H-->>U: 由低到高排列，點選只看該章
@@ -116,6 +121,7 @@ sequenceDiagram
 flowchart LR
     U((考生))
     U --> UC0[依主題分章刷題]
+    U --> UC11[接續上次進度]
     U --> UC8[查看弱項：各章答對率]
     U --> UC9[只看爭議題]
     U --> UC10[只看未作答]
