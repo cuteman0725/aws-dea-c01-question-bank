@@ -1,0 +1,428 @@
+[
+ {
+  "number": 153,
+  "q": "Redshift 實體化檢視要刪除所有列以回收儲存空間，哪個指令能回收最多空間？",
+  "opts": {
+   "A": "DELETE FROM mv WHERE 1=1",
+   "B": "TRUNCATE mv",
+   "C": "VACUUM table WHERE load_date<=今天",
+   "D": "DELETE FROM mv WHERE 日期<=今天"
+  },
+  "key": "TRUNCATE 立即釋放空間"
+ },
+ {
+  "number": 154,
+  "q": "Redshift Spectrum 查詢 S3 單一路徑 CSV（100+欄、每日30+檔）效能變差，最少開發工作量改善？（選2）",
+  "opts": {
+   "A": "第三方程式改輸出欄式格式",
+   "B": "Glue ETL 將每日 CSV 合併成單檔",
+   "C": "S3 資料依訂單日期分區",
+   "D": "第三方程式改輸出 JSON",
+   "E": "JSON 載入 Redshift SUPER 欄位"
+  },
+  "key": "欄式格式少掃欄位＋日期分區裁剪"
+ },
+ {
+  "number": 155,
+  "q": "S3 客戶記錄建立後7年內不可刪改，連 root 也不行，用 S3 Object Lock 怎麼設？",
+  "opts": {
+   "A": "Governance 模式，預設保留7年",
+   "B": "Compliance 模式，預設保留7年",
+   "C": "個別物件設 Legal Hold 保留7年",
+   "D": "僅對個別物件設保留期7年"
+  },
+  "key": "Compliance 模式連 root 都無法刪改"
+ },
+ {
+  "number": 156,
+  "q": "在 Athena 建立與 old_table 相同結構的空資料表，該用哪個 SQL？",
+  "opts": {
+   "A": "CTAS SELECT * FROM old_tables",
+   "B": "INSERT INTO new SELECT * FROM old",
+   "C": "CREATE TABLE new (LIKE old)",
+   "D": "CTAS SELECT * FROM old WITH NO DATA"
+  },
+  "key": "CTAS 加 WITH NO DATA 只複製結構"
+ },
+ {
+  "number": 157,
+  "q": "從 Athena 表 cities_world 取出美國城市放入新表 cities_us，該用哪個 SQL？",
+  "opts": {
+   "A": "INSERT INTO usa(city,state) SELECT…",
+   "B": "MOVE city,state FROM world TO usa",
+   "C": "INSERT INTO usa SELECT city,state…",
+   "D": "UPDATE usa SET(city,state)=(SELECT…)"
+  },
+  "key": "INSERT INTO 指定欄位再 SELECT"
+ },
+ {
+  "number": 158,
+  "q": "資料網格由治理帳號 Lake Formation 集中授權；Redshift Serverless 表要分給行銷與合規團隊各看不同欄位？（選2）",
+  "opts": {
+   "A": "建立只含所需欄位的 view",
+   "B": "建立 Redshift data share 含這些表",
+   "C": "行銷帳號建 Redshift 受管 VPC 端點",
+   "D": "data share 分享至治理帳號 LF 目錄",
+   "E": "data share 直接分享至行銷帳號"
+  },
+  "key": "data share 進 LF，由 LF 授權欄位"
+ },
+ {
+  "number": 159,
+  "q": "Glue Studio ETL 管線每次執行都要依預設閾值檢查資料品質，最少實作工作量？",
+  "opts": {
+   "A": "加 SQL 查詢 transform 實作規則",
+   "B": "加 Evaluate Data Quality + DQDL",
+   "C": "自訂 transform 用 PyDeequ",
+   "D": "自訂 transform 用 Great Expectations"
+  },
+  "key": "Glue 內建 DQ 轉換，用 DQDL"
+ },
+ {
+  "number": 160,
+  "q": "EKS 微服務需收集叢集日誌與應用追蹤，並關聯找出故障點，最少開發工作量？（選2）",
+  "opts": {
+   "A": "FluentBit收日誌+OpenTelemetry收追蹤",
+   "B": "CW 收日誌、Kinesis 收追蹤",
+   "C": "CW 收日誌、MSK 收追蹤",
+   "D": "OpenSearch 關聯日誌與追蹤",
+   "E": "Glue 關聯日誌與追蹤"
+  },
+  "key": "標準收集工具＋OpenSearch 關聯分析"
+ },
+ {
+  "number": 161,
+  "q": "DynamoDB 遊戲資料需近即時同步到 OpenSearch，哪個方案？",
+  "opts": {
+   "A": "Step Functions定期匯出S3+Lambda載入",
+   "B": "Glue 近即時 DynamoDB→OpenSearch",
+   "C": "DynamoDB Streams + Lambda 更新",
+   "D": "自訂 OpenSearch 外掛同步"
+  },
+  "key": "Streams 捕捉變更，Lambda 即時寫入"
+ },
+ {
+  "number": 162,
+  "q": "Redshift 去正規化大表持續成長、沒有適合的分佈鍵，最低維護負擔用哪種分佈？",
+  "opts": {
+   "A": "ALL 分佈",
+   "B": "EVEN 分佈",
+   "C": "AUTO 分佈",
+   "D": "KEY 分佈"
+  },
+  "key": "AUTO 由 Redshift 依資料量自動調整"
+ },
+ {
+  "number": 163,
+  "q": "QuickSight 匯率需算到小數4位，且須預先計算並實體化到 SPICE，計算欄位建在哪？",
+  "opts": {
+   "A": "在 dataset 建計算欄位",
+   "B": "在 analysis 建計算欄位",
+   "C": "在 visual 建計算欄位",
+   "D": "在 dashboard 建計算欄位"
+  },
+  "key": "dataset 層計算欄位才會存入 SPICE"
+ },
+ {
+  "number": 164,
+  "q": "整合 Redshift、Teradata、BigQuery，用各來源引擎轉換後 join 寫入 S3 Iceberg，最少營運負擔？",
+  "opts": {
+   "A": "Glue 連接器，以 Glue transform join",
+   "B": "Athena 聯合查詢，SQL join+MERGE",
+   "C": "EMR+JDBC/Spark 連接器，PySpark join",
+   "D": "AppFlow 寫 S3，再用 Athena join"
+  },
+  "key": "Athena 聯合查詢下推來源，免寫程式"
+ },
+ {
+  "number": 165,
+  "q": "EKS 容器需安全存取 DynamoDB，且不可在容器內嵌入 AWS 憑證？",
+  "opts": {
+   "A": "憑證存 S3，容器去讀取",
+   "B": "IAM 角色搭配 IRSA 服務帳戶",
+   "C": "IAM user 金鑰放環境變數",
+   "D": "IAM user 金鑰放 K8s secret"
+  },
+  "key": "IRSA 讓 Pod 透過角色取得臨時憑證"
+ },
+ {
+  "number": 166,
+  "q": "地端資料生產者遷移到 AWS，不可走公網，且各管線服務帳號憑證需安全保管？",
+  "opts": {
+   "A": "ECS 建 AMI，公有子網 SG 限地端",
+   "B": "Direct Connect+Secrets Manager",
+   "C": "公有子網 SG 限 CIDR+S3 預簽 URL",
+   "D": "Direct Connect+Secrets Mgr+預簽URL"
+  },
+  "key": "Direct Connect 專線不走公網"
+ },
+ {
+  "number": 167,
+  "q": "S3 事件已送到 SQS，Glue Data Catalog 需增量更新，最少營運負擔？（選2）",
+  "opts": {
+   "A": "S3 事件型 Glue crawler 讀 SQS",
+   "B": "定時排程執行 crawler 增量更新",
+   "C": "Lambda 依 SQS 事件直接改 Catalog",
+   "D": "S3 變動時手動啟動 crawler",
+   "E": "Step Functions 依事件協調更新"
+  },
+  "key": "事件型 crawler 只爬變動物件，搭配排程"
+ },
+ {
+  "number": 168,
+  "q": "每日報表有時在 S3 資料未齊時就執行，需把不完整資料通知既有 SNS，最少營運負擔？",
+  "opts": {
+   "A": "MWAA Airflow 跑品質檢查發 SNS",
+   "B": "EMR Spark 檢查+Step Functions 通知",
+   "C": "Glue DQ 檢查→EventBridge→SNS",
+   "D": "Lambda 檢查+Step Functions 通知"
+  },
+  "key": "Glue DQ+EventBridge 全受管"
+ },
+ {
+  "number": 169,
+  "q": "Redshift 含 PII，行銷、理賠、分析三團隊需看到不同遮罩程度的資料，最少管理負擔？",
+  "opts": {
+   "A": "每團隊各建一個 Redshift 叢集",
+   "B": "依需求建 view，各團隊授權各自 view",
+   "C": "每團隊建 DB 角色+套用遮罩政策",
+   "D": "搬到 S3 用 Lake Formation 細粒度權限"
+  },
+  "key": "Redshift 動態資料遮罩依角色套用"
+ },
+ {
+  "number": 170,
+  "q": "MSK 新增 topic 數天後，CW 對 RootDiskUsed 指標發出告警，該如何處理？",
+  "opts": {
+   "A": "擴充 broker 儲存並設自動擴展",
+   "B": "擴充 ZooKeeper 節點儲存",
+   "C": "broker 換大型執行個體並重啟",
+   "D": "對既有 topic 設 Target Volume"
+  },
+  "key": "磁碟用量告警→擴充 broker 儲存並自動擴展"
+ },
+ {
+  "number": 171,
+  "q": "以 S3 與 RDS 建企業資料目錄，需含資料儲存格式中繼資料，最少工作量？",
+  "opts": {
+   "A": "Glue crawler+人工檢視補填格式",
+   "B": "Glue crawler+classifier 辨識格式",
+   "C": "Macie 建目錄並取得格式資訊",
+   "D": "自寫腳本掃描並依格式分類"
+  },
+  "key": "classifier 自動辨識並記錄格式"
+ },
+ {
+  "number": 172,
+  "q": "DataBrew 掃描 PII，但公司自訂的 PII 類別不在標準規則中，需跨多個資料集掃描，最低營運負擔？",
+  "opts": {
+   "A": "人工檢查自訂 PII 類別",
+   "B": "DataBrew 自訂 DQ 規則套用至各資料集",
+   "C": "自寫 Python 腳本由 DataBrew 呼叫",
+   "D": "ETL 時用 regex 擷取 PII 欄位"
+  },
+  "key": "DataBrew 支援自訂 DQ 規則跨資料集套用"
+ },
+ {
+  "number": 173,
+  "q": "Glue ETL 每日輸出 Daily.csv，新檔為空或必填欄缺值時須保留前一天檔案，最少工作量？",
+  "opts": {
+   "A": "Lambda 檢查並補缺值",
+   "B": "Glue DQ 以 DQDL 檢查空檔與缺值",
+   "C": "Glue Studio 改碼以眾數補缺值",
+   "D": "Athena 讀 CSV 刪缺值列再複製"
+  },
+  "key": "Glue DQ 驗證通過才覆寫"
+ },
+ {
+  "number": 174,
+  "q": "要收集 S3 中未完成 multipart upload 與舊版本物件資訊以優化成本，最低營運工作量？",
+  "opts": {
+   "A": "用 AWS CLI 收集",
+   "B": "S3 Inventory 報表",
+   "C": "S3 Storage Lens 儀表板",
+   "D": "AWS S3 用量報告"
+  },
+  "key": "Storage Lens 儀表板內建此指標"
+ },
+ {
+  "number": 175,
+  "q": "KDS→Firehose 以 JSON 存 S3 供 Athena 查詢，要降低 Athena 成本且不重建管線，最少管理工作？",
+  "opts": {
+   "A": "Firehose改Parquet+分區，舊檔Glue轉",
+   "B": "每日 EMR Spark 轉 Parquet 換位置",
+   "C": "Firehose→KDS→Flink 轉 Parquet",
+   "D": "Firehose接Lambda轉Parquet+Glue轉舊"
+  },
+  "key": "Firehose 內建轉 Parquet 並分區"
+ },
+ {
+  "number": 176,
+  "q": "DynamoDB 表需自動刪除1個月前的資料以控管成本，且不影響讀寫，最低持續維護？",
+  "opts": {
+   "A": "啟用 DynamoDB TTL 依時間戳過期",
+   "B": "EventBridge 排程 Lambda 刪舊資料",
+   "C": "DynamoDB Streams 觸發 Lambda 刪除",
+   "D": "Lambda 定期 Scan 表並刪除舊資料"
+  },
+  "key": "TTL 免費自動刪除過期項目"
+ },
+ {
+  "number": 177,
+  "q": "Hub 帳號的 S3 以 KMS 加密，BI 帳號的 QS 需跨帳號存取；桶政策已授權 QS 角色，還要做？（選2）",
+  "opts": {
+   "A": "用既有 KMS 金鑰加密 QS 連線",
+   "B": "將 S3 桶加入 QS 角色可存取資源",
+   "C": "用 AWS RAM 分享 S3 桶給 BI 帳號",
+   "D": "QS 角色加 IAM policy 存取 KMS",
+   "E": "將 KMS 金鑰加入 QS 角色可存取資源"
+  },
+  "key": "QS 設定中加入 S3 桶與 KMS 金鑰資源"
+ },
+ {
+  "number": 178,
+  "q": "每日上傳≤5KB壓縮檔到 S3，需上傳即處理、自動編排、儀表板及可擴展臨時查詢，最具成本效益？",
+  "opts": {
+   "A": "EMR+Step Functions+Hive+OpenSearch",
+   "B": "常駐EMR+Step Functions+Athena+QS",
+   "C": "Glue+SFN+Spectrum+OpenSearch",
+   "D": "Glue+S3事件+Lambda+Athena+QS"
+  },
+  "key": "S3事件+Lambda+Athena 全無伺服器"
+ },
+ {
+  "number": 179,
+  "q": "多區域各有 EFS，資料須留在資料科學團隊區域，用 Step Functions+Lambda 處理成單一資料集，最少工作量？",
+  "opts": {
+   "A": "VPC 對等，Lambda 跨區掛載各 EFS",
+   "B": "各區 EFS 複寫至團隊區域並掛載複本",
+   "C": "各區部署 Lambda，輸出存團隊區 S3",
+   "D": "DataSync 傳至團隊區 EFS 再掛載"
+  },
+  "key": "DataSync 集中到本區再處理"
+ },
+ {
+  "number": 180,
+  "q": "EC2 應用需 SSL/TLS 加密傳輸，憑證要自動產生、輪替與續約部署，最低營運負擔？",
+  "opts": {
+   "A": "EC2 上自管憑證",
+   "B": "AWS Certificate Manager (ACM)",
+   "C": "Secrets Manager 自訂自動化腳本",
+   "D": "ECS Service Connect"
+  },
+  "key": "ACM 自動續約並部署憑證"
+ },
+ {
+  "number": 181,
+  "q": "S3 以 SSE-KMS 加密且含 PII，分析前須遮罩，預處理階段部分使用者可安全存取，要低維護？（選2）",
+  "opts": {
+   "A": "Glue DataBrew ETL 遮罩 PII",
+   "B": "GuardDuty 監控 PII 存取模式",
+   "C": "對 S3 執行 Macie 探索作業",
+   "D": "以 IAM 管理權限控管 PII 存取",
+   "E": "自寫腳本遮罩並控管存取"
+  },
+  "key": "DataBrew 遮罩＋IAM 控管存取"
+ },
+ {
+  "number": 182,
+  "q": "EMR 叢集需靜態與傳輸中加密；S3 資料以 KMS 加密，另有 S3 上的 PEM 憑證檔，怎麼做？",
+  "opts": {
+   "A": "建2個安全組態(KMS/PEM)皆附加",
+   "B": "單一組態：KMS 設本機磁碟+PEM",
+   "C": "單一組態 KMS 靜態+PEM，建立時指定",
+   "D": "單一組態 KMS 靜態+PEM，建後附加"
+  },
+  "key": "一個安全組態，只能在建立叢集時指定"
+ },
+ {
+  "number": 183,
+  "q": "Redshift 支援即時庫存，SageMaker 即時端點已部署模型，需即時庫存建議並預測未來需求？（選2）",
+  "opts": {
+   "A": "Redshift ML 產生庫存建議",
+   "B": "用 SQL 呼叫遠端 SageMaker 端點預測",
+   "C": "Redshift ML 排程匯出供離線訓練",
+   "D": "Autopilot 在 Redshift 建儀表板",
+   "E": "Redshift 當檔案儲存封存報表"
+  },
+  "key": "Redshift ML 以 SQL 推論/呼叫端點"
+ },
+ {
+  "number": 184,
+  "q": "S3 CSV 需改欄名、刪欄、略過第2列、依首列建新欄、依數值篩選，最少開發工作量？",
+  "opts": {
+   "A": "Glue Python job 轉換",
+   "B": "Glue 自訂 crawler 讀取並轉換",
+   "C": "Glue workflow 串 crawler 與 job",
+   "D": "Glue DataBrew recipe 轉換"
+  },
+  "key": "DataBrew recipe 免寫程式完成轉換"
+ },
+ {
+  "number": 185,
+  "q": "Redshift 部分表的壓縮編碼不適合資料，需改善編碼，怎麼做？",
+  "opts": {
+   "A": "ANALYZE 後依結果手動改編碼",
+   "B": "ANALYZE COMPRESSION 後手動改編碼",
+   "C": "VACUUM REINDEX",
+   "D": "VACUUM RECLUSTER"
+  },
+  "key": "ANALYZE COMPRESSION 給編碼建議"
+ },
+ {
+  "number": 186,
+  "q": "S3 大量記錄前30天須能立即存取，30天後少用，最具成本效益？",
+  "opts": {
+   "A": "生命週期30天後轉 Standard-IA",
+   "B": "使用 S3 Intelligent-Tiering",
+   "C": "30天後轉 Glacier Deep Archive",
+   "D": "全部直接存 Standard-IA"
+  },
+  "key": "模式已知用生命週期轉IA，仍可即時取"
+ },
+ {
+  "number": 187,
+  "q": "QuickSight 要顯示區域總營收，且不受視覺下鑽層級影響，用什麼？",
+  "opts": {
+   "A": "Table calculation",
+   "B": "簡單計算欄位",
+   "C": "LAC-A 層級感知聚合函數",
+   "D": "LAC-W 層級感知視窗函數"
+  },
+  "key": "LAC-A 在指定層級先聚合，不受下鑽影響"
+ },
+ {
+  "number": 188,
+  "q": "S3 部分客戶資料含 PII，提供給合作夥伴前需判斷是否含 PII，最少人工介入？",
+  "opts": {
+   "A": "Macie 自動敏感資料探索",
+   "B": "CloudTrail 監控 PUT 再人工檢視",
+   "C": "Lambda 定期掃描找 PII",
+   "D": "Glue 目錄+Athena 自寫 SQL 找 PII"
+  },
+  "key": "Macie 自動偵測 S3 中的 PII"
+ },
+ {
+  "number": 189,
+  "q": "Athena 現有表有1,000列，要建立它的空白副本，用哪個查詢？",
+  "opts": {
+   "A": "CREATE TABLE new LIKE old",
+   "B": "CTAS SELECT * FROM old WITH NO DATA",
+   "C": "CTAS SELECT * FROM old",
+   "D": "CTAS … FROM old_cable WHERE 1=1"
+  },
+  "key": "CTAS 加 WITH NO DATA 只建結構"
+ },
+ {
+  "number": 190,
+  "q": "S3 中依年分區、Glue 編目的 CloudTrail 日誌，Athena 查詢沒有資料，該做哪些排查？（選2）",
+  "opts": {
+   "A": "確認 Athena 指向正確 S3 位置",
+   "B": "延長查詢逾時",
+   "C": "執行 MSCK REPAIR TABLE",
+   "D": "重啟 Athena",
+   "E": "刪除並重建該資料表"
+  },
+  "key": "位置錯或分區未載入會查無資料"
+ }
+]

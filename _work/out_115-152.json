@@ -1,0 +1,426 @@
+[
+ {
+  "number": 115,
+  "q": "公司用 Transfer Family 從地端遷移資料至 AWS，政策要求傳輸中加密須用 TLS 1.2 以上。哪個方案符合？",
+  "opts": {
+   "A": "產生新 SSH 金鑰，新舊金鑰並用",
+   "B": "地端安全群組只允許 TLS 1.2+",
+   "C": "改 Transfer 安全政策最低 TLS 1.2",
+   "D": "在 Transfer 伺服器裝 SSL 憑證"
+  },
+  "key": "以 Transfer 安全政策指定最低 TLS"
+ },
+ {
+  "number": 116,
+  "q": "地端 Kafka 接收 Oracle 增量更新，要以 replatform（非 refactor）遷移至 AWS，管理負擔最低？",
+  "opts": {
+   "A": "KDS",
+   "B": "MSK 佈建叢集",
+   "C": "Firehose",
+   "D": "MSK Serverless"
+  },
+  "key": "沿用Kafka又免管容量→MSK無伺服器"
+ },
+ {
+  "number": 117,
+  "q": "Glue ETL 匯入 S3 壓縮檔，管線須支援增量處理，該用哪個 Glue 功能？",
+  "opts": {
+   "A": "Workflows",
+   "B": "Triggers",
+   "C": "Job bookmarks",
+   "D": "Classifiers"
+  },
+  "key": "Job bookmark 記錄已處理資料做增量"
+ },
+ {
+  "number": 118,
+  "q": "銀行用 PutRecord 寫入 KDS，特定時段網路中斷，要整條管線 exactly-once 遞送，怎麼做？",
+  "opts": {
+   "A": "來源嵌入唯一 ID，處理時去重",
+   "B": "調整 Flink checkpoint 避免重複",
+   "C": "設計來源不重複寫入 KDS",
+   "D": "改用 EMR 跑 Flink/Spark Streaming"
+  },
+  "key": "網路重試必重複，靠唯一 ID 消費端去重"
+ },
+ {
+  "number": 119,
+  "q": "S3 日誌檔被誤刪，要防止未來誤刪，營運負擔最低？",
+  "opts": {
+   "A": "定期手動備份 bucket",
+   "B": "啟用 S3 Versioning",
+   "C": "設定 bucket 複寫",
+   "D": "用 Glacier 封存資料"
+  },
+  "key": "Versioning 刪除僅加標記，可復原"
+ },
+ {
+  "number": 120,
+  "q": "每秒數千筆網路用量即時處理後存 Aurora，需偵測用量驟降以立即處置，延遲最低？",
+  "opts": {
+   "A": "EventBridge每分跑Lambda查Aurora",
+   "B": "改寫入 KDS，用 Flink 偵測驟降",
+   "C": "改 DynamoDB+DAX，Lambda每分查",
+   "D": "Aurora 活動串流內建 Lambda 偵測"
+  },
+  "key": "KDS+Flink 串流即時偵測，延遲最低"
+ },
+ {
+  "number": 121,
+  "q": "S3 數 TB 原始資料要清理後載入 Redshift 供複雜查詢，免複雜 ETL 與管理基礎設施，營運負擔最低？",
+  "opts": {
+   "A": "EMR清理/Step Functions載入/QS查",
+   "B": "DataBrew清理/Glue載入/Redshift查",
+   "C": "Lambda清理/Firehose載入/Athena查",
+   "D": "Glue清理/DMS載入/Spectrum查"
+  },
+  "key": "DataBrew 免寫碼清理+Glue 載入"
+ },
+ {
+  "number": 122,
+  "q": "VPC 內的 Lambda 可連 SFTP，但上傳 S3 逾時，需安全解決且最具成本效益？",
+  "opts": {
+   "A": "公有子網建 NAT gateway 並導流",
+   "B": "建 S3 gateway endpoint 並導流",
+   "C": "建 S3 interface endpoint 並導流",
+   "D": "用 internet gateway 連外網"
+  },
+  "key": "S3 gateway端點免費且走私網"
+ },
+ {
+  "number": 123,
+  "q": "多個 RDS 客戶資料庫欄位名稱不一致，需跨庫連結客戶記錄，營運負擔最低？",
+  "opts": {
+   "A": "EMR 佈建叢集+Zeppelin 用 FindMatches",
+   "B": "Glue crawler+FindMatches 並調校",
+   "C": "Glue crawler+SageMaker Spark ML",
+   "D": "EMR+Zeppelin 自建 Spark ML 模型"
+  },
+  "key": "Glue FindMatches託管ML比對"
+ },
+ {
+  "number": 124,
+  "q": "第三方資料存 S3，Glue crawler 卻建出多張表，要確保只建一張表？（選2）",
+  "opts": {
+   "A": "格式、壓縮、schema 全部一致",
+   "B": "格式與 schema 一致，壓縮不限",
+   "C": "僅 schema 一致，格式壓縮不限",
+   "D": "S3 物件 prefix 結構一致",
+   "E": "物件名稱遵循相似命名模式"
+  },
+  "key": "格式/壓縮/schema 與路徑結構皆需一致"
+ },
+ {
+  "number": 125,
+  "q": "SQS 消費端偶爾停機，訊息 1 天後過期被刪造成資料遺失，如何降到最低？（選2）",
+  "opts": {
+   "A": "延長訊息保留期間",
+   "B": "延長 visibility timeout",
+   "C": "掛載 DLQ 死信佇列",
+   "D": "用 delay queue 延遲遞送",
+   "E": "縮短訊息處理時間"
+  },
+  "key": "延長保留期（最長14天）＋DLQ 保存訊息"
+ },
+ {
+  "number": 126,
+  "q": "MSK 資料經管線寫入 Keyspaces、OpenSearch 及 S3 Avro，要近即時時序儀表板，延遲最低？",
+  "opts": {
+   "A": "用 OpenSearch Dashboards",
+   "B": "Athena+Hive查Avro，Grafana",
+   "C": "Athena查Avro，Keyspaces當目錄，QS",
+   "D": "Glue 編目+S3 Select，QS 連 S3"
+  },
+  "key": "OpenSearch已有資料，直接看最快"
+ },
+ {
+  "number": 127,
+  "q": "數 PB 資料在 S3 Standard，存取模式不可預測、部分數月未用但須毫秒取回，要降成本且營運負擔最低？",
+  "opts": {
+   "A": "Lens標準指標+持續調整Lifecycle",
+   "B": "Lens活動指標，依天數轉IA/Glacier",
+   "C": "Intelligent-Tiering啟用Deep Archive",
+   "D": "Intelligent-Tiering 預設存取層"
+  },
+  "key": "Intelligent-Tiering自動分層"
+ },
+ {
+  "number": 128,
+  "q": "KDS 每日數百萬事件，需轉換後寫入 OpenSearch，營運負擔最低？",
+  "opts": {
+   "A": "Firehose+Lambda 轉換後寫入",
+   "B": "Logstash 管線內建 filter 轉換",
+   "C": "Lambda 呼叫 Kinesis Agent 轉換",
+   "D": "用 KCL 自寫轉換並寫入"
+  },
+  "key": "Firehose 託管投遞+Lambda 轉換"
+ },
+ {
+  "number": 129,
+  "q": "Lake Formation 客戶表須禁止使用者存取加拿大客戶的資料列，營運最省力？",
+  "opts": {
+   "A": "列級篩選排除 country=Canada",
+   "B": "IAM 角色限制存取加拿大地址",
+   "C": "欄級篩選排除加拿大的列",
+   "D": "加拿大列加 tag，依 tag 阻擋"
+  },
+  "key": "Lake Formation 列級篩選"
+ },
+ {
+  "number": 130,
+  "q": "Redshift 查詢編輯器要用第三方 IdP 登入，資料工程師第一步該做什麼？",
+  "opts": {
+   "A": "在叢集組態設定中註冊 IdP",
+   "B": "在 Redshift 內註冊 IdP",
+   "C": "IdP 註冊到 Secrets Manager",
+   "D": "IdP 註冊到 ACM 管理憑證"
+  },
+  "key": "於 Redshift 內註冊 IdP 為第一步"
+ },
+ {
+  "number": 131,
+  "q": "EMR 每日 Spark ETL 擴到 5 個 task 節點，CPU 滿載但記憶體 <30%，要最具成本效益地降成本？",
+  "opts": {
+   "A": "managed scaling 上限改 10",
+   "B": "task 節點改記憶體最佳化",
+   "C": "task 節點改運算最佳化",
+   "D": "縮短擴展冷卻時間"
+  },
+  "key": "CPU 瓶頸、記憶體閒置→運算最佳化"
+ },
+ {
+  "number": 132,
+  "q": "Glue job 將 S3 CSV 寫入 Redshift，重跑會產生重複記錄，需更新且不重複？",
+  "opts": {
+   "A": "先寫 staging 表，再 SQL 更新",
+   "B": "先載入 MySQL 做 upsert 再複製",
+   "C": "Spark dropDuplicates() 後寫入",
+   "D": "Glue ResolveChoice 取最新值"
+  },
+  "key": "Staging 表+SQL 更新實現 upsert"
+ },
+ {
+  "number": 133,
+  "q": "數百個檔案載入 Redshift 事實表，要最大吞吐量並最佳利用叢集資源？",
+  "opts": {
+   "A": "用多個 COPY 指令載入",
+   "B": "S3DistCp 到 HDFS 再接 Redshift",
+   "C": "依節點數下等量 INSERT 平行",
+   "D": "用單一 COPY 指令載入"
+  },
+  "key": "單一 COPY 自動平行分配到各 slice"
+ },
+ {
+  "number": 134,
+  "q": "Glue ETL 寫入 S3 資料湖供 Athena 查詢，需在無共同唯一 ID 下找出相符記錄？",
+  "opts": {
+   "A": "ETL 中用 Macie 模式比對",
+   "B": "訓練並用 Glue PySpark Filter",
+   "C": "依唯一 ID 分割資料表",
+   "D": "訓練並用 FindMatches 轉換"
+  },
+  "key": "FindMatches用ML比對無ID記錄"
+ },
+ {
+  "number": 135,
+  "q": "S3 混放 csv 與 json，crawler 已排除 json 但 Athena 仍掃到 json，不影響 csv 存取，查詢最快？",
+  "opts": {
+   "A": "調整 crawler 也排除 json",
+   "B": "在 Athena 主控台排除 json",
+   "C": "把 json 移到 S3 其他路徑",
+   "D": "用 bucket policy 封鎖 json"
+  },
+  "key": "Athena 掃整個路徑，檔案須分開存放"
+ },
+ {
+  "number": 136,
+  "q": "Lambda 執行角色已可存取 S3，讀取 KMS 加密物件仍失敗，可能原因？",
+  "opts": {
+   "A": "S3 bucket 權限設定錯誤",
+   "B": "SDK 版本過舊導致讀取失敗",
+   "C": "跨 Region 延遲導致錯誤",
+   "D": "執行角色缺 KMS 金鑰解密權限"
+  },
+  "key": "讀 SSE-KMS 物件需 kms:Decrypt"
+ },
+ {
+  "number": 137,
+  "q": "1,000 張 Data Catalog 表的資料品質規則需修改，營運負擔最低？",
+  "opts": {
+   "A": "Glue ETL 管線+Lambda 逐表呼叫",
+   "B": "Lambda 呼叫 Glue Data Quality API",
+   "C": "EMR 管線逐表改，Lambda 觸發",
+   "D": "用主控台逐一編輯規則"
+  },
+  "key": "以 API 批次修改規則，免逐表手動"
+ },
+ {
+  "number": 138,
+  "q": "Branch A 已部署上線，Branch B 下週要合併到 master，發 PR 前 Branch B 應執行？",
+  "opts": {
+   "A": "git diff branchB master + commit",
+   "B": "git pull master",
+   "C": "git rebase master",
+   "D": "git fetch -b master"
+  },
+  "key": "rebase 將 B 接到最新 master 之上"
+ },
+ {
+  "number": 139,
+  "q": "Redshift 表以 Region ID、Department ID、Role ID 為複合排序鍵，哪些查詢最能加速？（選2）（NA=North America）",
+  "opts": {
+   "A": "WHERE Region ID='NA'",
+   "B": "WHERE Region ID='NA' AND Dept ID=20",
+   "C": "WHERE Dept ID=20 AND Region ID='NA'",
+   "D": "WHERE Role ID=50",
+   "E": "WHERE Region ID='NA' AND Role ID=50"
+  },
+  "key": "複合排序鍵需依前綴欄位順序過濾"
+ },
+ {
+  "number": 140,
+  "q": "數百萬個 1KB JSON 檔經 Glue 轉 Parquet 載入 Redshift，處理時間增加，最能縮短時間？",
+  "opts": {
+   "A": "Lambda 先合併小檔回 S3 再 Glue",
+   "B": "Glue dynamic frame 檔案分組讀取",
+   "C": "COPY 原檔進 Redshift 再處理",
+   "D": "改用 EMR 合併並處理檔案"
+  },
+  "key": "Glue groupFiles 合併小檔減少任務"
+ },
+ {
+  "number": 141,
+  "q": "MWAA 工作流程執行失敗，要用 Airflow 日誌診斷原因，該看哪種日誌？",
+  "opts": {
+   "A": "YourEnvironmentName-WebServer",
+   "B": "YourEnvironmentName-Scheduler",
+   "C": "YourEnvironmentName-DAGProcessing",
+   "D": "YourEnvironmentName-Task"
+  },
+  "key": "Task 日誌記錄任務執行錯誤細節"
+ },
+ {
+  "number": 142,
+  "q": "Redshift Spectrum 存取共用 S3 的第三方資料，法規要求資料不可從公司 AWS 環境外存取？（選2）",
+  "opts": {
+   "A": "Redshift 移私有子網+介面端點+NAT",
+   "B": "每家供應商各建 CloudHSM 加密",
+   "C": "啟用增強 VPC 路由+Direct Connect",
+   "D": "定義主鍵與外鍵約束",
+   "E": "Federated query 經 gateway 端點"
+  },
+  "key": "私有子網隔離＋增強 VPC 路由走私網"
+ },
+ {
+  "number": 143,
+  "q": "多來源檔案定期進 S3，需在新檔到達時近即時匯入 Redshift？",
+  "opts": {
+   "A": "query editor v2 排程 COPY",
+   "B": "Aurora 與 Redshift zero-ETL",
+   "C": "Glue job bookmarks ETL 載入",
+   "D": "S3 事件通知觸發 Lambda 載入"
+  },
+  "key": "S3 事件驅動 Lambda，到檔即載入"
+ },
+ {
+  "number": 144,
+  "q": "KDS 即時收集日誌，要在 Redshift 即時查詢並加值，匯入的營運負擔最低？",
+  "opts": {
+   "A": "Firehose 直送 Redshift 佈建叢集",
+   "B": "Firehose 到 S3，Redshift 每分載入",
+   "C": "Flink 直送 Redshift 叢集表",
+   "D": "Redshift 串流擷取 KDS 成具體化檢視"
+  },
+  "key": "Redshift串流擷取直讀KDS"
+ },
+ {
+  "number": 145,
+  "q": "地端 Oracle 資料倉儲表（<50GB、有單調遞增欄位）需每日增量同步到 S3 資料湖，最具作業效率？",
+  "opts": {
+   "A": "DMS 全量+CDC，Glue 自訂邏輯附加",
+   "B": "Glue JDBC+遞增欄位 job bookmark",
+   "C": "DMS 每日全量載入並覆寫",
+   "D": "Glue 每日全量載入並覆寫"
+  },
+  "key": "Job bookmark 依遞增欄位抓增量"
+ },
+ {
+  "number": 146,
+  "q": "地端 Oracle 70 張表（皆有主鍵、偶有異動），每天匯入 S3 Parquet 資料湖，最省工？",
+  "opts": {
+   "A": "EMR Sqoop 讀 Oracle 寫 Parquet",
+   "B": "Glue 連線+bookmark 增量寫 Parquet",
+   "C": "DMS 持續複寫至 S3（Parquet）",
+   "D": "先 DMS 到 RDS，觸發器呼叫 Lambda"
+  },
+  "key": "DMS CDC 持續複寫，直接輸出 Parquet"
+ },
+ {
+  "number": 147,
+  "q": "每秒 1 萬筆 10 bytes 定位記錄寫入 KDS，可容忍數分鐘延遲，需可靠且最大化 shard 吞吐效率？",
+  "opts": {
+   "A": "Kinesis Agent",
+   "B": "Kinesis Producer Library (KPL)",
+   "C": "Firehose",
+   "D": "Kinesis SDK"
+  },
+  "key": "KPL 聚合小記錄並自動重試"
+ },
+ {
+  "number": 148,
+  "q": "持續成長的半結構化資料需去重，含有拼寫錯誤的重複記錄，營運負擔最低？",
+  "opts": {
+   "A": "Glue FindMatches 移除重複",
+   "B": "Athena 非視窗函式移除重複",
+   "C": "Neptune ML+Gremlin 腳本",
+   "D": "DynamoDB global tables 防重複"
+  },
+  "key": "FindMatches 可模糊比對拼錯的重複"
+ },
+ {
+  "number": 149,
+  "q": "KPL 寫入、KCL 消費 KDS（自動擴縮），補貨系統收到重複資料，可能原因？（選2）",
+  "opts": {
+   "A": "Producer 遇網路逾時",
+   "B": "IteratorAgeMilliseconds 過高",
+   "C": "shard 或 record processor 數變動",
+   "D": "AggregationEnabled 設為 true",
+   "E": "max_records 設太高"
+  },
+  "key": "Producer 重試與重新分片皆會重複"
+ },
+ {
+  "number": 150,
+  "q": "多個 AWS 營運系統各有 JDBC 關聯式資料庫，需每小時追蹤全流程訂單，開發負擔最低？",
+  "opts": {
+   "A": "Glue 匯入 Redshift，QS 儀表板",
+   "B": "Glue 匯入 DynamoDB，QS 儀表板",
+   "C": "DMS CDC 到他區 DynamoDB+Grafana",
+   "D": "DMS CDC 到他區 DynamoDB+QS"
+  },
+  "key": "Glue匯入Redshift+QS分析"
+ },
+ {
+  "number": 151,
+  "q": "用 Amazon Neptune 開發圖形應用程式，應使用哪些語言？（選2）",
+  "opts": {
+   "A": "Gremlin",
+   "B": "SQL",
+   "C": "ANSI SQL",
+   "D": "SPARQL",
+   "E": "Spark SQL"
+  },
+  "key": "圖查詢語言：Gremlin、SPARQL"
+ },
+ {
+  "number": 152,
+  "q": "遊戲 App 送 20KB 記錄，需裝置端最佳吞吐，3 個內部消費者各需專用吞吐量？",
+  "opts": {
+   "A": "PutRecords 送 KDS+增強型扇出",
+   "B": "PutRecordBatch 送 Firehose+開案",
+   "C": "KPL 送 Firehose+增強型扇出",
+   "D": "PutRecords 送 KDS，EC2 自動擴展"
+  },
+  "key": "KDS 增強型扇出給每消費者專用頻寬"
+ }
+]

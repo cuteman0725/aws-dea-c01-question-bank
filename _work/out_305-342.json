@@ -1,0 +1,422 @@
+[
+ {
+  "number": 305,
+  "q": "日誌表需持續寫入，供其他應用以 API 可靠查特定記錄；每秒>4,000 寫入、6,500 讀取。哪個方案？",
+  "opts": {
+   "A": "Redshift KEY 分佈＋Data API 讀寫",
+   "B": "S3＋Glue Catalog＋Spectrum 讀取",
+   "C": "Redshift EVEN 分佈＋JDBC 讀寫",
+   "D": "DynamoDB 佈建容量＋API 讀寫"
+  },
+  "key": "高併發單筆 API 讀寫用 DynamoDB"
+ },
+ {
+  "number": 306,
+  "q": "大量 IoT 資料需無限期保留，在 Redshift 分析。最具成本效益？",
+  "opts": {
+   "A": "S3 存 JSON＋auto-copy 進 Redshift",
+   "B": "S3 存 Parquet＋Redshift Spectrum",
+   "C": "S3 存 JSON＋Redshift Spectrum",
+   "D": "S3 存 Parquet＋auto-copy 進 Redshift"
+  },
+  "key": "Parquet 存 S3＋Spectrum 最省"
+ },
+ {
+  "number": 307,
+  "q": "S3 資料湖含多部門資料，每天匯入百萬筆；各部門只能存取所需子集，最小權限。最少營運工作？",
+  "opts": {
+   "A": "各部門 IAM 政策限定 S3 路徑",
+   "B": "以 Redshift＋Spectrum 為入口",
+   "C": "Lake Formation＋LF-Tags(TBAC)",
+   "D": "RDS PG aws_s3＋Lambda 同步"
+  },
+  "key": "LF-TBAC 標籤式授權易擴充"
+ },
+ {
+  "number": 308,
+  "q": "地端 MySQL 存病歷，每 30 天輪換憑證，不想每次輪換都改程式碼。最低營運負擔？",
+  "opts": {
+   "A": "IAM 角色取得臨時憑證",
+   "B": "KMS 自動輪換金鑰，憑證存 DDB",
+   "C": "Secrets Manager 自動輪換＋API 取",
+   "D": "憑證放加密 S3，Lifecycle 輪換"
+  },
+  "key": "Secrets Manager 自動輪換憑證"
+ },
+ {
+  "number": 309,
+  "q": "擷取多個 Aurora MySQL 更新，近即時供分析；需無伺服器、維護最少。最低營運負擔？",
+  "opts": {
+   "A": "DMS 結構轉換後載入 Redshift SL",
+   "B": "MSK Connect＋Debezium→Redshift",
+   "C": "DMS binlog→KDS→Redshift SL",
+   "D": "Aurora zero-ETL→Redshift SL"
+  },
+  "key": "Aurora zero-ETL 免維護近即時"
+ },
+ {
+  "number": 310,
+  "q": "Athena 聯結兩表，要選正確聯結順序以優化效能。哪個做法？",
+  "opts": {
+   "A": "小表放左、大表放右",
+   "B": "大表放左、小表放右",
+   "C": "先用 Glue 前處理再聯結",
+   "D": "用表統計自動決定順序"
+  },
+  "key": "本題答案：小表左、大表右"
+ },
+ {
+  "number": 311,
+  "q": "Redshift 報表用 30 表，來源 Aurora MySQL 有 100 表；每小時全量刷新造成延遲。最低營運負擔？（選2）",
+  "opts": {
+   "A": "DMS 複寫任務只選所需表",
+   "B": "Redshift 建立使用整合的 DB",
+   "C": "Aurora 建 zero-ETL 只選所需表",
+   "D": "Redshift query editor v2 查 Aurora",
+   "E": "Glue job 每 5 分鐘搬各表"
+  },
+  "key": "zero-ETL 選表＋建整合 DB"
+ },
+ {
+  "number": 312,
+  "q": "每小時自動檢查 RDS、DynamoDB、OpenSearch 新資料並處理，單次≤10MB；成本與營運最佳、錯誤處理穩健。哪個方案？",
+  "opts": {
+   "A": "EventBridge→Step Functions＋Lambda",
+   "B": "EventBridge→Lambda→SQS→Lambda",
+   "C": "EMR Spark 檢查＋EventBridge 觸發",
+   "D": "MWAA DAG＋Python operator 錯誤"
+  },
+  "key": "Step Functions 各狀態內建錯誤處理"
+ },
+ {
+  "number": 313,
+  "q": "Glue job 排程將 Redshift 供應商資料寫入 S3，已設好私有網路連線。下一步？",
+  "opts": {
+   "A": "建可寫 S3 的 IAM 角色掛 Redshift",
+   "B": "S3 加入 Glue Catalog＋Spectrum",
+   "C": "啟用 Redshift 資料共享到 S3",
+   "D": "Redshift 帳密存 Secrets Manager"
+  },
+  "key": "Redshift 需 IAM 角色才能寫 S3"
+ },
+ {
+  "number": 314,
+  "q": "S3 中 100MB Parquet 資料，需在資料準備前先做剖析(profile)。最具營運效率？",
+  "opts": {
+   "A": "Glue DataBrew 建 profile job",
+   "B": "串流進 Flink 用儀表板剖析",
+   "C": "匯入 Redshift Spectrum 用 SQL",
+   "D": "載入 QS dataset 建 topic 問答"
+  },
+  "key": "DataBrew 剖析免寫程式"
+ },
+ {
+  "number": 315,
+  "q": "零售點擊流即時分析載入 Redshift，每秒數百 MB。分析查詢延遲最低？",
+  "opts": {
+   "A": "Firehose→S3→COPY 進 Redshift",
+   "B": "MSK＋EMR＋federated query",
+   "C": "KDS＋Redshift 串流擷取到 MV",
+   "D": "DDB Streams＋Glue＋zero-ETL"
+  },
+  "key": "KDS 串流擷取直入物化檢視最即時"
+ },
+ {
+  "number": 316,
+  "q": "即時交易管線依錯誤類型（安全/驗證/系統）立即通知不同團隊，不得延遲。最低營運負擔？",
+  "opts": {
+   "A": "SNS＋Lambda 判斷類型轉寄信",
+   "B": "EventBridge 規則分類→各 SNS 主題",
+   "C": "SQS 訊息屬性分類，各隊輪詢",
+   "D": "CW 各類指標告警→SNS"
+  },
+  "key": "EventBridge 事件模式路由到各 SNS"
+ },
+ {
+  "number": 317,
+  "q": "需可擴展、全託管、事件驅動編排複雜 ETL（Glue、EMR→Redshift、S3），支援相依管理、自動重試、監控。哪個方案？",
+  "opts": {
+   "A": "Step Functions express 工作流程",
+   "B": "各步驟 Lambda＋EventBridge 觸發",
+   "C": "MWAA 以 Airflow DAG 管理 ETL",
+   "D": "單一 Lambda＋每日排程規則"
+  },
+  "key": "MWAA DAG 管相依、重試與監控"
+ },
+ {
+  "number": 318,
+  "q": "Redshift＋QuickSight 報表，部分分析師不會 SQL，想用自然語言建儀表板與報表。最低營運工作？",
+  "opts": {
+   "A": "QS 儀表板 zero-ETL 連 Redshift",
+   "B": "QS 啟用 Amazon Q 產生報表",
+   "C": "Tableau 直連 Redshift",
+   "D": "QS 儀表板 federated query"
+  },
+  "key": "Amazon Q in QS 支援自然語言"
+ },
+ {
+  "number": 319,
+  "q": "SageMaker Unified Studio：各業務單位隔離管理資產/專案/中繼資料，核准後可跨單位共享，需集中驗證與身分對應。哪個方案？",
+  "opts": {
+   "A": "domain unit 委派＋API key 驗證",
+   "B": "domain unit 限擁有者，禁共享",
+   "C": "各單位獨立 domain，互不共享",
+   "D": "domain unit＋IdC＋存取申請核准"
+  },
+  "key": "domain unit 隔離＋IdC＋申請核准共享"
+ },
+ {
+  "number": 320,
+  "q": "集中資料集供多個跨帳號下游團隊（各自 RA3 Redshift）存取，需立即存取且維持 Redshift 效能。哪個方案？",
+  "opts": {
+   "A": "UNLOAD 到 S3＋LF 共享＋Spectrum",
+   "B": "每日 ETL 卸載 S3 各隊自行 COPY",
+   "C": "Redshift data sharing 生產/消費",
+   "D": "DataSync 同步 Redshift 叢集間"
+  },
+  "key": "RA3 跨帳號用 data sharing 即時"
+ },
+ {
+  "number": 321,
+  "q": "三區域交易資料近即時同步，傳輸加密、保順序一致、跨區 DR，延遲<500ms。最低營運工作？",
+  "opts": {
+   "A": "各區 Kafka Connect 自建連接器",
+   "B": "MSK Replicator 三區互連＋TLS",
+   "C": "各區 MirrorMaker 2.0 自訂政策",
+   "D": "KDS 收資料＋Firehose 複寫 MSK"
+  },
+  "key": "MSK Replicator 全託管跨區複寫"
+ },
+ {
+  "number": 322,
+  "q": "需近即時搜尋分析，每秒 1,000 請求低延遲；各資料團隊可自行擁有並調整成本/效能。哪個方案？",
+  "opts": {
+   "A": "S3＋Athena，各隊不同前綴",
+   "B": "KDS＋Flink，各隊一條串流",
+   "C": "OpenSearch 索引，各隊一叢集",
+   "D": "Aurora I/O 優化，各隊一叢集"
+  },
+  "key": "OpenSearch 搜尋分析低延遲"
+ },
+ {
+  "number": 323,
+  "q": "Redshift 表 orders.complete_orders_history 有 100 欄，要查全部欄位但排除 companyId、unique_system_id。哪個 SQL？",
+  "opts": {
+   "A": "SELECT * EXCLUDE 兩欄 FROM 表",
+   "B": "SELECT * EXCEPT 兩欄 FROM 表",
+   "C": "SELECT * FROM 表 WHERE 欄 IS NULL",
+   "D": "SELECT * MINUS 兩欄 FROM 表"
+  },
+  "key": "用 SELECT * EXCLUDE 排除"
+ },
+ {
+  "number": 324,
+  "q": "S3 存敏感交易資料，需防止意外刪除。哪個方案？",
+  "opts": {
+   "A": "啟用版本控制＋MFA Delete",
+   "B": "bucket policy 拒建 delete marker",
+   "C": "Lifecycle 將刪除檔移 Deep Archive",
+   "D": "AWS Config 修正動作阻止刪除"
+  },
+  "key": "版本控制＋MFA Delete 防誤刪"
+ },
+ {
+  "number": 325,
+  "q": "Redshift Email 欄含 null 與非 email 值；需 Glue Data Quality 規則在有效 email 比例<90% 時失敗。哪個？",
+  "opts": {
+   "A": "Uniqueness matches，門檻>0.9",
+   "B": "ColumnValues matches，門檻>0.1",
+   "C": "ColumnValues matches，門檻>0.9",
+   "D": "UniqueValueRatio matches，>0.1"
+  },
+  "key": "ColumnValues 比對格式門檻 0.9"
+ },
+ {
+  "number": 326,
+  "q": "Glue job 存取 S3，需依分類只能存取特定前綴，且限營業時間 9–17 點。自訂 IAM 政策需含哪些元素？",
+  "opts": {
+   "A": "Resource 前綴萬用字元＋$util.time",
+   "B": "Resource 前綴＋aws:CurrentTime Date",
+   "C": "s3:prefix 條件＋CurrentTime 等於",
+   "D": "s3:ResourceAccount＋非上班 Deny"
+  },
+  "key": "ARN 前綴＋aws:CurrentTime"
+ },
+ {
+  "number": 327,
+  "q": "RDS MySQL 日誌供稽核，須追蹤每位修改資料或變更 DB 執行個體的使用者。哪個方案？",
+  "opts": {
+   "A": "CW Logs 指標篩選＋近即時告警",
+   "B": "EventBridge＋Lambda 存 OpenSearch",
+   "C": "CloudTrail＋CW 基本監控＋排程報告",
+   "D": "RDS 原生稽核日誌＋CW＋CloudTrail"
+  },
+  "key": "RDS 稽核記資料、CloudTrail 記實例"
+ },
+ {
+  "number": 328,
+  "q": "S3 每日百萬筆交易 CSV，需平行驗證後更新 DB，失敗>15% 就停止全部。最低營運負擔？",
+  "opts": {
+   "A": "AWS Batch 平行＋自訂錯誤追蹤",
+   "B": "Step Functions 分散式 Map 容忍15%",
+   "C": "EMR Spark 自訂失敗門檻 15%",
+   "D": "Lambda＋S3 Batch Ops 追蹤失敗"
+  },
+  "key": "Distributed Map 內建容錯百分比"
+ },
+ {
+  "number": 329,
+  "q": "一次性報告需聯結 DynamoDB、RDS、Redshift、S3 資料，避免不必要搬移並縮短查詢時間。哪個方案？",
+  "opts": {
+   "A": "各來源匯出到 S3 用 Spectrum 查",
+   "B": "Glue ETL 集中到 S3 用 Athena",
+   "C": "EMR Spark 擷取合併後分析",
+   "D": "Athena Federated Query 跨源聯結"
+  },
+  "key": "Federated Query 免搬資料跨源查"
+ },
+ {
+  "number": 330,
+  "q": "無伺服器多步驟 ETL：S3 資料湖→Glue ETL→Redshift，需編排工作流程。哪些方案？（選2）",
+  "opts": {
+   "A": "Step Functions 協調 Glue＋重試",
+   "B": "Glue workflows 建相依與觸發圖",
+   "C": "常駐 EC2 cron 依序呼叫 Glue",
+   "D": "EventBridge 規則串接複雜相依",
+   "E": "CodePipeline 協調 ETL 與基礎設施"
+  },
+  "key": "Step Functions、Glue WF"
+ },
+ {
+  "number": 331,
+  "q": "S3 原始影片處理後保留 90 天以備重處理，之後可刪除。原始檔最具成本效益的 Lifecycle？",
+  "opts": {
+   "A": "Standard 90 天→Glacier FR→到期",
+   "B": "Standard＋版本控制＋Object Lock",
+   "C": "Standard 90 天後 Lifecycle 到期刪",
+   "D": "Intelligent-Tiering＋版本＋到期"
+  },
+  "key": "短期保留直接到期刪除最省"
+ },
+ {
+  "number": 332,
+  "q": "大學 App 分析多語論文，回饋需精準引用教科書章節並用學生所選語言。最低營運負擔？",
+  "opts": {
+   "A": "OpenSearch SL 自建向量＋Bedrock",
+   "B": "Bedrock Knowledge Bases＋多語模型",
+   "C": "Comprehend＋Kendra＋Lambda 格式化",
+   "D": "SageMaker 託管微調 LLM"
+  },
+  "key": "Bedrock KB 託管 RAG 附來源引用"
+ },
+ {
+  "number": 333,
+  "q": "限制 S3 存取並用 AWS 託管金鑰加密；需管理 Lambda 用的 DB 憑證並自動輪換。哪個方案？",
+  "opts": {
+   "A": "bucket policy＋SSE-S3＋環境變數",
+   "B": "IAM＋SSE-KMS＋Secrets Manager 輪換",
+   "C": "S3 ACL＋SSE-KMS＋Parameter Store",
+   "D": "IAM＋SSE-S3＋Parameter Store 排程"
+  },
+  "key": "SSE-KMS＋Secrets 輪換"
+ },
+ {
+  "number": 334,
+  "q": "半結構化交易資料存無伺服器 DB，少寫多讀，需毫秒內取回。最低營運負擔？",
+  "opts": {
+   "A": "S3 Standard＋Transfer Acceleration",
+   "B": "S3 Iceberg 表＋Transfer Accel",
+   "C": "RDS MySQL＋Optimized Reads",
+   "D": "DynamoDB＋DAX 快取"
+  },
+  "key": "DynamoDB 無伺服器＋DAX 快速讀"
+ },
+ {
+  "number": 335,
+  "q": "Redshift 分析查詢與更新維度表的 ETL 同時跑，造成表鎖、逾時與死結。哪個方案能修正？",
+  "opts": {
+   "A": "用 MV 查詢，ETL 改離峰執行",
+   "B": "federated query＋讀取複本隔離",
+   "C": "Spectrum 查 S3，ETL 用交易隔離",
+   "D": "ETL/分析分叢集＋data sharing"
+  },
+  "key": "分離叢集＋data sharing 避免鎖"
+ },
+ {
+  "number": 336,
+  "q": "S3 資料湖每天數百萬筆感測資料，每天依感測器類別做複雜查詢。查詢最快？",
+  "opts": {
+   "A": "ORC，依日期分區，依類別排序",
+   "B": "CSV，依日期分區，依狀態排序",
+   "C": "Parquet，依類別分區，依日期排序",
+   "D": "CSV，依日期分區，依類別排序"
+  },
+  "key": "列式格式＋依查詢欄（類別）分區"
+ },
+ {
+  "number": 337,
+  "q": "Redshift orders 表需刪除過時記錄並從 staging 表插入最新資料，下游需即時最新。哪個方案？",
+  "opts": {
+   "A": "Redshift Spectrum 刪除並插入",
+   "B": "UNLOAD 到 S3 用 Athena 改再 COPY",
+   "C": "Athena 聯合查詢刪除並插入",
+   "D": "Redshift 預存程序刪除後插入"
+  },
+  "key": "預存程序在 Redshift 內做 merge"
+ },
+ {
+  "number": 338,
+  "q": "Firehose 將 CW Logs 送到 S3 供稽核，只送相關日誌且轉成相容格式，需穩定效能。哪個方案？",
+  "opts": {
+   "A": "S3 規則篩時間＋S3 觸發 Lambda",
+   "B": "訂閱篩選目的地為 Firehose＋Lambda",
+   "C": "訂閱篩選監控 Firehose＋Lambda",
+   "D": "標記日誌群組，Firehose 只收標記"
+  },
+  "key": "訂閱篩選→Firehose＋Lambda 轉換"
+ },
+ {
+  "number": 339,
+  "q": "網站與 App 即時分析，以最低延遲擷取百萬事件，需可擴展、耐久不遺失。最具成本效益？",
+  "opts": {
+   "A": "KDS＋Lambda 處理＋Redshift",
+   "B": "Glue 每 10 分鐘抓 S3 日誌",
+   "C": "S3 事件通知觸發 Lambda",
+   "D": "MSK＋自管消費者＋Redshift"
+  },
+  "key": "KDS 即時耐久，Lambda 免管理"
+ },
+ {
+  "number": 340,
+  "q": "Athena 常對 S3 大資料集跑相同參數的重複複雜查詢，需優化效能與成本。哪個方案？",
+  "opts": {
+   "A": "先轉成 JSON 格式再查",
+   "B": "用 EMR 先前處理資料",
+   "C": "Workgroup 啟用查詢結果重用",
+   "D": "改用 Redshift Spectrum 查 S3"
+  },
+  "key": "Athena 查詢結果重用省時省錢"
+ },
+ {
+  "number": 341,
+  "q": "每天以依賴自訂函式庫的複雜 PySpark 轉換 S3 點擊流後存 Redshift，需高擴展。最低營運負擔？",
+  "opts": {
+   "A": "Glue Studio PySpark＋連線含函式庫",
+   "B": "EC2 Auto Scaling＋自訂 AMI",
+   "C": "EMR＋bootstrap 安裝函式庫",
+   "D": "SageMaker Processing 原生函式庫"
+  },
+  "key": "Glue 無伺服器可載入自訂函式庫"
+ },
+ {
+  "number": 342,
+  "q": "Lambda（受管執行環境）寫 CW Logs，需應用日誌只顯示 ERROR、系統日誌只顯示 WARN。哪個方案？",
+  "opts": {
+   "A": "執行角色加更多權限",
+   "B": "程式碼內設 log level 為 ERROR",
+   "C": "Lambda 改用 JSON 日誌格式",
+   "D": "日誌改送自訂 log group"
+  },
+  "key": "JSON 格式才能分設應用/系統層級"
+ }
+]

@@ -103,3 +103,32 @@ python gen_html_v4.py
 - [parse_pdf.md](parse_pdf.md) - PDF 解析腳本的 Mermaid 圖表
 - [gen_html_v4.md](gen_html_v4.md) - HTML 產生腳本的 Mermaid 圖表
 - [Request.md](../Request.md) - 需求記錄
+
+## 中文精簡版（手機快速複習）
+
+> 新增日期：2026-10-05
+
+`Short_ZH.html`：342 題中文精簡版，題目 ≤100 字、每個選項在 360px 手機（16px 字）一行放得下（≤18 個中文字，英數算半格）。
+
+- 點選項作答，複選題選滿題數後自動判定；答對綠、答錯紅，並顯示答案與一句考點
+- 預設「依主題」排序：依 Notion 讀本的 14 章分組（章內依小節），卡片標小節編號；可切回「依題號」
+- 篩選：各章主題、只看未作答／錯題／星號／複選／爭議題，或依題號範圍
+- 「弱項」：各章作答數與答對率（低→高），點一下只看該章
+- 作答結果與星號存在瀏覽器 localStorage；「全顯答案」快速瀏覽、「亂序」打散（依主題時在章內打散）、「重作」清除畫面上的作答
+- 標「⚠ 爭議」的題目為 Notion 爭議題或社群多數票不同，答案列附說明，考前請特別確認
+
+14 章主題：S3 儲存、資料匯入、串流、Catalog/Crawler、Glue ETL/資料品質、EMR/Spark、編排、Athena、Redshift、DynamoDB/RDS、QuickSight/OpenSearch、治理/IAM/加密、網路、監控/稽核。
+
+| 檔案 | 說明 |
+|------|------|
+| `Short_ZH.html` | 中文精簡版（單一檔案，可直接傳到手機開啟） |
+| `short_zh.json` | 精簡版資料（題目、選項、答案、考點） |
+| `gen_short_zh.py` | 產生腳本：`prep` 切批次、`build` 檢查字數、比對 Notion 答案並產生 HTML |
+| `notion_meta.json` | 從 Notion「AWS DEA C01」整理的章節名稱、每題章節、答案、爭議題與說明 |
+| `gen_short_zh.md` | 產生腳本的 Mermaid 圖表 |
+| `_work/` | 批次輸入（`in_*.json`）與改寫結果（`out_*.json`） |
+
+```powershell
+python gen_short_zh.py prep    # 修正答案、切批次到 _work/
+python gen_short_zh.py build   # 合併 _work/out_*.json → short_zh.json、Short_ZH.html
+```

@@ -1,0 +1,422 @@
+[
+ {
+  "number": 191,
+  "q": "要協調 ETL：EMR 跑 Spark、呼叫 Salesforce API、載入 Redshift，需自動處理失敗與重試，且必須用 Python 撰寫編排。用哪個服務？",
+  "opts": {
+   "A": "MWAA（Managed Airflow）",
+   "B": "Step Functions",
+   "C": "Glue",
+   "D": "EventBridge"
+  },
+  "key": "Python 編排＝MWAA（Airflow）"
+ },
+ {
+  "number": 192,
+  "q": "多個 Lambda 共用自訂 Python 腳本，每次修改都要手動更新所有函式。要減少手動更新，怎麼做？",
+  "opts": {
+   "A": "腳本放 S3，指標存 execution context",
+   "B": "腳本打包成 Lambda Layer 套用",
+   "C": "腳本放 S3，指標存環境變數",
+   "D": "所有 Lambda 設同一 alias"
+  },
+  "key": "共用程式碼用 Lambda Layer 集中管理"
+ },
+ {
+  "number": 193,
+  "q": "S3 客戶資料供多團隊分析，須確保團隊看不到 PII。最少營運負擔？",
+  "opts": {
+   "A": "Macie 探索作業偵測並移除 PII",
+   "B": "S3 Object Lambda＋Comprehend 去 PII",
+   "C": "Firehose＋Comprehend 去 PII",
+   "D": "DataBrew 把 PII 搬到另一個桶"
+  },
+  "key": "Object Lambda 讀取時即遮 PII"
+ },
+ {
+  "number": 194,
+  "q": "S3 以 IAM 角色控管存取，使用者違反存取政策時要通知，且通知須含違規者使用者名稱。怎麼做？",
+  "opts": {
+   "A": "Config 規則偵測＋合規告警",
+   "B": "CW 物件層級指標＋CW 告警",
+   "C": "CloudTrail 物件事件→CW 告警",
+   "D": "S3 伺服器存取日誌→CW 指標篩選"
+  },
+  "key": "CloudTrail 資料事件含使用者身分"
+ },
+ {
+  "number": 195,
+  "q": "第三方客戶資料要載入 Redshift，其中一欄是 JSON 格式。最省力的載入方式？",
+  "opts": {
+   "A": "Redshift 表用 SUPER 型別存",
+   "B": "Glue 攤平 JSON 再載入 Redshift",
+   "C": "JSON 存 S3，用 Athena 查",
+   "D": "Lambda 攤平 JSON 存 S3"
+  },
+  "key": "SUPER 型別可直接存半結構 JSON"
+ },
+ {
+  "number": 196,
+  "q": "MySQL 每日 2GB 銷售紀錄要與 Salesforce 100GB 銷售機會關聯，每晚跑一次。最少營運負擔？",
+  "opts": {
+   "A": "MWAA 抓資料＋Lambda 關聯＋SFN",
+   "B": "AppFlow＋Glue 關聯，MWAA 編排",
+   "C": "AppFlow＋Glue 關聯，SFN 編排",
+   "D": "AppFlow＋KDS＋Flink，SFN 編排"
+  },
+  "key": "AppFlow抓SaaS＋Glue處理＋SFN編排"
+ },
+ {
+  "number": 197,
+  "q": "S3 伺服器日誌保留 1 年，之後自動刪除。最少營運負擔？",
+  "opts": {
+   "A": "S3 生命週期規則 1 年後刪除",
+   "B": "Lambda 刪除 1 年前日誌",
+   "C": "EC2 cron job 定期刪除",
+   "D": "Step Functions 刪除"
+  },
+  "key": "到期刪除用 S3 Lifecycle，免寫程式"
+ },
+ {
+  "number": 198,
+  "q": "Step Functions 流程需依傳入資料內容執行不同步驟，應用哪種狀態類型？",
+  "opts": {
+   "A": "Parallel",
+   "B": "Choice",
+   "C": "Task",
+   "D": "Map"
+  },
+  "key": "依條件分支用 Choice 狀態"
+ },
+ {
+  "number": 199,
+  "q": "Athena 查 cloudtrail_logs，要列出 2024 年起有錯誤碼的錯誤，回傳前 10 筆。哪個查詢正確？",
+  "opts": {
+   "A": "errorcode非null＋依次數DESC＋limit10",
+   "B": "無 errorcode 過濾＋次數DESC",
+   "C": "無 errorcode 過濾＋eventname ASC",
+   "D": "errorcode非null＋無ORDER BY"
+  },
+  "key": "須過濾 errorcode 非空並依次數排序"
+ },
+ {
+  "number": 200,
+  "q": "S3 中訂單摘要部分含 PII，需偵測 PII 以便塗銷。最少營運負擔？",
+  "opts": {
+   "A": "Textract",
+   "B": "S3 Storage Lens",
+   "C": "Macie",
+   "D": "SageMaker Data Wrangler"
+  },
+  "key": "Macie 自動偵測 S3 中的 PII"
+ },
+ {
+  "number": 201,
+  "q": "Redshift 每天 100+ 使用者以多種 IAM 角色存取，要依職務、權限、資料敏感度控管物件存取。怎麼做？",
+  "opts": {
+   "A": "Redshift RBAC 角色存取控制",
+   "B": "Redshift 列層級安全（RLS）",
+   "C": "Redshift 欄層級安全（CLS）",
+   "D": "Redshift 動態資料遮罩"
+  },
+  "key": "依職務角色控管物件權限＝RBAC"
+ },
+ {
+  "number": 202,
+  "q": "S3 資料湖用 Glue Data Catalog，要把 Glue Data Quality 分數發布到 DataZone 入口。怎麼做？",
+  "opts": {
+   "A": "DQDL 規則集排程＋DZ 用 Redshift 來源",
+   "B": "ETL 內 Evaluate DQ＋DZ 用 Glue 來源",
+   "C": "DQDL 規則集排程＋DZ 用 Glue 來源",
+   "D": "ETL 內 Evaluate DQ＋DZ Redshift 來源"
+  },
+  "key": "DQ 規則集＋DataZone 用 Glue 來源"
+ },
+ {
+  "number": 203,
+  "q": "Redshift 為合規需記錄並儲存所有使用者活動與連線活動。怎麼做？",
+  "opts": {
+   "A": "啟用 Redshift 稽核日誌存到 S3",
+   "B": "啟用日誌寫入 EFS",
+   "C": "啟用日誌寫入 Aurora MySQL",
+   "D": "啟用日誌寫入 EBS"
+  },
+  "key": "Redshift 稽核日誌存到 S3"
+ },
+ {
+  "number": 204,
+  "q": "資料倉儲從 Teradata 遷移到 Redshift，最少營運工作量？",
+  "opts": {
+   "A": "DMS Schema Conversion＋DMS 搬資料",
+   "B": "SCT 轉 schema＋DMS 搬資料",
+   "C": "DMS 搬資料＋自動轉 schema",
+   "D": "手動匯出 schema＋DMS 搬資料"
+  },
+  "key": "異質 schema 轉換用 SCT"
+ },
+ {
+  "number": 205,
+  "q": "多來源資料集中到資料倉儲，QS 直接查詢需快速回應；每天僅數小時查詢且尖峰不可預測。最少營運負擔？",
+  "opts": {
+   "A": "Redshift Serverless 載入 RMS",
+   "B": "Athena 轉 Parquet 存 S3",
+   "C": "Redshift 佈建叢集載入 RMS",
+   "D": "載入 Aurora PostgreSQL"
+  },
+  "key": "間歇尖峰用 Redshift Serverless"
+ },
+ {
+  "number": 206,
+  "q": "KDS 因熱分片收到過多資料而被節流（throttling），如何解決？",
+  "opts": {
+   "A": "改用隨機 partition key 分散",
+   "B": "增加分片數並分散紀錄",
+   "C": "生產者限制每秒送出筆數",
+   "D": "縮小生產者送出的紀錄大小"
+  },
+  "key": "熱分片根因是 partition key 不均"
+ },
+ {
+  "number": 207,
+  "q": "數十步驟管線（S3、Lambda、Step Functions），任一步失敗或成功都要即時告警，監控整條管線。怎麼做？",
+  "opts": {
+   "A": "SFN 完成時寫通知到 S3＋S3 事件",
+   "B": "Lambda 寫通知到 S3＋S3 事件",
+   "C": "CloudTrail 發 SNS 通知",
+   "D": "EventBridge 監狀態變更→SNS"
+  },
+  "key": "EventBridge 接 SFN 狀態變更通知"
+ },
+ {
+  "number": 208,
+  "q": "API 用的 Lambda 在其他 Lambda 呼叫量增加時常被節流，要不受其他函式影響。最具成本效益？",
+  "opts": {
+   "A": "增加 DynamoDB RCU",
+   "B": "Lambda 設定佈建並行",
+   "C": "Lambda 設定保留並行",
+   "D": "加大 Lambda 逾時與記憶體"
+  },
+  "key": "保留並行隔離配額且免費；佈建並行要錢"
+ },
+ {
+  "number": 209,
+  "q": "JSON 檔含 PII 與非 PII；非 PII 全公司可查，PII 僅限特定群組。最少營運負擔？",
+  "opts": {
+   "A": "Glue 拆成兩檔放不同桶分權",
+   "B": "Macie 識別 PII 並依身分授權",
+   "C": "Lake Formation 編目＋LF 權限控管",
+   "D": "拆到兩個 RDS PostgreSQL 分權"
+  },
+  "key": "LF 欄位級權限，免拆檔"
+ },
+ {
+  "number": 210,
+  "q": "以 KMS 加密的 Redshift 叢集，要用 CLI 設定跨區域快照做 DR。哪些步驟？（選2）",
+  "opts": {
+   "A": "來源區建 KMS key＋copy grant",
+   "B": "來源區啟用複製，指定目的區 grant",
+   "C": "來源區啟用複製，指定來源區 grant",
+   "D": "目的區建 KMS key＋copy grant",
+   "E": "叢集改為 Multi-AZ"
+  },
+  "key": "copy grant 建在目的區，來源區啟用複製"
+ },
+ {
+  "number": 211,
+  "q": "多個 RDS 與地端 SQL Server 要把既有資料與後續變更複製到 S3 資料湖（Parquet）。最具成本效益？",
+  "opts": {
+   "A": "Glue 搬既有，另一 Glue 搬變更",
+   "B": "DMS 搬既有，Glue 搬變更",
+   "C": "DMS 搬既有資料＋持續變更",
+   "D": "Glue 搬既有，KDS 搬變更"
+  },
+  "key": "DMS 全量＋CDC 一次完成"
+ },
+ {
+  "number": 212,
+  "q": "訂單每日進 S3，每週依訂單日期多個區間查詢指標，資料量增加時效能不可下降。最具成本效益？",
+  "opts": {
+   "A": "依訂單日期分區＋Athena",
+   "B": "依訂單日期分區＋Redshift",
+   "C": "依載入日期分區＋EMR",
+   "D": "依載入日期分區＋Aurora"
+  },
+  "key": "依查詢欄位分區，Athena 按量計費最省"
+ },
+ {
+  "number": 213,
+  "q": "Glue DQ 要判斷 primary 的 city、state 值組是否完全存在於 reference 資料集。哪條 DQDL 規則？",
+  "opts": {
+   "A": "DatasetMatch ... = 1.0",
+   "B": "ReferentialIntegrity ... = 1.0",
+   "C": "DatasetMatch ... = 100",
+   "D": "ReferentialIntegrity ... = 100"
+  },
+  "key": "ReferentialIntegrity=1.0"
+ },
+ {
+  "number": 214,
+  "q": "地端 PostgreSQL 持續更新，已有 VPN，要遷到 Redshift 且資料要盡快同步。怎麼做？",
+  "opts": {
+   "A": "pg_dump＋SCT 上傳，每晚 cron",
+   "B": "DMS 全量＋CDC，目標 Redshift",
+   "C": "pg_dump 上 S3＋COPY 匯入",
+   "D": "DMS 每晚全量載入 Redshift"
+  },
+  "key": "持續同步要 DMS CDC"
+ },
+ {
+  "number": 215,
+  "q": "新的 CSV、JSON 資料集要讓分析師用 SQL 查詢。最具成本效益？",
+  "opts": {
+   "A": "RDS MySQL＋Glue 載入",
+   "B": "Glue DataBrew 專案",
+   "C": "S3＋Glue 爬蟲＋Athena 工作群組限額",
+   "D": "載入 QS SPICE 建儀表板"
+  },
+  "key": "S3＋Athena 無伺服器 SQL，按掃描量計費"
+ },
+ {
+  "number": 216,
+  "q": "Aurora Orders 表數十億列、每秒 10 萬交易，要低延遲與 Redshift Campaigns 聯結，不得影響 Aurora。最少工作量？",
+  "opts": {
+   "A": "DMS Serverless 複製＋具體化檢視",
+   "B": "Aurora zero-ETL＋具體化檢視",
+   "C": "Glue 複製＋具體化檢視",
+   "D": "聯合查詢 Aurora＋具體化檢視"
+  },
+  "key": "zero-ETL 近即時複製且不影響來源"
+ },
+ {
+  "number": 217,
+  "q": "CSV（≤5MB）上傳 S3，已有 Lambda 負責 COPY 進 Redshift。還需哪個步驟串起管線？",
+  "opts": {
+   "A": "S3 事件→EventBridge 規則→Lambda",
+   "B": "S3 事件通知→SQS→Lambda 處理",
+   "C": "DMS 串流 S3 物件到 KDS→Lambda",
+   "D": "EventBridge 規則→SQS→Lambda"
+  },
+  "key": "S3 事件送 SQS 緩衝再給 Lambda"
+ },
+ {
+  "number": 218,
+  "q": "Redshift 敏感欄位：客服只看末 4 碼、稽核看全部、其他人不可看，且不可複製資料。怎麼做？",
+  "opts": {
+   "A": "動態資料遮罩政策套到該欄",
+   "B": "啟用 metadata security 授權",
+   "C": "列層級安全政策套到表",
+   "D": "Glue 遮蔽後載入新表"
+  },
+  "key": "依角色遮罩部分值＝動態資料遮罩"
+ },
+ {
+  "number": 219,
+  "q": "用 Lake Formation 控管 S3，Glue 爬蟲報錯「S3 location is not registered」。如何解決？",
+  "opts": {
+   "A": "爬蟲 IAM 角色加讀取 S3 權限",
+   "B": "在 Lake Formation 註冊該 S3 位置",
+   "C": "建新 Glue 資料庫並授權",
+   "D": "Bucket policy 允許跨帳號"
+  },
+  "key": "LF 管理的 S3 路徑須先註冊"
+ },
+ {
+  "number": 220,
+  "q": "已有資料湖與倉儲，要建資料目錄，每項資產能加業務中繼資料與詞彙表。最少營運負擔？",
+  "opts": {
+   "A": "Glue Catalog＋API＋自建網頁",
+   "B": "Hive metastore＋自建網頁",
+   "C": "DataZone 詞彙表＋中繼資料表單",
+   "D": "OpenSearch 建索引＋儀表板"
+  },
+  "key": "業務詞彙／中繼資料用 DataZone"
+ },
+ {
+  "number": 221,
+  "q": "MERGE INTO accounts t USING monthly_accounts_update s ON 同客戶 WHEN MATCHED THEN DELETE，結果？",
+  "opts": {
+   "A": "兩表都有的客戶從 accounts 刪除",
+   "B": "只保留兩表都有的客戶",
+   "C": "monthly_accounts_update 被刪",
+   "D": "語法無效，不刪任何資料"
+  },
+  "key": "MATCHED DELETE 刪目標表相符列"
+ },
+ {
+  "number": 222,
+  "q": "CSV（100–300KB）每 40–60 分鐘進 S3，每檔內容要載入 Redshift。最少營運負擔？",
+  "opts": {
+   "A": "S3 上傳觸發 EB→Lambda 跑 COPY",
+   "B": "Firehose 以 Lambda 為來源拉 S3",
+   "C": "Redshift Spectrum＋Glue 爬蟲",
+   "D": "DMS 任務遷移"
+  },
+  "key": "事件觸發 Lambda 執行 COPY 最簡單"
+ },
+ {
+  "number": 223,
+  "q": "S3 維度表有 1000 萬筆、1TB，每天最多更新 1 萬筆變更。執行時間最短？",
+  "opts": {
+   "A": "EMR Spark 讀全部再 update",
+   "B": "Glue Python 用 Pandas update",
+   "C": "Glue Spark 讀全部再 update",
+   "D": "EMR＋Apache Hudi 只讀變更 upsert"
+  },
+  "key": "Hudi 支援增量 upsert，免重讀全表"
+ },
+ {
+  "number": 224,
+  "q": "Glue Spark 作業出現「No space left on device」，要找出原因並解決。最具成本效益？（選2）",
+  "opts": {
+   "A": "垂直擴充 worker 處理偏斜",
+   "B": "Spark UI＋Glue 指標看資料偏斜",
+   "C": "水平增加 worker 處理偏斜",
+   "D": "shuffle 寫 S3 參數＋salting",
+   "E": "CW 錯誤日誌監控資料偏斜"
+  },
+  "key": "UI 查偏斜，S3 shuffle＋salting"
+ },
+ {
+  "number": 225,
+  "q": "RDS 與 Glue 在同私有子網、同安全群組；SG 被改成只剩特定 IP 的 SSH 入站，Glue 連不上 RDS。如何修？",
+  "opts": {
+   "A": "入站全 TCP 埠，來源為本 SG",
+   "B": "入站全 UDP 埠，來源 RDS 私有 IP",
+   "C": "入站全 TCP 埠，來源 RDS DNS 名稱",
+   "D": "SSH 來源改 RDS IP＋同規則出站"
+  },
+  "key": "Glue 需 SG 自我參照全 TCP 入站規則"
+ },
+ {
+  "number": 226,
+  "q": "BI 報表缺資料，要在存入前檢查欄位空值與參照完整性。最少營運負擔？",
+  "opts": {
+   "A": "Data Wrangler 資料品質報告",
+   "B": "Glue DQ 轉換＋IsComplete＋RefInteg",
+   "C": "Glue 兩個 SQL 轉換自行檢查",
+   "D": "Data Wrangler 自訂 Python 規則"
+  },
+  "key": "Glue DQ 內建空值與參照完整性規則"
+ },
+ {
+  "number": 227,
+  "q": "管線從 S3 擷取、做品質檢查與轉換，結果存關聯式資料庫供日後查詢。最具成本效益？",
+  "opts": {
+   "A": "Glue ETL＋Glue DQ，全載入 RDS",
+   "B": "Glue Studio＋DataBrew，結果分存",
+   "C": "Glue ETL＋DataBrew，全存 S3",
+   "D": "Glue Studio＋DataBrew，全載入 RDS"
+  },
+  "key": "Glue ETL＋DQ 同平台最省"
+ },
+ {
+  "number": 228,
+  "q": "Redshift 中某供應商資料，需每週轉存到供應商的 S3 桶。怎麼做？",
+  "opts": {
+   "A": "Lambda 排程用 COPY 寫到 S3",
+   "B": "Glue 排程用 UNLOAD 寫到 S3",
+   "C": "Redshift data sharing 到 S3",
+   "D": "Redshift Spectrum 以 S3 為目的地"
+  },
+  "key": "Redshift 匯出到 S3 用 UNLOAD"
+ }
+]

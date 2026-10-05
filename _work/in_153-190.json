@@ -1,0 +1,504 @@
+[
+ {
+  "number": 153,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer maintains a materialized view that is based on an Amazon Redshift database. The view has a column named load_date that stores the date when each row was loaded. The data engineer needs to reclaim database storage space by deleting all the rows from the materialized view. Which command will reclaim the MOST database storage space?",
+  "en_options": {
+   "A": "DELETE FROM materialized_view_name where 1=1",
+   "B": "TRUNCATE materialized_view_name",
+   "C": "VACUUM table_name where load_date<=current_date materializedview",
+   "D": "DELETE FROM materialized_view_name where load_date<=current_date"
+  },
+  "zh_question": "一名資料工程師維護一個基於AmazonRedshift資料庫的實體化檢視表。該檢視 表有一個名為「載入日期」的欄位，用於儲存每列資料被載入時的日期_。 資料工程師需要透過刪除實體化檢視表中的所有列，來回收資料庫儲存空間。 哪個命令能回收最多的資料庫儲存空間？"
+ },
+ {
+  "number": 154,
+  "answer": "AC",
+  "multi": true,
+  "en_question": "A retail company uses an Amazon Redshift data warehouse and an Amazon S3 bucket. The company ingests retail order data into the S3 bucket every day. The company stores all order data at a single path within the S3 bucket. The data has more than 100 columns. The company ingests the order data from a third-party application that generates more than 30 files in CSV format every day. Each CSV file is between 50 and 70 MB in size. The company uses Amazon Redshift Spectrum to run queries that select sets of columns. Users aggregate metrics based on daily orders. Recently, users have reported that the performance of the queries has degraded. A data engineer must resolve the performance issues for the queries. Which combination of steps will meet this requirement with LEAST developmental effort? (Choose two.)",
+  "en_options": {
+   "A": "Configure the third-party application to create the files in a columnar format.",
+   "B": "Develop an AWS Glue ETL job to convert the multiple daily CSV files to one file for each day.",
+   "C": "Partition the order data in the S3 bucket based on order date.",
+   "D": "Configure the third-party application to create the files in JSON format.",
+   "E": "Load the JSON data into the Amazon Redshift table in a SUPER type column."
+  },
+  "zh_question": "一家零售公司使用AmazonRedshift資料倉儲和AmazonS3儲存貯體。該公 司每天將零售訂單資料匯入至S3儲存貯體。 該公司將所有訂單資料儲存在S3儲存貯桶內的單一路徑中。該資料擁有超過 100個欄位。該公司從第三方應用程式匯入訂單資料，該應用程式每天會產生 超過30個CSV格式的檔案。每個CSV檔案的大小介於50到70MB之間。 該公司使用AmazonRedshiftSpectrum執行選取欄位集合的查詢。使用者根 據每日訂單彙總指標。最近，使用者回報查詢效能下降。資料工程師必須解決這 些查詢的效能問題。 哪一組步驟能以最小的開發工作量符合此需求？（請選擇兩項。）"
+ },
+ {
+  "number": 155,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company stores customer records in Amazon S3. The company must not delete or modify the customer record data for 7 years after each record is created. The root user also must not have the ability to delete or modify the data. A data engineer wants to use S3 Object Lock to secure the data. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Enable governance mode on the S3 bucket. Use a default retention period of 7 years.",
+   "B": "Enable compliance mode on the S3 bucket. Use a default retention period of 7 years.",
+   "C": "Place a legal hold on individual objects in the S3 bucket. Set the retention period to 7 years.",
+   "D": "Set the retention period for individual objects in the S3 bucket to 7 years."
+  },
+  "zh_question": "一家公司將客戶記錄儲存在AmazonS3中。該公司在每筆記錄建立後的7年 內，不得刪除或修改客戶記錄資料。根使用者也必須無法刪除或修改這些資料。 一位資料工程師想要使用S3物件鎖定來保護資料。 哪種解決方案能符合這些需求？"
+ },
+ {
+  "number": 156,
+  "answer": "D",
+  "multi": false,
+  "en_question": "A data engineer needs to create a new empty table in Amazon Athena that has the same schema as an existing table named old_table. Which SQL statement should the data engineer use to meet this requirement?",
+  "en_options": {
+   "A": "CREATE TABLE new_table AS SELECT * FROM old_tables;",
+   "B": "INSERT INTO new_table SELECT * FROM old_table;",
+   "C": "CREATE TABLE new_table (LIKE old_table);",
+   "D": "CREATE TABLE new_table AS (SELECT * FROM old_table) WITH NO DATA;"
+  },
+  "zh_question": "資料工程師需要在AmazonAthena中建立一個新的空資料表，其結構與名為 old_table的現有資料表相同。 資料工程師應使用哪一個SQL陳述式來符合此需求？"
+ },
+ {
+  "number": 157,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer needs to create an Amazon Athena table based on a subset of data from an existing Athena table named cities_world. The cities_world table contains cities that are located around the world. The data engineer must create a new table named cities_us to contain only the cities from cities_world that are located in the US. Which SQL statement should the data engineer use to meet this requirement?",
+  "en_options": {
+   "A": "INSERT INTO cities_usa (city,state) SELECT city, state FROM cities_world WHERE country=’usa’;",
+   "B": "MOVE city, state FROM cities_world TO cities_usa WHERE country=’usa’;",
+   "C": "INSERT INTO cities_usa SELECT city, state FROM cities_world WHERE country=’usa’;",
+   "D": "UPDATE cities_usa SET (city, state) = (SELECT city, state FROM cities_world WHERE country=’usa’);"
+  },
+  "zh_question": "一位資料工程師需要根據現有名為cities_world的表中的部分資料，建立一個 新的表。cities_world表包含位於世界各地的城市。該資料工程師必須建立一個 名為cities_us的新表，僅包含位於美國的城市（來自cities_world）。 資料工程師應使用哪一個SQL陳述式來符合此需求？"
+ },
+ {
+  "number": 158,
+  "answer": "BD",
+  "multi": true,
+  "en_question": "A company implements a data mesh that has a central governance account. The company needs to catalog all data in the governance account. The governance account uses AWS Lake Formation to centrally share data and grant access permissions. The company has created a new data product that includes a group of Amazon Redshift Serverless tables. A data engineer needs to share the data product with a marketing team. The marketing team must have access to only a subset of columns. The data engineer needs to share the same data product with a compliance team. The compliance team must have access to a different subset of columns than the marketing team needs access to. Which combination of steps should the data engineer take to meet these requirements? (Choose two.)",
+  "en_options": {
+   "A": "Create views of the tables that need to be shared. Include only the required columns.",
+   "B": "Create an Amazon Redshift data share that includes the tables that need to be shared.",
+   "C": "Create an Amazon Redshift managed VPC endpoint in the marketing team’s account. Grant the marketing team access to the views.",
+   "D": "Share the Amazon Redshift data share to the Lake Formation catalog in the governance account.",
+   "E": "Share the Amazon Redshift data share to the Amazon Redshift Serverless workgroup in the marketing team's account."
+  },
+  "zh_question": "一家公司實施了具有中央治理帳戶的資料網格。該公司需要編目治理帳戶中的所 有資料。治理帳戶使用AWSLakeFormation來集中共用資料並授予存取權限。 該公司建立了一個新的資料產品，其中包含一組AmazonRedshift Serverless資料表。資料工程師需要將此資料產品分享給行銷團隊。行銷團隊必 須只能存取部分欄位。資料工程師也需要將相同的資料產品分享給合規團隊。合 規團隊必須存取與行銷團隊不同的欄位子集。 資料工程師應採取哪兩種步驟組合來符合這些需求？（選擇兩項。）"
+ },
+ {
+  "number": 159,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company has a data lake in Amazon S3. The company uses AWS Glue to catalog data and AWS Glue Studio to implement data extract, transform, and load (ETL) pipelines. The company needs to ensure that data quality issues are checked every time the pipelines run. A data engineer must enhance the existing pipelines to evaluate data quality rules based on predefined thresholds. Which solution will meet these requirements with the LEAST implementation effort?",
+  "en_options": {
+   "A": "Add a new transform that is defined by a SQL query to each Glue ETL job. Use the SQL query to implement a ruleset that includes the data quality rules that need to be evaluated.",
+   "B": "Add a new Evaluate Data Quality transform to each Glue ETL job. Use Data Quality Definition Language (DQDL) to implement a ruleset that includes the data quality rules that need to be evaluated.",
+   "C": "Add a new custom transform to each Glue ETL job. Use the PyDeequ library to implement a ruleset that includes the data quality rules that need to be evaluated.",
+   "D": "Add a new custom transform to each Glue ETL job. Use the Great Expectations library to implement a ruleset that includes the data quality rules that need to be evaluated."
+  },
+  "zh_question": "一家公司在AmazonS3中擁有資料湖。該公司使用AWSGlue來編目資料， 並使用AWSGlueStudio實作資料擷取、轉換和載入(ETL)管線。 公司需要確保每次管線執行時都檢查資料品質問題。資料工程師必須增強現有 的管線，以根據預定義的閾值評估資料品質規則。 哪種解決方案能以最小的實作工作量滿足這些需求？"
+ },
+ {
+  "number": 160,
+  "answer": "AD",
+  "multi": true,
+  "en_question": "A company has an application that uses a microservice architecture. The company hosts the application on an Amazon Elastic Kubernetes Services (Amazon EKS) cluster. The company wants to set up a robust monitoring system for the application. The company needs to analyze the logs from the EKS cluster and the application. The company needs to correlate the cluster's logs with the application's traces to identify points of failure in the whole application request flow. Which combination of steps will meet these requirements with the LEAST development effort? (Choose two.)",
+  "en_options": {
+   "A": "Use FluentBit to collect logs. Use OpenTelemetry to collect traces.",
+   "B": "Use Amazon CloudWatch to collect logs. Use Amazon Kinesis to collect traces.",
+   "C": "Use Amazon CloudWatch to collect logs. Use Amazon Managed Streaming for Apache Kafka (Amazon MSK) to collect traces.",
+   "D": "Use Amazon OpenSearch to correlate the logs and traces.",
+   "E": "Use AWS Glue to correlate the logs and traces."
+  },
+  "zh_question": "一家公司擁有一個採用微服務架構的應用程式。該公司將此應用程式託管在 AmazonElasticKubernetesService(AmazonEKS)叢集上。 該公司希望為該應用程式建立一個穩健的監控系統。該公司需要分析來自EKS叢 集和應用程式的日誌。該公司需要將叢集的日誌與應用程式的追蹤資料進行關聯， 以識別整個應用程式請求流程中的故障點。 哪兩個步驟的組合能以最小的開發工作量滿足這些需求？（選擇兩項。）"
+ },
+ {
+  "number": 161,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company has a gaming application that stores data in Amazon DynamoDB tables. A data engineer needs to ingest the game data into an Amazon OpenSearch Service cluster. Data updates must occur in near real time. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Use AWS Step Functions to periodically export data from the Amazon DynamoDB tables to an Amazon S3 bucket. Use an AWS Lambda function to load the data into Amazon OpenSearch Service.",
+   "B": "Configure an AWS Glue job to have a source of Amazon DynamoDB and a destination of Amazon OpenSearch Service to transfer data in near real time.",
+   "C": "Use Amazon DynamoDB Streams to capture table changes. Use an AWS Lambda function to process and update the data in Amazon OpenSearch Service.",
+   "D": "Use a custom OpenSearch plugin to sync data from the Amazon DynamoDB tables."
+  },
+  "zh_question": "一家公司擁有一款遊戲應用程式，其資料儲存在AmazonDynamoDB表中。 一名資料工程師需要將遊戲資料匯入AmazonOpenSearchService叢集。 資料更新必須以近即時方式進行。 哪項解決方案能符合這些需求？"
+ },
+ {
+  "number": 162,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company uses Amazon Redshift as its data warehouse service. A data engineer needs to design a physical data model. The data engineer encounters a de-normalized table that is growing in size. The table does not have a suitable column to use as the distribution key. Which distribution style should the data engineer use to meet these requirements with the LEAST maintenance overhead?",
+  "en_options": {
+   "A": "ALL distribution",
+   "B": "EVEN distribution",
+   "C": "AUTO distribution",
+   "D": "KEY distribution"
+  },
+  "zh_question": "一家公司使用AmazonRedshift作為其資料倉儲服務。一位資料工程師需要設計 實體資料模型。 資料工程師遇到一個正在增長的去正規化表格。該表格沒有適合用作分佈鍵的欄 位。 資料工程師應使用哪種分佈樣式，才能以最低的維護負擔滿足這些需 求？"
+ },
+ {
+  "number": 163,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A retail company is expanding its operations globally. The company needs to use Amazon QuickSight to accurately calculate currency exchange rates for financial reports. The company has an existing dashboard that includes a visual that is based on an analysis of a dataset that contains global currency values and exchange rates. A data engineer needs to ensure that exchange rates are calculated with a precision of four decimal places. The calculations must be precomputed. The data engineer must materialize results in QuickSight super-fast, parallel, in- memory calculation engine (SPICE). Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Define and create the calculated field in the dataset.",
+   "B": "Define and create the calculated field in the analysis.",
+   "C": "Define and create the calculated field in the visual.",
+   "D": "Define and create the calculated field in the dashboard."
+  },
+  "zh_question": "一家零售公司正在全球擴展其業務。該公司需要使用AmazonQuickSight來準 確計算財務報告中的貨幣匯率。該公司現有的儀表板包含一個視覺效果，該視覺 效果基於對包含全球貨幣數值和匯率的資料集所進行的分析。 資料工程師需要確保匯率計算精確到小數點後四位。這些計算必須預先完成。 資料工程師必須將結果實體化至QuickSight的超快速、平行、記憶體內計算 引擎(SPICE)中。 哪項解決方案能符合這些需求？"
+ },
+ {
+  "number": 164,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company has three subsidiaries. Each subsidiary uses a different data warehousing solution. The first subsidiary hosts its data warehouse in Amazon Redshift. The second subsidiary uses Teradata Vantage on AWS. The third subsidiary uses Google BigQuery. The company wants to aggregate all the data into a central Amazon S3 data lake. The company wants to use Apache Iceberg as the table format. A data engineer needs to build a new pipeline to connect to all the data sources, run transformations by using each source engine, join the data, and write the data to Iceberg. Which solution will meet these requirements with the LEAST operational effort?",
+  "en_options": {
+   "A": "Use native Amazon Redshift, Teradata, and BigQuery connectors to build the pipeline in AWS Glue. Use native AWS Glue transforms to join the data. Run a Merge operation on the data lake Iceberg table.",
+   "B": "Use the Amazon Athena federated query connectors for Amazon Redshift, Teradata, and BigQuery to build the pipeline in Athena. Write a SQL query to read from all the data sources, join the data, and run a Merge operation on the data lake Iceberg table.",
+   "C": "Use the native Amazon Redshift connector, the Java Database Connectivity (JDBC) connector for Teradata, and the open source Apache Spark BigQuery connector to build the pipeline in Amazon EMR. Write code in PySpark to join the data. Run a Merge operation on the data lake Iceberg table.",
+   "D": "Use the native Amazon Redshift, Teradata, and BigQuery connectors in Amazon Appflow to write data to Amazon S3 and AWS Glue Data Catalog. Use Amazon Athena to join the data. Run a Merge operation on the data lake Iceberg table."
+  },
+  "zh_question": "一家公司擁有三家子公司。每家子公司使用不同的資料倉儲解決方案。第一家子 公司將其資料倉儲託管在AmazonRedshift上。第二家子公司在AWS上使用 TeradataVantage。第三家子公司使用GoogleBigQuery。 該公司希望將所有資料彙總至中央的AmazonS3資料湖，並使用Apache Iceberg作為表格格式。 資料工程師需要建置一條新管線，以連接所有資料來源、利用各來源引擎執行 轉換、合併資料，並將資料寫入Iceberg。 哪項解決方案能以最低的營運工作量滿足這些需求？"
+ },
+ {
+  "number": 165,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company is building a data stream processing application. The application runs in an Amazon Elastic Kubernetes Service (Amazon EKS) cluster. The application stores processed data in an Amazon DynamoDB table. The company needs the application containers in the EKS cluster to have secure access to the DynamoDB table. The company does not want to embed AWS credentials in the containers. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Store the AWS credentials in an Amazon S3 bucket. Grant the EKS containers access to the S3 bucket to retrieve the credentials.",
+   "B": "Attach an IAM role to the EKS worker nodes, Grant the IAM role access to DynamoDUse the IAM role to set up IAM roles service accounts (IRSA) functionality.",
+   "C": "Create an IAM user that has an access key to access the DynamoDB table. Use environment variables in the EKS containers to store the IAM user access key data.",
+   "D": "Create an IAM user that has an access key to access the DynamoDB table. Use Kubernetes secrets that are mounted in a volume of the EKS duster nodes to store the user access key data."
+  },
+  "zh_question": "一家公司正在建置資料串流處理應用程式。該應用程式執行於Amazon ElasticKubernetesService(AmazonEKS)叢集中，並將處理後的資料儲 存至AmazonDynamoDB資料表中。 公司需要讓EKS叢集中的應用程式容器能夠安全地存取DynamoDB資料表。公 司不希望將AWS憑證嵌入容器中。 哪種解決方案能符合這些需求？"
+ },
+ {
+  "number": 166,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer needs to onboard a new data producer into AWS. The data producer needs to migrate data products to AWS. The data producer maintains many data pipelines that support a business application. Each pipeline must have service accounts and their corresponding credentials. The data engineer must establish a secure connection from the data producer's on-premises data center to AWS. The data engineer must not use the public internet to transfer data from an on-premises data center to AWS. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Instruct the new data producer to create Amazon Machine Images (AMIs) on Amazon Elastic Container Service (Amazon ECS) to store the code base of the application. Create security groups in a public subnet that allow connections only to the on-premises data center.",
+   "B": "Create an AWS Direct Connect connection to the on-premises data center. Store the service account credentials in AWS Secrets manager.",
+   "C": "Create a security group in a public subnet. Configure the security group to allow only connections from the CIDR blocks that correspond to the data producer. Create Amazon S3 buckets than contain presigned URLS that have one-day expiration dates.",
+   "D": "Create an AWS Direct Connect connection to the on-premises data center. Store the application keys in AWS Secrets Manager. Create Amazon S3 buckets that contain presigned URLS that have one-day expiration dates."
+  },
+  "zh_question": "資料工程師需要將新的資料生產者導入AWS。該資料生產者需要將資料產 品遷移至AWS。 資料生產者維護許多支援商業應用程式的資料管線。每條管線都必須擁有服務帳 戶及其相應的憑證。資料工程師必須建立從資料生產者的內部部署資料中心到 AWS的安全連線。資料工程師不得透過公共網際網路將資料從內部部署資料中 心傳輸至AWS。 哪項解決方案符合這些需求？"
+ },
+ {
+  "number": 167,
+  "answer": "AB",
+  "multi": true,
+  "en_question": "A data engineer configured an AWS Glue Data Catalog for data that is stored in Amazon S3 buckets. The data engineer needs to configure the Data Catalog to receive incremental updates. The data engineer sets up event notifications for the S3 bucket and creates an Amazon Simple Queue Service (Amazon SQS) queue to receive the S3 events. Which combination of steps should the data engineer take to meet these requirements with LEAST operational overhead? (Choose two.)",
+  "en_options": {
+   "A": "Create an S3 event-based AWS Glue crawler to consume events from the SQS queue.",
+   "B": "Define a time-based schedule to run the AWS Glue crawler, and perform incremental updates to the Data Catalog.",
+   "C": "Use an AWS Lambda function to directly update the Data Catalog based on S3 events that the SQS queue receives.",
+   "D": "Manually initiate the AWS Glue crawler to perform updates to the Data Catalog when there is a change in the S3 bucket.",
+   "E": "Use AWS Step Functions to orchestrate the process of updating the Data Catalog based on S3 events that the SQS queue receives."
+  },
+  "zh_question": "一名資料工程師為儲存在AmazonS3儲存桶中的資料設定了AWSGlue資料 目錄。該資料工程師需要設定資料目錄以接收增量更新。 資料工程師為S3儲存桶設定事件通知，並建立一個AmazonSimpleQueue Service(AmazonSQS)佇列以接收S3事件。 資料工程師應採取哪兩種步驟組合，才能以最少的營運負擔符合這些需求？ （請選擇兩項。）"
+ },
+ {
+  "number": 168,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company uses AWS Glue Data Catalog to index data that is uploaded to an Amazon S3 bucket every day. The company uses a daily batch processes in an extract, transform, and load (ETL) pipeline to upload data from external sources into the S3 bucket. The company runs a daily report on the S3 data. Some days, the company runs the report before all the daily data has been uploaded to the S3 bucket. A data engineer must be able to send a message that identifies any incomplete data to an existing Amazon Simple Notification Service (Amazon SNS) topic. Which solution will meet this requirement with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Create data quality checks for the source datasets that the daily reports use. Create a new AWS managed Apache Airflow cluster. Run the data quality checks by using Airflow tasks that run data quality queries on the columns data type and the presence of null values. Configure Airflow Directed Acyclic Graphs (DAGs) to send an email notification that informs the data engineer about the incomplete datasets to the SNS topic.",
+   "B": "Create data quality checks on the source datasets that the daily reports use. Create a new Amazon EMR cluster. Use Apache Spark SQL to create Apache Spark jobs in the EMR cluster that run data quality queries on the columns data type and the presence of null values. Orchestrate the ETL pipeline by using an AWS Step Functions workflow. Configure the workflow to send an email notification that informs the data engineer about the incomplete datasets to the SNS topic.",
+   "C": "Create data quality checks on the source datasets that the daily reports use. Create data quality actions by using AWS Glue workflows to confirm the completeness and consistency of the datasets. Configure the data quality actions to create an event in Amazon EventBridge if a dataset is incomplete. Configure EventBridge to send the event that informs the data engineer about the incomplete datasets to the Amazon SNS topic.",
+   "D": "Create AWS Lambda functions that run data quality queries on the columns data type and the presence of null values. Orchestrate the ETL pipeline by using an AWS Step Functions workflow that runs the Lambda functions. Configure the Step Functions workflow to send an email notification that informs the data engineer about the incomplete datasets to the SNS topic."
+  },
+  "zh_question": "一家公司使用AWSGlueDataCatalog來編製每天上傳至AmazonS3儲存桶之 資料的索引。該公司在提取、轉換和載入(ETL)流程中使用每日批次處理，將來 自外部來源的資料上傳至S3儲存桶。 該公司每天針對S3資料執行報表。有些時候，公司在所有每日資料上傳至S3儲 存貯體之前就執行了報表。資料工程師必須能夠傳送訊息，將任何不完整的資料 識別出來，並傳送至現有的AmazonSimpleNotificationService(Amazon SNS)主題。 哪項解決方案能以最低的營運負擔符合此需求？"
+ },
+ {
+  "number": 169,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company stores customer data that contains personally identifiable information (PII) in an Amazon Redshift cluster. The company's marketing, claims, and analytics teams need to be able to access the customer data. The marketing team should have access to obfuscated claim information but should have full access to customer contact information. The claims team should have access to customer information for each claim that the team processes. The analytics team should have access only to obfuscated PII data. Which solution will enforce these data access requirements with the LEAST administrative overhead?",
+  "en_options": {
+   "A": "Create a separate Redshift cluster for each team. Load only the required data for each team. Restrict access to clusters based on the teams.",
+   "B": "Create views that include required fields for each of the data requirements. Grant the teams access only to the view that each team requires.",
+   "C": "Create a separate Amazon Redshift database role for each team. Define masking policies that apply for each team separately. Attach appropriate masking policies to each team role.",
+   "D": "Move the customer data to an Amazon S3 bucket. Use AWS Lake Formation to create a data lake. Use fine-grained security capabilities to grant each team appropriate permissions to access the data."
+  },
+  "zh_question": "某公司將包含個人識別資訊（PII）的客戶資料儲存於 AmazonRedshift叢集中。該公司的行銷、 理賠與分析團隊需要能夠存取這些客戶資料。 行銷團隊應能存取經混淆處理的理賠資訊，但需擁有客戶聯絡資訊的完整存取權 限。理賠團隊應能存取其處理之每筆理賠案相關的客戶資訊。分析團隊則僅應能 存取經混淆處理的PII資料。 哪種解決方案能以最小的管理負擔強制實施這些資料存取需求？"
+ },
+ {
+  "number": 170,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A financial company recently added more features to its mobile app. The new features required the company to create a new topic in an existing Amazon Managed Streaming for Apache Kafka (Amazon MSK) cluster. A few days after the company added the new topic, Amazon CloudWatch raised an alarm on the RootDiskUsed metric for the MSK cluster. How should the company address the CloudWatch alarm?",
+  "en_options": {
+   "A": "Expand the storage of the MSK broker. Configure the MSK cluster storage to expand automatically.",
+   "B": "Expand the storage of the Apache ZooKeeper nodes.",
+   "C": "Update the MSK broker instance to a larger instance type. Restart the MSK cluster.",
+   "D": "Specify the Target Volume-in-GiB parameter for the existing topic."
+  },
+  "zh_question": "一家金融公司最近為其行動應用程式新增了更多功能。這些新功能要求該公司 在現有的AmazonManagedStreamingforApacheKafka（Amazon MSK）叢集中建立一個新的主題。 在公司新增新主題幾天後，AmazonCloudWatch針對MSK叢集的 RootDiskUsed指標發出了警報。 公司應如何處理此CloudWatch警報？"
+ },
+ {
+  "number": 171,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer needs to build an enterprise data catalog based on the company's Amazon S3 buckets and Amazon RDS databases. The data catalog must include storage format metadata for the data in the catalog. Which solution will meet these requirements with the LEAST effort?",
+  "en_options": {
+   "A": "Use an AWS Glue crawler to scan the S3 buckets and RDS databases and build a data catalog. Use data stewards to inspect the data and update the data catalog with the data format.",
+   "B": "Use an AWS Glue crawler to build a data catalog. Use AWS Glue crawler classifiers to recognize the format of data and store the format in the catalog.",
+   "C": "Use Amazon Macie to build a data catalog and to identify sensitive data elements. Collect the data format information from Macie.",
+   "D": "Use scripts to scan data elements and to assign data classifications based on the format of the data."
+  },
+  "zh_question": "資料工程師需要根據公司的AmazonS3儲存貯桶和AmazonRDS資料庫， 建置企業級資料目錄。該資料目錄必須包含目錄中資料的儲存格式後設資料。 哪項解決方案能以最小的工作量滿足這些需求？"
+ },
+ {
+  "number": 172,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company analyzes data in a data lake every quarter to perform inventory assessments. A data engineer uses AWS Glue DataBrew to detect any personally identifiable formation (PII) about customers within the data. The company's privacy policy considers some custom categories of information to be PII. However, the categories are not included in standard DataBrew data quality rules. The data engineer needs to modify the current process to scan for the custom PII categories across multiple datasets within the data lake. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Manually review the data for custom PII categories.",
+   "B": "Implement custom data quality rules in DataBrew. Apply the custom rules across datasets.",
+   "C": "Develop custom Python scripts to detect the custom PII categories. Call the scripts from DataBrew.",
+   "D": "Implement regex patterns to extract PII information from fields during extract transform, and load (ETL) operations into the data lake."
+  },
+  "zh_question": "一家公司每季度分析資料湖中的資料，以執行庫存評估。一位資料工程師使用 AWSGlueDataBrew來偵測資料中任何關於客戶的個人識別資訊（PII）。該公 司的隱私權政策將某些自訂類別的資訊視為PII。然而，這些類別並未包含在標準 的DataBrew資料品質規則中。 資料工程師需要修改現行流程，以便在資料湖中的多個資料集掃描自訂的個人識 別資訊(PII)類別。 哪項解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 173,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company receives a data file from a partner each day in an Amazon S3 bucket. The company uses a daily AWS Glue extract, transform, and load (ETL) pipeline to clean and transform each data file. The output of the ETL pipeline is written to a CSV file named Daily.csv in a second S3 bucket. Occasionally, the daily data file is empty or is missing values for required fields. When the file is missing data, the company can use the previous day’s CSV file. A data engineer needs to ensure that the previous day's data file is overwritten only if the new daily file is complete and valid. Which solution will meet these requirements with the LEAST effort?",
+  "en_options": {
+   "A": "Invoke an AWS Lambda function to check the file for missing data and to fill in missing values in required fields.",
+   "B": "Configure the AWS Glue ETL pipeline to use AWS Glue Data Quality rules. Develop rules in Data Quality Definition Language (DQDL) to check for missing values in required fields and empty files.",
+   "C": "Use AWS Glue Studio to change the code in the ETL pipeline to fill in any missing values in the required fields with the most common values for each field.",
+   "D": "Run a SQL query in Amazon Athena to read the CSV file and drop missing rows. Copy the corrected CSV file to the second S3 bucket."
+  },
+  "zh_question": "一家公司每天從合作夥伴處接收位於AmazonS3儲存貯體中的資料檔案。該公 司使用每日執行的AWSGlue提取、轉換與載入(ETL)流程來清理並轉換每個資 料檔案。此ETL流程的輸出結果會寫入第二個S3儲存貯體中名為Daily.csv的 CSV檔案。 偶爾，每日資料檔案可能為空，或缺少必要欄位的值。當檔案缺少資料時，公司 可以使用前一天的CSV檔案。 資料工程師需要確保僅在新的每日檔案完整且有效時，才覆蓋前一天的資料檔案。 哪種解決方案能以最少的工作量滿足這些需求？"
+ },
+ {
+  "number": 174,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A marketing company uses Amazon S3 to store marketing data. The company uses versioning in some buckets. The company runs several jobs to read and load data into the buckets. To help cost-optimize its storage, the company wants to gather information about incomplete multipart uploads and outdated versions that are present in the S3 buckets. Which solution will meet these requirements with the LEAST operational effort?",
+  "en_options": {
+   "A": "Use AWS CLI to gather the information.",
+   "B": "Use Amazon S3 Inventory configurations reports to gather the information.",
+   "C": "Use the Amazon S3 Storage Lens dashboard to gather the information.",
+   "D": "Use AWS usage reports for Amazon S3 to gather the information."
+  },
+  "zh_question": "一家行銷公司使用AmazonS3儲存行銷資料。該公司在某些儲存貯體中啟用 了版本控制，並執行多項作業以讀取並將資料載入這些儲存貯體。 為了協助優化儲存成本，該公司希望蒐集關於S3儲存貯存桶中未完成的多部分 上傳及過時版本資訊。 哪項解決方案能以最低的營運工作量滿足這些需求？"
+ },
+ {
+  "number": 175,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A gaming company uses Amazon Kinesis Data Streams to collect clickstream data. The company uses Amazon Data Firehose delivery streams to store the data in JSON format in Amazon S3. Data scientists at the company use Amazon Athena to query the most recent data to obtain business insights. The company wants to reduce Athena costs but does not want to recreate the data pipeline. Which solution will meet these requirements with the LEAST management effort?",
+  "en_options": {
+   "A": "Change the Firehose output format to Apache Parquet. Provide a custom S3 object YYYYMMDD prefix expression and specify a large buffer size. For the existing data, create an AWS Glue extract, transform, and load (ETL) job. Configure the ETL job to combine small JSON files, convert the JSON files to large Parquet files, and add the YYYYMMDD prefix. Use the ALTER TABLE ADD PARTITION statement to reflect the partition on the existing Athena table.",
+   "B": "Create an Apache Spark job that combines JSON files and converts the JSON files to Apache Parquet files. Launch an Amazon EMR ephemeral cluster every day to run the Spark job to create new Parquet files in a different S3 location. Use the ALTER TABLE SET LOCATION statement to reflect the new S3 location on the existing Athena table.",
+   "C": "Create a Kinesis data stream as a delivery destination for Firehose. Use Amazon Managed Service for Apache Flink (previously known as Amazon Kinesis Data Analytics) to run Apache Flink on the Kinesis data stream. Use Flink to aggregate the data and save the data to Amazon S3 in Apache Parquet format with a custom S3 object YYYYMMDD prefix. Use the ALTER TABLE ADD PARTITION statement to reflect the partition on the existing Athena table.",
+   "D": "Integrate an AWS Lambda function with Firehose to convert source records to Apache Parquet and write them to Amazon S3. In parallel, run an AWS Glue extract, transform, and load (ETL) job to combine the JSON files and convert the JSON files to large Parquet files. Create a custom S3 object YYYYMMDD prefix. Use the ALTER TABLE ADD PARTITION statement to reflect the partition on the existing Athena table."
+  },
+  "zh_question": "一家遊戲公司使用AmazonKinesisDataStreams收集點擊流資料。該公司使 用AmazonDataFirehose傳輸串流，將資料以JSON格式儲存至Amazon S3。該公司的資料科學家使用AmazonAthena查詢最新資料，以取得商業洞 察。 該公司希望降低Athena成本，但不想重新建立資料管線。 哪種解決方案能以最小的管理努力滿足這些需求？"
+ },
+ {
+  "number": 176,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company needs a solution to manage costs for an existing Amazon DynamoDB table. The company also needs to control the size of the table. The solution must not disrupt any ongoing read or write operations. The company wants to use a solution that automatically deletes data from the table after 1 month. Which solution will meet these requirements with the LEAST ongoing maintenance?",
+  "en_options": {
+   "A": "Use the DynamoDB TTL feature to automatically expire data based on timestamps.",
+   "B": "Configure a scheduled Amazon EventBridge rule to invoke an AWS Lambda function to check for data that is older than 1 month. Configure the Lambda function to delete old data.",
+   "C": "Configure a stream on the DynamoDB table to invoke an AWS Lambda function. Configure the Lambda function to delete data in the table that is older than 1 month.",
+   "D": "Use an AWS Lambda function to periodically scan the DynamoDB table for data that is older than 1 month. Configure the Lambda function to delete old data."
+  },
+  "zh_question": "一家公司需要解決方案來管理現有AmazonDynamoDB資料表的成本。該公司 還需要控制資料表的大小。解決方案不得干擾任何進行中的讀取或寫入作業。該公 司希望使用能在1個月後自動從資料表中刪除資料的解決方案。 哪種解決方案能以最低的持續維護工作量滿足這些需求？"
+ },
+ {
+  "number": 177,
+  "answer": "BE",
+  "multi": true,
+  "en_question": "A company uses Amazon S3 to store data and Amazon QuickSight to create visualizations, The company has an S3 bucket in an AWS account named Hub-Account. The S3 bucket is encrypted by an AWS Key Management Service (AWS KMS) key. The company's QuickSight instance is in a separate account named BI-Account. The company updates the S3 bucket policy to grant access to the QuickSight service role. The company wants to enable cross-account access to allow QuickSight to interact with the S3 bucket. Which combination of steps will meet this requirement? (Choose two.)",
+  "en_options": {
+   "A": "Use the existing AWS KMS key to encrypt connections from QuickSight to the S3 bucket.",
+   "B": "Add the S3 bucket as a resource that the QuickSight service role can access.",
+   "C": "Use AWS Resource Access Manager (AWS RAM) to share the S3 bucket with the BI-Account account.",
+   "D": "Add an IAM policy to the QuickSight service role to give QuickSight access to the KMS key that encrypts the S3 bucket.",
+   "E": "Add the KMS key as a resource that the QuickSight service role can access."
+  },
+  "zh_question": "一家公司使用AmazonS3儲存資料，並使用AmazonQuickSight建立視 覺化圖表， 該公司在名為Hub‑Account的AWS帳戶中擁有一個S3儲存貯桶。此S3儲存 貯桶由AWSKeyManagementService(AWSKMS)金鑰進行加密。該公司 的QuickSight執行個體位於另一個名為BI‑Account的帳戶中。 該公司已更新S3儲存貯桶原則，以授予存取權限給QuickSight服務角色。 該公司希望啟用跨帳戶存取，以便讓QuickSight能夠與S3儲存貯桶互動。 哪一組步驟符合此需求？（請選擇兩項。）"
+ },
+ {
+  "number": 178,
+  "answer": "D",
+  "multi": false,
+  "en_question": "A car sales company maintains data about cars that are listed for sale in an area. The company receives data about new car listings from vendors who upload the data daily as compressed files into Amazon S3. The compressed files are up to 5 KB in size. The company wants to see the most up-to-date listings as soon as the data is uploaded to Amazon S3. A data engineer must automate and orchestrate the data processing workflow of the listings to feed a dashboard. The data engineer must also provide the ability to perform one-time queries and analytical reporting. The query solution must be scalable. Which solution will meet these requirements MOST cost-effectively?",
+  "en_options": {
+   "A": "Use an Amazon EMR cluster to process incoming data. Use AWS Step Functions to orchestrate workflows. Use Apache Hive for one-time queries and analytical reporting. Use Amazon OpenSearch Service to bulk ingest the data into compute optimized instances. Use OpenSearch Dashboards in OpenSearch Service for the dashboard.",
+   "B": "Use a provisioned Amazon EMR cluster to process incoming data. Use AWS Step Functions to orchestrate workflows. Use Amazon Athena for one-time queries and analytical reporting. Use Amazon QuickSight for the dashboard.",
+   "C": "Use AWS Glue to process incoming data. Use AWS Step Functions to orchestrate workflows. Use Amazon Redshift Spectrum for one-time queries and analytical reporting. Use OpenSearch Dashboards in Amazon OpenSearch Service for the dashboard.",
+   "D": "Use AWS Glue to process incoming data. Use AWS Lambda and S3 Event Notifications to orchestrate workflows. Use Amazon Athena for one-time queries and analytical reporting. Use Amazon QuickSight for the dashboard."
+  },
+  "zh_question": "一家汽車銷售公司維護著關於在特定區域上市銷售車輛的資料。該公司從供應商處 接收新車上架資料，供應商每天會將壓縮檔案上傳至AmazonS3。這些壓縮檔案 的大小最高可達5KB。该公司希望在資料上傳至AmazonS3後，能立即查看最 新的上架資訊。 資料工程師必須自動化並協調清單的資料處理工作流程，以提供儀表板所需的資 料。該工程師還必須提供執行一次性查詢和分析報告的能力。查詢解決方案必須 具備可擴展性。 哪項解決方案能以最具成本效益的方式滿足這些需求？"
+ },
+ {
+  "number": 179,
+  "answer": "D",
+  "multi": false,
+  "en_question": "A company has AWS resources in multiple AWS Regions. The company has an Amazon EFS file system in each Region where the company operates. The company’s data science team operates within only a single Region. The data that the data science team works with must remain within the team's Region. A data engineer needs to create a single dataset by processing files that are in each of the company's Regional EFS file systems. The data engineer wants to use an AWS Step Functions state machine to orchestrate AWS Lambda functions to process the data. Which solution will meet these requirements with the LEAST effort?",
+  "en_options": {
+   "A": "Peer the VPCs that host the EFS file systems in each Region with the VPC that is in the data science team’s Region. Enable EFS file locking. Configure the Lambda functions in the data science team's Region to mount each of the Region specific file systems. Use the Lambda functions to process the data.",
+   "B": "Configure each of the Regional EFS file systems to replicate data to the data science team's Region. In the data science team’s Region, configure the Lambda functions to mount the replica file systems. Use the Lambda functions to process the data.",
+   "C": "Deploy the Lambda functions to each Region. Mount the Regional EFS file systems to the Lambda functions. Use the Lambda functions to process the data. Store the output in an Amazon S3 bucket in the data science team’s Region.",
+   "D": "Use AWS DataSync to transfer files from each of the Regional EFS files systems to the file system that is in the data science team's Region. Configure the Lambda functions in the data science team's Region to mount the file system that is in the same Region. Use the Lambda functions to process the data."
+  },
+  "zh_question": "一家公司在多個AWS區域擁有AWS資源。該公司在其營運的每個區域都擁 有一個AmazonEFS檔案系統。該公司的資料科學團隊僅在單一區域內運作。 資料科學團隊處理的資料必須保留在該團隊所在的區域內。 一位資料工程師需要透過處理位於公司各區域EFS檔案系統中的檔案，來建立單 一資料集。該資料工程師希望使用AWSStepFunctions狀態機器來協調A WSLambda函數以處理資料。 哪種解決方案能以最少的工作量滿足這些需求？"
+ },
+ {
+  "number": 180,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company hosts its applications on Amazon EC2 instances. The company must use SSL/TLS connections that encrypt data in transit to communicate securely with AWS infrastructure that is managed by a customer. A data engineer needs to implement a solution to simplify the generation, distribution, and rotation of digital certificates. The solution must automatically renew and deploy SSL/TLS certificates. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Store self-managed certificates on the EC2 instances.",
+   "B": "Use AWS Certificate Manager (ACM).",
+   "C": "Implement custom automation scripts in AWS Secrets Manager.",
+   "D": "Use Amazon Elastic Container Service (Amazon ECS) Service Connect."
+  },
+  "zh_question": "一家公司在AmazonEC2執行個體上託管其應用程式。該公司必須使用 SSL/TLS連線來加密傳輸中的資料，以便與由客戶管理的AWS基礎設施進行安 全通訊。 一名資料工程師需要實作一項解決方案，以簡化數位憑證的產生、分發和輪替。該 解決方案必須自動更新並部署SSL/TLS憑證。 哪項解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 181,
+  "answer": "AD",
+  "multi": true,
+  "en_question": "A company saves customer data to an Amazon S3 bucket. The company uses server-side encryption with AWS KMS keys (SSE-KMS) to encrypt the bucket. The dataset includes personally identifiable information (PII) such as social security numbers and account details. Data that is tagged as PII must be masked before the company uses customer data for analysis. Some users must have secure access to the PII data during the pre-processing phase. The company needs a low-maintenance solution to mask and secure the PII data throughout the entire engineering pipeline. Which combination of solutions will meet these requirements? (Choose two.)",
+  "en_options": {
+   "A": "Use AWS Glue DataBrew to perform extract, transform, and load (ETL) tasks that mask the PII data before analysis.",
+   "B": "Use Amazon GuardDuty to monitor access patterns for the PII data that is used in the engineering pipeline.",
+   "C": "Configure an Amazon Macie discovery job for the S3 bucket.",
+   "D": "Use AWS Identity and Access Management (IAM) to manage permissions and to control access to the PII data.",
+   "E": "Write custom scripts in an application to mask the PII data and to control access."
+  },
+  "zh_question": "一家公司將客戶資料儲存至AmazonS3儲存貯體。該公司使用帶有AWSK MS金鑰的伺服器端加密（SSE‑KMS）來加密該儲存貯體。資料集包含個人識別 資訊（PII），例如社會安全號碼與帳戶詳細資料。 標記為個人識別資訊（PII）的資料必須在公司將客戶資料用於分析之前進行遮罩。 部分使用者在預處理階段必須能夠安全存取PII資料。公司需要一種低維護成本的 解決方案，以便在整個工程管線中遮罩並保護PII資料。 哪兩種解決方案的組合符合這些需求？（請選擇兩項。）"
+ },
+ {
+  "number": 182,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A data engineer is launching an Amazon EMR cluster. The data that the data engineer needs to load into the new cluster is currently in an Amazon S3 bucket. The data engineer needs to ensure that data is encrypted both at rest and in transit. The data that is in the S3 bucket is encrypted by an AWS Key Management Service (AWS KMS) key. The data engineer has an Amazon S3 path that has a Privacy Enhanced Mail (PEM) file. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Create an Amazon EMR security configuration. Specify the appropriate AWS KMS key for at- rest encryption for the S3 bucket. Create a second security configuration. Specify the Amazon S3 path of the PEM file for in-transit encryption. Create the EMR cluster, and attach both security configurations to the cluster.",
+   "B": "Create an Amazon EMR security configuration. Specify the appropriate AWS KMS key for local disk encryption for the S3 bucket. Specify the Amazon S3 path of the PEM file for in-transit encryption. Use the security configuration during EMR cluster creation.",
+   "C": "Create an Amazon EMR security configuration. Specify the appropriate AWS KMS key for at- rest encryption for the S3 bucket. Specify the Amazon S3 path of the PEM file for in-transit encryption. Use the security configuration during EMR cluster creation.",
+   "D": "Create an Amazon EMR security configuration. Specify the appropriate AWS KMS key for at- rest encryption for the S3 bucket. Specify the Amazon S3 path of the PEM file for in-transit encryption. Create the EMR cluster, and attach the security configuration to the cluster."
+  },
+  "zh_question": "一名資料工程師正在啟動一個AmazonEMR叢集。該工程師需要載入至新叢集的 資料目前位於一個AmazonS3儲存貯體中。該資料工程師必須確保資料在靜態與 傳輸過程中皆已加密。 S3儲存貯桶中的資料已由AWSKeyManagementService(AWSKMS)金 鑰進行加密。該資料工程師擁有一個包含隱私增強郵件(PEM)檔案的 AmazonS3路徑。 哪項解決方案符合這些需求？"
+ },
+ {
+  "number": 183,
+  "answer": "AB",
+  "multi": true,
+  "en_question": "A retail company is using an Amazon Redshift cluster to support real-time inventory management. The company has deployed an ML model on a real-time endpoint in Amazon SageMaker. The company wants to make real-time inventory recommendations. The company also wants to make predictions about future inventory needs. Which solutions will meet these requirements? (Choose two.)",
+  "en_options": {
+   "A": "Use Amazon Redshift ML to generate inventory recommendations.",
+   "B": "Use SQL to invoke a remote SageMaker endpoint for prediction.",
+   "C": "Use Amazon Redshift ML to schedule regular data exports for offline model training.",
+   "D": "Use SageMaker Autopilot to create inventory management dashboards in Amazon Redshift.",
+   "E": "Use Amazon Redshift as a file storage system to archive old inventory management reports."
+  },
+  "zh_question": "一家零售公司正在使用AmazonRedshift叢集來支援即時庫存管理。該公司已將 機器學習模型部署在AmazonSageMaker的即時端點上。 該公司希望提供即時庫存建議，並預測未來的庫存需求。 哪些解決方案能符合這些需求？（請選擇兩項。）"
+ },
+ {
+  "number": 184,
+  "answer": "D",
+  "multi": false,
+  "en_question": "A company stores CSV files in an Amazon S3 bucket. A data engineer needs to process the data in the CSV files and store the processed data in a new S3 bucket. The process needs to rename a column, remove specific columns, ignore the second row of each file, create a new column based on the values of the first row of the data, and filter the results by a numeric value of a column. Which solution will meet these requirements with the LEAST development effort?",
+  "en_options": {
+   "A": "Use AWS Glue Python jobs to read and transform the CSV files.",
+   "B": "Use an AWS Glue custom crawler to read and transform the CSV files.",
+   "C": "Use an AWS Glue workflow to build a set of jobs to crawl and transform the CSV files.",
+   "D": "Use AWS Glue DataBrew recipes to read and transform the CSV files."
+  },
+  "zh_question": "一家公司將CSV檔案儲存在AmazonS3儲存貯體中。資料工程師需要處理這 些CSV檔案中的資料，並將處理後的資料儲存至新的S3儲存貯體。 該程序需要重新命名欄位、移除特定欄位、忽略每個檔案的第二列、根據資料 第一列的值建立新欄位，並依據某欄位的數值篩選結果。 哪項解決方案能以最小的開發工作量滿足這些需求？"
+ },
+ {
+  "number": 185,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company uses Amazon Redshift as its data warehouse. Data encoding is applied to the existing tables of the data warehouse. A data engineer discovers that the compression encoding applied to some of the tables is not the best fit for the data. The data engineer needs to improve the data encoding for the tables that have sub-optimal encoding. Which solution will meet this requirement?",
+  "en_options": {
+   "A": "Run the ANALYZE command against the identified tables. Manually update the compression encoding of columns based on the output of the command.",
+   "B": "Run the ANALYZE COMPRESSION command against the identified tables. Manually update the compression encoding of columns based on the output of the command.",
+   "C": "Run the VACUUM REINDEX command against the identified tables.",
+   "D": "Run the VACUUM RECLUSTER command against the identified tables."
+  },
+  "zh_question": "某公司使用AmazonRedshift作為其資料倉儲。資料編碼已應用於該資料倉儲 的現有表格。一位資料工程師發現，套用至部分表格的壓縮編碼並非最適合該資 料的選擇。 資料工程師需要改善那些編碼效率不佳之表格的資料編碼。 哪項解決方案能符合此需求？"
+ },
+ {
+  "number": 186,
+  "answer": "A",
+  "multi": false,
+  "en_question": "The company stores a large volume of customer records in Amazon S3. To comply with regulations, the company must be able to access new customer records immediately for the first 30 days after the records are created. The company accesses records that are older than 30 days infrequently. The company needs to cost-optimize its Amazon S3 storage. Which solution will meet these requirements MOST cost-effectively?",
+  "en_options": {
+   "A": "Apply a lifecycle policy to transition records to S3 Standard Infrequent-Access (S3 Standard-IA) storage after 30 days.",
+   "B": "Use S3 Intelligent-Tiering storage.",
+   "C": "Transition records to S3 Glacier Deep Archive storage after 30 days.",
+   "D": "Use S3 Standard-Infrequent Access (S3 Standard-IA) storage for all customer records."
+  },
+  "zh_question": "該公司在AmazonS3中儲存了大量客戶記錄。為符合法規要求，公司必須能 夠在記錄建立後的前30天內立即存取新的客戶記錄。對於超過30天的記錄， 公司的存取頻率較低。 該公司需要對其AmazonS3儲存進行成本優化。 哪種解決方案能以最具成本效益的方式滿足這些需求？"
+ },
+ {
+  "number": 187,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A data engineer is using Amazon QuickSight to build a dashboard to report a company’s revenue in multiple AWS Regions. The data engineer wants the dashboard to display the total revenue for a Region, regardless of the drill- down levels shown in the visual. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Create a table calculation.",
+   "B": "Create a simple calculated field.",
+   "C": "Create a level-aware calculation - aggregate (LAC-A) function.",
+   "D": "Create a level-aware calculation - window (LAC-W) function."
+  },
+  "zh_question": "一位資料工程師正在使用AmazonQuickSight建置儀表板，以報告公司在多 個AWS區域的收入。該資料工程師希望儀表板能顯示每個區域的總收入，無 論視覺圖表中顯示的下鑽層級為何。 哪種解決方案能符合這些需求？"
+ },
+ {
+  "number": 188,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A retail company stores customer data in an Amazon S3 bucket. Some of the customer data contains personally identifiable information (PII) about customers. The company must not share PII data with business partners. A data engineer must determine whether a dataset contains PII before making objects in the dataset available to business partners. Which solution will meet this requirement with the LEAST manual intervention?",
+  "en_options": {
+   "A": "Configure the S3 bucket and S3 objects to allow access to Amazon Macie. Use automated sensitive data discovery in Macie.",
+   "B": "Configure AWS CloudTrail to monitor S3 PUT operations. Inspect the CloudTrail trails to identify operations that save PII.",
+   "C": "Create an AWS Lambda function to identify PII in S3 objects. Schedule the function to run periodically.",
+   "D": "Create a table in AWS Glue Data Catalog. Write custom SQL queries to identify PII in the table. Use Amazon Athena to run the queries."
+  },
+  "zh_question": "一家零售公司將客戶資料儲存在AmazonS3儲存貯體中。部分客戶資料包含 關於客戶的個人識別資訊(PII)。該公司不得與業務合作夥伴分享PII資料。 資料工程師必須在將資料集中的物件提供給業務合作夥伴之前，判斷該資料集是 否包含PII。 哪種解決方案能以最少的手動干預滿足此需求？"
+ },
+ {
+  "number": 189,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer needs to create an empty copy of an existing table in Amazon Athena to perform data processing tasks. The existing table in Athena contains 1,000 rows. Which query will meet this requirement?",
+  "en_options": {
+   "A": "CREATE TABLE new_table - LIKE old_table;",
+   "B": "CREATE TABLE new_table - AS SELECT * FROM old_table - WITH NO DATA;",
+   "C": "CREATE TABLE new_table - AS SELECT * FROM old_table;",
+   "D": "CREATE TABLE new_table - as SELECT * FROM old_cable - WHERE 1=1;"
+  },
+  "zh_question": "資料工程師需要在AmazonAthena中建立現有資料表的空白副本，以執行資料 處理任務。該現有的Athena資料表包含1,000列。 哪個查詢符合此需求？"
+ },
+ {
+  "number": 190,
+  "answer": "AC",
+  "multi": true,
+  "en_question": "A company has a data lake in Amazon S3. The company collects AWS CloudTrail logs for multiple applications. The company stores the logs in the data lake, catalogs the logs in AWS Glue, and partitions the logs based on the year. The company uses Amazon Athena to analyze the logs. Recently, customers reported that a query on one of the Athena tables did not return any data. A data engineer must resolve the issue. Which combination of troubleshooting steps should the data engineer take? (Choose two.)",
+  "en_options": {
+   "A": "Confirm that Athena is pointing to the correct Amazon S3 location.",
+   "B": "Increase the query timeout duration.",
+   "C": "Use the MSCK REPAIR TABLE command.",
+   "D": "Restart Athena.",
+   "E": "Delete and recreate the problematic Athena table."
+  },
+  "zh_question": "一家公司在AmazonS3中擁有資料湖。該公司收集多個應用程式的AWS CloudTrail日誌，將這些日誌儲存在資料湖中，在AWSGlue中建置日誌目錄， 並依年份對日誌進行分割。該公司使用AmazonAthena分析這些日誌。 最近，客戶回報其中一個Athena資料表的查詢未傳回任何資料。資料工程師必 須解決此問題。 資料工程師應採取哪兩種除錯步驟的組合？（請選擇兩項。）"
+ }
+]

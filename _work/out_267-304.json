@@ -1,0 +1,420 @@
+[
+ {
+  "number": 267,
+  "q": "ML 訓練資料存於 S3，需套用資料品質規則，最少營運負擔？",
+  "opts": {
+   "A": "Lambda 檢查拋例外+CW 警報",
+   "B": "DataBrew 規則集+Profile job+EB",
+   "C": "EMR 叢集+開源 Python 品質套件",
+   "D": "Lambda 規則+Step Functions 通知"
+  },
+  "key": "DataBrew 規則集免寫程式，EB 自動觸發"
+ },
+ {
+  "number": 268,
+  "q": "用 Glue Data Catalog 查 S3 銷售資料，發現部分記錄遺失或過時，最可能原因？",
+  "opts": {
+   "A": "Catalog 未同步最新 S3 分割區",
+   "B": "Glue job 的 IAM 角色錯誤",
+   "C": "S3 未啟用版本控制",
+   "D": "Glue job 排程互相重疊"
+  },
+  "key": "分割區未更新，查詢看不到新資料"
+ },
+ {
+  "number": 269,
+  "q": "POS 交易在 RDS MySQL，歷史在 Redshift，需每日合併報表、近即時，且傳輸成本與維護最低？",
+  "opts": {
+   "A": "DMS 持續複寫到 Redshift 再查",
+   "B": "Redshift 聯合查詢直連 RDS",
+   "C": "Glue 每小時增量 ETL 到 Redshift",
+   "D": "定期匯出 S3 再 COPY 進 Redshift"
+  },
+  "key": "DMS CDC 持續複寫，近即時且低維護"
+ },
+ {
+  "number": 270,
+  "q": "資料分析師需在進階轉換前準備、標準化資料湖資料，不能寫新程式碼，最少工作量？",
+  "opts": {
+   "A": "Glue Studio notebook 用 Pandas",
+   "B": "SageMaker Canvas+Data Wrangler",
+   "C": "Glue Studio 資料準備 recipe 轉換",
+   "D": "寫規則文件交工程師實作"
+  },
+  "key": "recipe 轉換免寫程式"
+ },
+ {
+  "number": 271,
+  "q": "RDS Oracle 全表需供未來分析，customer_complaints 表須近即時經 REST API 處理，最具成本效益？",
+  "opts": {
+   "A": "DMS 複寫到 RDS PG+Lambda",
+   "B": "DMS 到 Redshift+Data API+UNLOAD",
+   "C": "DMS→KDS(該表)+DMS→S3+Lambda",
+   "D": "建讀取複本+Lambda 輪詢處理"
+  },
+  "key": "DMS 串流 KDS 近即時，全表進 S3 便宜"
+ },
+ {
+  "number": 272,
+  "q": "Redshift 複雜轉換查詢要跑數小時，要盡可能縮短查詢時間？",
+  "opts": {
+   "A": "提高並行擴展(concurrency)配額",
+   "B": "匯出到 S3 改用 Athena 查",
+   "C": "用 Spectrum 建外部表",
+   "D": "對常用查詢建物化檢視(MV)"
+  },
+  "key": "物化檢視預先計算，大幅縮短查詢"
+ },
+ {
+  "number": 273,
+  "q": "S3 資料湖需轉換清理後，讓多個夥伴在上班時間跑 SQL，最具成本效益？",
+  "opts": {
+   "A": "下班後 EMR 叢集→Redshift Serverless",
+   "B": "下班後 Glue Flex→Redshift Serverless",
+   "C": "下班後 Lambda→Redshift 佈建叢集",
+   "D": "下班後 Glue Flex→Redshift 佈建叢集"
+  },
+  "key": "Flex 便宜+Serverless 按量計費"
+ },
+ {
+  "number": 274,
+  "q": "批次 ETL 分擷取、轉換、儲存階段，存 S3，每階段自動重試、可見各階段成敗，最少營運負擔？",
+  "opts": {
+   "A": "Glue job trigger 串接，MaxRetries=0",
+   "B": "Step Functions 編排 Lambda+Glue",
+   "C": "EventBridge 觸發各階段 Lambda",
+   "D": "MWAA DAG+SQS 擷取+Glue 轉換"
+  },
+  "key": "Step Functions 內建重試與各步驟狀態"
+ },
+ {
+  "number": 275,
+  "q": "資料網格：3 團隊各擁資料，Glue Catalog 千張表，用 Athena/Redshift，需跨域分析、稽核、限制 PII，可擴展？",
+  "opts": {
+   "A": "Athena 檢視給 Redshift+CT+LF",
+   "B": "Catalog 檢視+CT+LF+definer 遮罩",
+   "C": "Lake Formation 跨域存取+細粒度",
+   "D": "MV+各域 Redshift datashare"
+  },
+  "key": "LF 集中跨域授權、細粒度控制與稽核"
+ },
+ {
+  "number": 276,
+  "q": "S3 與 RDS 需備份並依期限保留，且保留期間防意外或惡意刪除，最少營運負擔？",
+  "opts": {
+   "A": "S3 版本+MFA Delete；RDS 自動備份",
+   "B": "S3 版本+同區複寫；RDS 自動備份",
+   "C": "AWS Backup 計畫+Vault Lock 合規",
+   "D": "S3 版本+跨區複寫；RDS 自動備份"
+  },
+  "key": "Backup 集中管理+Vault Lock"
+ },
+ {
+  "number": 277,
+  "q": "每天上傳機密文件到 S3，需獨立驗證所有上傳資料完整性，確認傳輸未損毀？",
+  "opts": {
+   "A": "上傳後下載部分資料人工驗證",
+   "B": "改 SSE-C 並開 S3 Bucket Key",
+   "C": "上傳前算 SHA-256 傳給 SDK",
+   "D": "上傳後全部下載程式驗證"
+  },
+  "key": "上傳帶 checksum，S3 端自動比對完整性"
+ },
+ {
+  "number": 278,
+  "q": "S3 物件超過 1 年須 5 小時內可取，所有版本 WORM 不可變保留 7 年？",
+  "opts": {
+   "A": "版本控制+1年轉 Glacier Flexible",
+   "B": "Object Lock+1年轉 Deep Archive",
+   "C": "Object Lock+1年轉 Glacier Flexible",
+   "D": "版本控制+1年轉 Deep Archive"
+  },
+  "key": "WORM靠Object Lock；GFR數小時可取"
+ },
+ {
+  "number": 279,
+  "q": "部署複雜管線，各階段要能執行腳本，只能用全託管、無伺服器服務？",
+  "opts": {
+   "A": "Glue job 與 workflow 排程執行",
+   "B": "MWAA 建置並排程管線",
+   "C": "腳本部署 EC2+EventBridge 排程",
+   "D": "DataBrew 建管線+EventBridge 排程"
+  },
+  "key": "MWAA 全託管 Airflow 可編排複雜腳本"
+ },
+ {
+  "number": 280,
+  "q": "S3 每天千萬小物件：前60天即時取、61–180天偶爾取、181–365天1小時內可取、365天後刪，最佳化成本？",
+  "opts": {
+   "A": "Intelligent-Tiering+Archive 層",
+   "B": "生命週期：60天IA→180天GFR→刪",
+   "C": "Inventory+Batch Ops 搬移",
+   "D": "Inventory+每日 Lambda 搬移"
+  },
+  "key": "生命週期規則依天數轉層，免自建搬移"
+ },
+ {
+  "number": 281,
+  "q": "Glue PySpark 需從 DynamoDB 讀已知分割鍵的資料，需 DynamicFrame，RCU 最少？",
+  "opts": {
+   "A": "Glue DynamoDB 連接器+filter",
+   "B": "只用排序鍵做 query 再轉 DF",
+   "C": "scan 全表後再過濾分割鍵",
+   "D": "用分割鍵做 query 再轉 DF"
+  },
+  "key": "以分割鍵 query 只讀所需項目，RCU 最省"
+ },
+ {
+  "number": 282,
+  "q": "多租戶 EMR，團隊用 EMR Step 跑 Spark 讀 DynamoDB 機密表，只允許特定團隊存取？",
+  "opts": {
+   "A": "為 EMR Step 設 runtime role",
+   "B": "設定 Lake Formation 權限",
+   "C": "設 EMRFS 請求的 IAM 角色",
+   "D": "設 DynamoDB 資源型政策"
+  },
+  "key": "Step runtime role 分團隊權限"
+ },
+ {
+  "number": 283,
+  "q": "S3 每小時進數千個 50–100KB Parquet，評估 Iceberg+Glue Catalog，需確保檔案增多效能不下降？",
+  "opts": {
+   "A": "每日 Glue job 壓成 512MB+爬蟲",
+   "B": "Catalog 每分鐘自動壓縮",
+   "C": "Iceberg 依檔案大小/數量自動壓縮",
+   "D": "S3 分割策略+每5分鐘跑爬蟲"
+  },
+  "key": "Iceberg 門檻式自動壓縮解決小檔問題"
+ },
+ {
+  "number": 284,
+  "q": "IoT 管線用 KDS→Firehose→S3，需監控管線健康，最少營運工作？",
+  "opts": {
+   "A": "CW Logs 人工檢視日誌",
+   "B": "CW 警報監控 IncomingBytes 等指標",
+   "C": "Lambda 每日檢查+SNS 通知",
+   "D": "Flink 近即時異常偵測告警"
+  },
+  "key": "CW 內建指標+警報，免自建"
+ },
+ {
+  "number": 285,
+  "q": "產品屬性可變，需高量突發查詢、個位數毫秒延遲，以 Product ID 取值並可依 Category、Brand 查？",
+  "opts": {
+   "A": "DynamoDB 隨需容量+主鍵+GSI",
+   "B": "Aurora Multi-AZ+讀取複本+索引",
+   "C": "OpenSearch Serverless 建索引",
+   "D": "ElastiCache+S3+Athena 查詢"
+  },
+  "key": "DDB 毫秒延遲+隨需+GSI"
+ },
+ {
+  "number": 286,
+  "q": "地端日誌上傳 S3，需驗證 S3 上的日誌與地端一致？",
+  "opts": {
+   "A": "SDK 上傳自動算 CRC32 存中繼資料",
+   "B": "Lambda 算 SHA-256 存另表事後驗",
+   "C": "啟用 Object Lock 合規模式",
+   "D": "上傳後啟用 Object Lock 治理模式"
+  },
+  "key": "SDK 上傳自動 checksum 驗證一致性"
+ },
+ {
+  "number": 287,
+  "q": "EventBridge Scheduler 呼叫 Glue workflow，取消訂單 FailedInvocations 很高，須找出失敗原因？",
+  "opts": {
+   "A": "Scheduler 設 DLQ 存失敗事件分析",
+   "B": "用 Scheduler 封存與重播功能",
+   "C": "調低重試政策最大重試次數",
+   "D": "調高重試政策事件最大存活時間"
+  },
+  "key": "DLQ 保留失敗事件與錯誤原因可分析"
+ },
+ {
+  "number": 288,
+  "q": "處理 S3 1TB 檔產生 3 個 DataFrame 平行存另一 S3，管線為 EventBridge 規則目標，最少維護？",
+  "opts": {
+   "A": "EMR Spark Streaming 批次處理",
+   "B": "3 個 Lambda 平行處理",
+   "C": "Glue workflow 平行跑 3 個 job",
+   "D": "Step Functions 啟動 Glue workflow"
+  },
+  "key": "Glue workflow 可直接當 EB 目標"
+ },
+ {
+  "number": 289,
+  "q": "KDS 的 IoT 資料需近即時做複雜、有狀態轉換後存 S3，最少營運負擔？",
+  "opts": {
+   "A": "排程 Glue ETL job 處理串流",
+   "B": "Managed Service for Apache Flink",
+   "C": "Lambda 處理串流",
+   "D": "EMR 排程 Spark job"
+  },
+  "key": "Flink 託管、支援有狀態近即時處理"
+ },
+ {
+  "number": 290,
+  "q": "S3 時序資料只允許部署在公司 VPC 內的工作負載存取？",
+  "opts": {
+   "A": "Bucket policy 條件限定來源 VPC",
+   "B": "S3 套安全群組只允許 VPC CIDR",
+   "C": "IAM 政策拒絕非 VPC 請求",
+   "D": "子網 NACL 限定資源存取 S3"
+  },
+  "key": "Bucket policy 限 SourceVpc"
+ },
+ {
+  "number": 291,
+  "q": "Glue 平台需資料品質驗證：含已知問題規則，且能自動偵測未預期問題，最少營運負擔？",
+  "opts": {
+   "A": "Glue Data Quality+異常偵測",
+   "B": "Glue job+開源品質框架",
+   "C": "DataBrew profile 後設規則",
+   "D": "Glue job 用 SQL 驗證"
+  },
+  "key": "Glue DQ 規則+內建異常偵測抓未知問題"
+ },
+ {
+  "number": 292,
+  "q": "自管 Iceberg 資料湖，即時表由大量小檔組成導致查詢慢，需提升效能？",
+  "opts": {
+   "A": "使歷史快照過期",
+   "B": "封存歷史快照",
+   "C": "刪除未被表引用的 S3 物件",
+   "D": "執行壓縮(compaction)"
+  },
+  "key": "壓縮合併小檔，提升讀取效能"
+ },
+ {
+  "number": 293,
+  "q": "每日 CSV 交易日誌存 S3，Athena 當天查部分欄位，量增變慢，要查詢時間最短？",
+  "opts": {
+   "A": "轉多個 ORC+日期分割+下推",
+   "B": "轉 JSON+日期分割+動態過濾",
+   "C": "轉 Avro+日期分割+分割投影",
+   "D": "每日單一 Parquet+日期分割+下推"
+  },
+  "key": "Parquet 欄式+分割+謂詞下推掃描最少"
+ },
+ {
+  "number": 294,
+  "q": "S3 客戶資料超過 7 年必須永久刪除？",
+  "opts": {
+   "A": "生命週期政策刪除超過7年物件",
+   "B": "Athena 查出舊物件並刪除結果",
+   "C": "生命週期轉 Glacier Deep Archive",
+   "D": "生命週期對舊物件啟用 Object Lock"
+  },
+  "key": "S3 生命週期到期自動永久刪除"
+ },
+ {
+  "number": 295,
+  "q": "兩團隊各在不同帳號，要存取第三帳號 Redshift 的 datashare salesshare，用 SQL 授權？",
+  "opts": {
+   "A": "GRANT … TO ACCOUNTS 'a' AND 'b'",
+   "B": "GRANT … TO NAMESPACES 'a' AND 'b'",
+   "C": "兩條 GRANT … TO ACCOUNT",
+   "D": "兩條 GRANT … TO NAMESPACE"
+  },
+  "key": "逐一 GRANT 給各 NAMESPACE"
+ },
+ {
+  "number": 296,
+  "q": "DynamoDB 資料保留 1 年，之後封存 5 年再刪除，最具作業效率？",
+  "opts": {
+   "A": "時間戳+Lambda 搬 GFR+生命週期刪",
+   "B": "Streams+TTL+Lambda→GFR 再刪",
+   "C": "時間戳+Lambda→Deep Archive",
+   "D": "Streams+TTL+Lambda→DA+生命週期刪"
+  },
+  "key": "TTL+Streams 搬 DA，生命週期刪"
+ },
+ {
+  "number": 297,
+  "q": "已啟用版本控制的 S3，設 365 天過期規則後物件數反而加倍，須如何永久刪除舊物件？",
+  "opts": {
+   "A": "停用版本控制",
+   "B": "Lambda 找出並刪除舊物件",
+   "C": "暫停版本控制",
+   "D": "加規則刪除現行與非現行版本"
+  },
+  "key": "過期只加刪除標記，須另刪非現行版本"
+ },
+ {
+  "number": 298,
+  "q": "Glue 處理 IoT 資料，需自動標記溫度超出 -50~150°C 及缺時間戳記錄，極少寫程式？",
+  "opts": {
+   "A": "DataBrew：完整性+數值範圍規則",
+   "B": "Glue DQ+ML 異常偵測",
+   "C": "Lambda 驗溫度+Catalog 查時間戳",
+   "D": "自訂 DynamicFrame+Data Wrangler"
+  },
+  "key": "DataBrew 規則免寫程式檢查範圍與缺值"
+ },
+ {
+  "number": 299,
+  "q": "推薦系統需整合第三方資料集到既有分析平台，最少營運負擔與時間？",
+  "opts": {
+   "A": "API 從 AWS Data Exchange 取用",
+   "B": "API 從 AWS DataSync 取用",
+   "C": "KDS 從 Git 儲存庫取用",
+   "D": "KDS 從 ECR 取用"
+  },
+  "key": "Data Exchange 專供訂閱第三方資料集"
+ },
+ {
+  "number": 300,
+  "q": "年度報表存 S3，1 週後少存取，需保留 7 年且隨時可存取，最具成本效益？",
+  "opts": {
+   "A": "7天後轉 Deep Archive，7年過期",
+   "B": "上傳即 Intelligent-Tiering",
+   "C": "7天後轉 Glacier IR，7年過期",
+   "D": "上傳即 Glacier IR+Lambda 刪"
+  },
+  "key": "Glacier IR 毫秒取回且低成本"
+ },
+ {
+  "number": 301,
+  "q": "Glue ETL 處理 PII 並寫入 CW Logs 日誌群組，需在日誌群組遮罩 PII？",
+  "opts": {
+   "A": "ETL job 掛 Glue 安全組態",
+   "B": "日誌群組套用資料保護政策",
+   "C": "執行 Macie 敏感資料探索",
+   "D": "ETL 呼叫 Glue 敏感資料偵測 API"
+  },
+  "key": "CW Logs 資料保護政策自動遮罩 PII"
+ },
+ {
+  "number": 302,
+  "q": "EC2 與 RDS 同子網，EC2 應用需以 JDBC 連 RDS？",
+  "opts": {
+   "A": "改 DB 的 IAM 角色允許 EC2",
+   "B": "改參數群組 ec2_authorized_hosts",
+   "C": "DB 安全群組允許 EC2 連入",
+   "D": "啟用 RDS Data API 填 ARN"
+  },
+  "key": "連線由安全群組控制，需放行 EC2"
+ },
+ {
+  "number": 303,
+  "q": "電商需收集網站與 App 點擊流做即時分析並儲存，最少持續維護？",
+  "opts": {
+   "A": "Firehose→Redshift 佈建叢集",
+   "B": "EC2 代理+CLI 批次上傳 S3",
+   "C": "KDS 收集+Firehose 送 S3",
+   "D": "MSK broker 收集存 RDS"
+  },
+  "key": "KDS+Firehose 全託管串流進 S3"
+ },
+ {
+  "number": 304,
+  "q": "Glue ETL 需檢查出貨日>訂單日、送達日>出貨日，不合格存另一 S3，最具成本效益？",
+  "opts": {
+   "A": "DataBrew DATEDIFF 加兩欄檢查",
+   "B": "Athena 查三個日期欄比較",
+   "C": "Glue DQ 自訂規則用三日期欄",
+   "D": "爬蟲建 Catalog 再用日期過濾"
+  },
+  "key": "Glue DQ 自訂規則內建於 ETL 並分流"
+ }
+]

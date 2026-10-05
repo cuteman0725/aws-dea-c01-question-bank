@@ -1,0 +1,500 @@
+[
+ {
+  "number": 229,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company uses an Amazon Redshift cluster as a data warehouse that is shared across two departments. To comply with a security policy, each department must have unique access permissions. Department A must have access to tables and views for Department A. Department B must have access to tables and views for Department B. The company often runs SQL queries that use objects from both departments in one query. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Group tables and views for each department into dedicated schemas. Manage permissions at the schema level.",
+   "B": "Group tables and views for each department into dedicated databases. Manage permissions at the database level.",
+   "C": "Update the names of the tables and views to follow a naming convention that contains the department names. Manage permissions based on the new naming convention.",
+   "D": "Create an IAM user group for each department. Use identity-based IAM policies to grant table and view permissions based on the IAM user group."
+  },
+  "zh_question": "一家公司使用AmazonRedshift叢集作為資料倉儲，由兩個部門共用。為符合 安全政策，每個部門必須擁有獨立的存取權限。 A部門必須能夠存取該部門的資料表和檢視表。B部門必須能夠存取該 部門的資料表和檢視表。 该公司經常執行SQL查詢，這些查詢會在單一查詢中使用來自兩個部門的物件。 哪種解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 230,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company wants to ingest streaming data into an Amazon Redshift data warehouse from an Amazon Managed Streaming for Apache Kafka (Amazon MSK) cluster. A data engineer needs to develop a solution that provides low data access time and that optimizes storage costs. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Create an external schema that maps to the MSK cluster. Create a materialized view that references the external schema to consume the streaming data from the MSK topic.",
+   "B": "Develop an AWS Glue streaming extract, transform, and load (ETL) job to process the incoming data from Amazon MSK. Load the data into Amazon S3. Use Amazon Redshift Spectrum to read the data from Amazon S3.",
+   "C": "Create an external schema that maps to the streaming data source. Create a new Amazon Redshift table that references the external schema.",
+   "D": "Create an Amazon S3 bucket. Ingest the data from Amazon MSK. Create an event-driven AWS Lambda function to load the data from the S3 bucket to a new Amazon Redshift table."
+  },
+  "zh_question": "一家公司希望將串流資料從AmazonManagedStreamingforApacheKafka (AmazonMSK)叢集匯入至AmazonRedshift資料倉儲。資料工程師需要開發 一項解決方案，以提供低延遲的資料存取時間，並最佳化儲存成本。 哪種解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 231,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A sales company uses AWS Glue ETL to collect, process, and ingest data into an Amazon S3 bucket. The AWS Glue pipeline creates a new file in the S3 bucket every hour. File sizes vary from 200 KB to 300 KB. The company wants to build a sales prediction model by using data from the previous 5 years. The historic data includes 44,000 files. The company builds a second AWS Glue ETL pipeline by using the smallest worker type. The second pipeline retrieves the historic files from the S3 bucket and processes the files for downstream analysis. The company notices significant performance issues with the second ETL pipeline. The company needs to improve the performance of the second pipeline. Which solution will meet this requirement MOST cost-effectively?",
+  "en_options": {
+   "A": "Use a larger worker type.",
+   "B": "Increase the number of workers in the AWS Glue ETL jobs.",
+   "C": "Use the AWS Glue DynamicFrame grouping option.",
+   "D": "Enable AWS Glue auto scaling."
+  },
+  "zh_question": "一家銷售公司使用AWSGlueETL來收集、處理並將資料匯入AmazonS3儲存 桶。該AWSGlue管線每小時會在S3儲存桶中建立一個新檔案，檔案大小介於 200KB至300KB之間。该公司希望利用過去5年的資料建置銷售預測模型，歷 史資料共包含44,000個檔案。 該公司使用最小的worker類型建置了第二個AWSGlueETL管線。第二個管 線從S3儲存桶擷取歷史檔案，並處理這些檔案以供下游分析。該公司發現第二 個ETL管線存在嚴重的效能問題。 該公司需要改善第二個管線的效能。 哪項解決方案能以最具成本效益的方式滿足此需求？"
+ },
+ {
+  "number": 232,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company wants to combine data from multiple software as a service (SaaS) applications for analysis. A data engineering team needs to use Amazon QuickSight to perform the analysis and build dashboards. A data engineer needs to extract the data from the SaaS applications and make the data available for QuickSight queries. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "en_options": {
+   "A": "Create AWS Lambda functions that call the required APIs to extract the data from the applications. Store the data in an Amazon S3 bucket. Use AWS Glue to catalog the data in the S3 bucket. Create a data source and a dataset in QuickSight.",
+   "B": "Use AWS Lambda functions as Amazon Athena data source connectors to run federated queries against the SaaS applications. Create an Athena data source and a dataset in QuickSight.",
+   "C": "Use Amazon AppFlow to create a flow for each SaaS application. Set an Amazon S3 bucket as the destination. Schedule the flows to extract the data to the bucket. Use AWS Glue to catalog the data in the S3 bucket. Create a data source and a dataset in QuickSight.",
+   "D": "Export data the from the SaaS applications as Microsoft Excel files. Create a data source and a dataset in QuickSight by uploading the Excel files."
+  },
+  "zh_question": "一家公司希望整合來自多個軟體即服務(SaaS)應用程式的數據以進行分析。 資料工程團隊需要使用AmazonQuickSight進行分析並建置儀表板。資料工程 師需要從SaaS應用程式中提取資料，並讓這些資料可供QuickSight查詢。 哪種解決方案能以最符合營運效率的方式滿足這些需求？"
+ },
+ {
+  "number": 233,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company runs multiple applications on AWS. The company configured each application to output logs. The company wants to query and visualize the application logs in near real time. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Configure the applications to output logs to Amazon CloudWatch Logs log groups. Create an Amazon S3 bucket. Create an AWS Lambda function that runs on a schedule to export the required log groups to the S3 bucket. Use Amazon Athena to query the log data in the S3 bucket.",
+   "B": "Create an Amazon OpenSearch Service domain. Configure the applications to output logs to Amazon CloudWatch Logs log groups. Create an OpenSearch Service subscription filter for each log group to stream the data to OpenSearch. Create the required queries and dashboards in OpenSearch Service to analyze and visualize the data.",
+   "C": "Configure the applications to output logs to Amazon CloudWatch Logs log groups. Use CloudWatch log anomaly detection to query and visualize the log data.",
+   "D": "Update the application code to send the log data to Amazon QuickSight by using Super-fast, Parallel, In-memory Calculation Engine (SPICE. Create the required analyses and dashboards in QuickSight."
+  },
+  "zh_question": "一家公司在AWS上運行多個應用程式。該公司已設定每個應用程式輸出日誌。 该公司希望以近乎即時的方式查詢並視覺化這些應用程式日誌。 哪項解決方案能符合這些需求？"
+ },
+ {
+  "number": 234,
+  "answer": "C",
+  "multi": false,
+  "en_question": "An ecommerce company processes millions of orders each day. The company uses AWS Glue ETL to collect data from multiple sources, clean the data, and store the data in an Amazon S3 bucket in CSV format by using the S3 Standard storage class. The company uses the stored data to conduct daily analysis. The company wants to optimize costs for data storage and retrieval. Which solution will meet this requirement?",
+  "en_options": {
+   "A": "Transition the data to Amazon S3 Glacier Flexible Retrieval.",
+   "B": "Transition the data from Amazon S3 to an Amazon Aurora cluster.",
+   "C": "Configure AWS Glue ETL to transform the incoming data to Apache Parquet format.",
+   "D": "Configure AWS Glue ETL to use Amazon EMR to process incoming data in parallel."
+  },
+  "zh_question": "一家電子商務公司每天處理數百萬筆訂單。該公司使用AWSGlueETL從多個 來源收集資料、清理資料，並透過S3標準儲存類別將資料以CSV格式儲存在 AmazonS3儲存貯體中。該公司利用所儲存的資料進行每日分析。 該公司希望最佳化資料儲存與檢索的成本。 哪項解決方案能符合此需求？"
+ },
+ {
+  "number": 235,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer is optimizing query performance in Amazon Athena notebooks that use Apache Spark to analyze large datasets that are stored in Amazon S3. The data is partitioned. An AWS Glue crawler updates the partitions. The data engineer wants to minimize the amount of data that is scanned to improve efficiency of Athena queries. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Apply partition filters in the queries.",
+   "B": "Increase the frequency of AWS Glue crawler invocations to update the data catalog more often.",
+   "C": "Organize the data that is in Amazon S3 by using a nested directory structure.",
+   "D": "Configure Spark to use in-memory caching for frequently accessed data."
+  },
+  "zh_question": "一位資料工程師正在最佳化使用ApacheSpark分析儲存於AmazonS3之大型 資料集的AmazonAthena筆記本中的查詢效能。該資料已進行分割。 AWSGluecrawler會更新分割區。 資料工程師希望最小化掃描的資料量，以提升Athena查詢的效率。 哪種解決方案能符合這些需求？"
+ },
+ {
+  "number": 236,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company manages an Amazon Redshift data warehouse. The data warehouse is in a public subnet inside a custom VPC. A security group allows only traffic from within itself. An ACL is open to all traffic. The company wants to generate several visualizations in Amazon QuickSight for an upcoming sales event. The company will run QuickSight Enterprise edition in a second AWS account inside a public subnet within a second custom VPC. The new public subnet has a security group that allows outbound traffic to the existing Redshift cluster. A data engineer needs to establish connections between Amazon Redshift and QuickSight. QuickSight must refresh dashboards by querying the Redshift cluster. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Configure the Redshift security group to allow inbound traffic on the Redshift port from the QuickSight security group.",
+   "B": "Assign Elastic IP addresses to the QuickSight visualizations. Configure the QuickSight security group to allow inbound traffic on the Redshift port from the Elastic IP addresses.",
+   "C": "Confirm that the CIDR ranges of the Redshift VPC and the QuickSight VPC are the same. If CIDR ranges are different, reconfigure one CIDR range to match the other. Establish network peering between the VPCs.",
+   "D": "Create a QuickSight gateway endpoint in the Redshift VPC. Attach an endpoint policy to the gateway endpoint to ensure only specific QuickSight accounts can use the endpoint."
+  },
+  "zh_question": "一家公司管理著一個AmazonRedshift資料倉儲。該資料倉儲位於自訂VPC內 的公用子網中。安全群組僅允許來自其內部的流量，而存取控制清單(ACL)則對 所有流量開放。 該公司希望為即將到來的銷售活動在AmazonQuickSight中產生多個視覺化圖 表。该公司將在第二個AWS帳戶中的自訂VPC內公用子網執行QuickSight Enterprise版本。新的公用子網具備一個安全群組，允許出站流量連接到現有的 Redshift叢集。 資料工程師需要建立AmazonRedshift與QuickSight之間的連線。 QuickSight必須透過查詢Redshift叢集來更新儀表板。 哪項解決方案符合這些需求？"
+ },
+ {
+  "number": 237,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer is building a data pipeline. A large data file is uploaded to an Amazon S3 bucket once each day at unpredictable times. An AWS Glue workflow uses hundreds of workers to process the file and load the data into Amazon Redshift. The company wants to process the file as quickly as possible. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Create an on-demand AWS Glue trigger to start the workflow. Create an AWS Lambda function that runs every 15 minutes to check the S3 bucket for the daily file. Configure the function to start the AWS Glue workflow if the file is present.",
+   "B": "Create an event-based AWS Glue trigger to start the workflow. Configure Amazon S3 to log events to AWS CloudTrail. Create a rule in Amazon EventBridge to forward PutObject events to the AWS Glue trigger.",
+   "C": "Create a scheduled AWS Glue trigger to start the workflow. Create a cron job that runs the AWS Glue job every 15 minutes. Set up the AWS Glue job to check the S3 bucket for the daily file. Configure the job to stop if the file is not present.",
+   "D": "Create an on-demand AWS Glue trigger to start the workflow. Create an AWS Database Migration Service (AWS DMS) migration task. Set the DMS source as the S3 bucket. Set the target endpoint as the AWS Glue workflow."
+  },
+  "zh_question": "資料工程師正在建置資料管線。一個大型資料檔案每天會在不可預測的時間上傳 至AmazonS3儲存貯體一次。AWSGlue工作流程使用數百個工作節點來處理 該檔案，並將資料載入AmazonRedshift。该公司希望盡快處理該檔案。 哪種解決方案能符合這些需求？"
+ },
+ {
+  "number": 238,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A data engineer needs to run a data transformation job whenever a user adds a file to an Amazon S3 bucket. The job will run for less than 1 minute. The job must send the output through an email message to the data engineer. The data engineer expects users to add one file every hour of the day. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "en_options": {
+   "A": "Create a small Amazon EC2 instance that polls the S3 bucket for new files. Run transformation code on a schedule to generate the output. Use operating system commands to send email messages.",
+   "B": "Run an Amazon Elastic Container Service (Amazon ECS) task to poll the S3 bucket for new files. Run transformation code on a schedule to generate the output. Use operating system commands to send email messages.",
+   "C": "Create an AWS Lambda function to transform the data. Use Amazon S3 Event Notifications to invoke the Lambda function when a new object is created. Publish the output to an Amazon Simple Notification Service (Amazon SNS) topic. Subscribe the data engineer’s email account to the topic.",
+   "D": "Deploy an Amazon EMR cluster. Use EMR File System (EMRFS) to access the files in the S3 bucket. Run transformation code on a schedule to generate the output to a second S3 bucket. Create an Amazon Simple Notification Service (Amazon SNS) topic. Configure Amazon S3 Event Notifications to notify the topic when a new object is created."
+  },
+  "zh_question": "資料工程師需要在使用者將檔案新增至AmazonS3儲存貯桶時，執行資料轉換 工作。該工作執行時間少於1分鐘，且必須透過電子郵件將輸出結果傳送給資料 工程師。資料工程師預期使用者每小時會新增一個檔案。 哪種解決方案能以最具作業效率的方式符合這些需求？"
+ },
+ {
+  "number": 239,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company uses Amazon S3 and AWS Glue Data Catalog to manage a data lake that contains contact information for customers. The company uses PySpark and AWS Glue jobs with a DynamicFrame to run a workflow that processes data within the data lake. A data engineer notices that the workflow is generating errors as a result of how customer postal codes are stored in the data lake. Some postal codes include unnecessary numbers or invalid characters. The data engineer needs a solution to address the errors and correct the postal codes in the data lake.",
+  "en_options": {
+   "A": "Create a schema definition for PySpark that matches the format the processing workflow requires for postal codes. Pass the schema to the DynamicFrame during processing.",
+   "B": "Use AWS Glue workflow properties to allow job state sharing. Configure the AWS Glue jobs to read values from the postal code column by using the properties from a previously successful run of the jobs.",
+   "C": "Configure the column.push_down_predicate setting and the catalogPartitionPredicate settings for the postal code column in the DynamicFrame.",
+   "D": "Set the DynamicFrame additional_options parameter ‘useS3ListImplementation’ to True."
+  },
+  "zh_question": "一家公司使用AmazonS3和AWSGlue資料目錄來管理包含客戶聯絡資訊的資 料湖。該公司使用PySpark和帶有動態框架（DynamicFrame）的AWS Glue任務，執行處理資料湖內資料的工作流程。 一位資料工程師發現，由於客戶郵遞區號在資料湖中的儲存方式，工作流程產生了 錯誤。部分郵遞區號包含不必要的數字或無效字元。 這位資料工程師需要一個解決方案來修正這些錯誤，並更正資料湖中的郵遞區號。"
+ },
+ {
+  "number": 240,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer is troubleshooting an AWS Glue workflow that occasionally fails. The engineer determines that the failures are a result of data quality issues. A business reporting team needs to receive an email notification any time the workflow fails in the future. Which solution will meet this requirement?",
+  "en_options": {
+   "A": "Create an Amazon Simple Notification Service (Amazon SNS) FIFO topic. Subscribe the team’s email account to the SNS topic. Create an AWS Lambda function that initiates when the AWS Glue job state changes to FAILED. Set the SNS topic as the target.",
+   "B": "Create an Amazon Simple Notification Service (Amazon SNS) standard topic. Subscribe the team’s email account to the SNS topic. Create an Amazon EventBridge rule that triggers when the AWS Glue job state changes to FAILED. Set the SNS topic as the target.",
+   "C": "Create an Amazon Simple Queue Service (Amazon SQS) FIFO queue. Subscribe the team’s email account to the SQS queue. Create an AWS Config rule that triggers when the AWS Glue job state changes to FAILED. Set the SQS queue as the target.",
+   "D": "Create an Amazon Simple Queue Service (Amazon SQS) standard queue. Subscribe the team’s email account to the SQS queue. Create an Amazon EventBridge rule that triggers when the AWS Glue job state changes to FAILESet the SQS queue as the target."
+  },
+  "zh_question": "一位資料工程師正在排查一個偶爾失敗的AWSGlue工作流程。該工程師判定失 敗是由資料品質問題所導致。業務報告團隊需要在工作流程未來任何一次失敗時收 到電子郵件通知。 哪項解決方案能符合此需求？"
+ },
+ {
+  "number": 241,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company uses AWS Glue jobs to implement several data pipelines. The pipelines are critical to the company. The company needs to implement a monitoring mechanism that will alert stakeholders if the pipelines fail. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Create an Amazon EventBridge rule to match AWS Glue job failure events. Configure the rule to target an AWS Lambda function to process events. Configure the function to send notifications to an Amazon Simple Notification Service (Amazon SNS) topic.",
+   "B": "Configure an Amazon CloudWatch Logs log group for the AWS Glue jobs. Create an Amazon EventBridge rule to match new log creation events in the log group. Configure the rule to target an AWS Lambda function that reads the logs and sends notifications to an Amazon Simple Notification Service (Amazon SNS) topic if AWS Glue job failure logs are present.",
+   "C": "Create an Amazon EventBridge rule to match AWS Glue job failure events. Define an Amazon CloudWatch metric based on the EventBridge rule. Set up a CloudWatch alarm based on the metric to send notifications to an Amazon Simple Notification Service (Amazon SNS) topic.",
+   "D": "Configure an Amazon CloudWatch Logs log group for the AWS Glue jobs. Create an Amazon EventBridge rule to match new log creation events in the log group. Configure the rule to send notifications to an Amazon Simple Notification Service (Amazon SNS) topic."
+  },
+  "zh_question": "一家公司使用AWSGlue任務來實作多個資料管線。這些管線對該公司至 關重要。 公司需要實作一種監控機制，以便在管線失敗時通知利害關係人。 哪項解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 242,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company uses AWS Glue Apache Spark jobs to handle extract, transform, and load (ETL) workloads. The company has enabled logging and monitoring for all AWS Glue jobs. One of the AWS Glue jobs begins to fail. A data engineer investigates the error and wants to examine metrics for all individual stages within the job. How can the data engineer access the stage metrics?",
+  "en_options": {
+   "A": "Examine the AWS Glue job and stage details in the Spark UI.",
+   "B": "Examine the AWS Glue job and stage metrics in Amazon CloudWatch.",
+   "C": "Examine the AWS Glue job and stage logs in AWS CloudTrail logs.",
+   "D": "Examine the AWS Glue job and stage details by using the run insights feature on the job."
+  },
+  "zh_question": "一家公司使用AWSGlueApacheSpark作業來處理提取、轉換和載入(ETL) 工作負載。該公司已為所有AWSGlue作業啟用了日誌記錄和監控。 其中一個AWSGlue作業開始失敗。資料工程師調查該錯誤，並希望檢查該作 業內所有個別階段的指標。 資料工程師該如何存取階段指標？"
+ },
+ {
+  "number": 243,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A data engineer notices slow query performance on a highly partitioned table that is in Amazon Athena. The table contains daily data for the previous 5 years, partitioned by date. The data engineer wants to improve query performance and to automate partition management. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Use an AWS Lambda function that runs daily. Configure the function to manually create new partitions in AWS Glue for each day’s data.",
+   "B": "Use partition projection in Athena. Configure the table properties by using a date range from 5 years ago to the present.",
+   "C": "Reduce the number of partitions by changing the partitioning schema from daily to monthly granularity.",
+   "D": "Increase the processing capacity of Athena queries by allocating more compute resources."
+  },
+  "zh_question": "一名資料工程師注意到，在AmazonAthena中一個高度分區的表格上，查詢效 能緩慢。該表格包含過去5年的每日資料，並依日期進行分區。 資料工程師希望提升查詢效能並自動化分割區管理。 哪項解決方案能符合這些需求？"
+ },
+ {
+  "number": 244,
+  "answer": "BC",
+  "multi": true,
+  "en_question": "A data engineer is using an Apache Iceberg framework to build a data lake that contains 100 ТВ of data. The data engineer wants to run AWS Glue Apache Spark jobs that use the Iceberg framework. What combination of steps will meet these requirements? (Choose two.)",
+  "en_options": {
+   "A": "Create a key named --conf for an AWS Glue job. Set Iceberg as a value for the --datalake- formats job parameter.",
+   "B": "Specify the path to a specific version of Iceberg by using the -extra-jars job parameter. Set Iceberg as a value for the datalake-formats job parameter.",
+   "C": "Set Iceberg as a value for the --datalake-formats job parameter.",
+   "D": "Set the --enable-auto-scaling parameter to true.",
+   "E": "Add the --job-bookmark-option: job-bookmark-enable parameter to an AWS Glue job."
+  },
+  "zh_question": "一名資料工程師正在使用ApacheIceberg框架建置一個包含100TB資料的資料 湖。該資料工程師希望執行使用Iceberg框架的AWSGlueApacheSpark作業。 哪兩個步驟的組合可滿足這些需求？（請選擇兩項。）"
+ },
+ {
+  "number": 245,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer is configuring an AWS Glue Apache Spark extract, transform, and load (ETL) job. The job contains a sort-merge join of two large and equally sized DataFrames. The job is failing with the following error: No space left on device. Which solution will resolve the error?",
+  "en_options": {
+   "A": "Use the AWS Glue Spark shuffle manager.",
+   "B": "Deploy are Amazon Elastic Block Store (Amazon EBS) volume for the job to use.",
+   "C": "Convert the sort-merge join in the job to be a broadcast join.",
+   "D": "Convert the DataFrames to DynamicFrames, and perform a DynamicFrame join in the job."
+  },
+  "zh_question": "一名資料工程師正在設定一個包含兩個大型且大小相等之資料框（DataFra me）排序合併聯結的AWSGlueApacheSpark提取、轉換與載入(ETL)工作。 工作失敗，出現以下錯誤：裝置空間不足。 哪種解決方案可以解決此錯誤？"
+ },
+ {
+  "number": 246,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company needs to implement a workflow to process transactions. Each transaction goes through multiple levels of validation. Each validation level depends on the preceding validation level. The workflow must either process or reject each transaction within 24-hours. The workflow must run for less than 24 hours total. Which solution will meet these requirements with the LEAST operational cost?",
+  "en_options": {
+   "A": "Create a standard workflow in AWS Step Functions. Implement a Wait for Callback pattern to wait for the validation steps to finish.",
+   "B": "Create an express workflow in AWS Step Functions. Implement a Wait for Callback pattern to wait for the validation steps to finish.",
+   "C": "Use AWS Lambda functions to implement the workflow. Use Amazon EventBridge to invoke the validation steps.",
+   "D": "Use Amazon Managed Workflows for Apache Airflow (Amazon MWAA) to implement the workflow."
+  },
+  "zh_question": "一家公司需要實作一個工作流程來處理交易。每筆交易需經過多層驗證，且每 個驗證層級皆依賴前一個驗證層級。 該工作流程必須在24小時內完成每筆交易的處理或拒絕，且整體執行時間須 少於24小時。 哪項解決方案能以最低的營運成本滿足這些需求？"
+ },
+ {
+  "number": 247,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer configures a large number of AWS Glue jobs that all start up around the same time. All the jobs run for less than 1 hour in the same subnet of the same VPC. All the AWS Glue jobs run on a G1.X worker type. Some of the jobs occasionally fail with the following error: \"The specified subnet does not have enough free addresses to satisfy the request\". What is the likely root cause of the error?",
+  "en_options": {
+   "A": "There are not enough IP addresses in the subnet.",
+   "B": "The G1.X worker type cannot access the subnet.",
+   "C": "AWS Glue does not have the correct IAM permissions to add additional IP addresses to the subnet.",
+   "D": "There are not enough IP addresses in the VPC."
+  },
+  "zh_question": "一名資料工程師設定大量AWSGlue工作，這些工作皆於相近時間啟動。所有 工作執行時間均少於1小時，且位於同一VPC的同一子網內。所有AWS Glue工作皆使用G1.X工作節點類型執行。 部分工作偶爾會失敗，並出現以下錯誤：「指定的子網沒有足夠的空閒位 址來滿足請求」。 此錯誤的可能根本原因為何？"
+ },
+ {
+  "number": 248,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company runs an Apache Spark application every night in an Amazon EMR cluster. The company uses Amazon EC2 instances to supply compute capacity for the EMR cluster. The company deployed the Spark application in cluster mode. An error occurs in the Spark application. A log for the error is stored in the application's Spark driver standard error logs. A data engineer needs to investigate the error. Where can the data engineer find this error log?",
+  "en_options": {
+   "A": "The engineer can connect to the web UI on the live cluster to see the YARN ResourceManager logs.",
+   "B": "The engineer can connect to the persistent application UI to see the first YARN container log in the Spark UI.",
+   "C": "The engineer can connect to the Amazon EMR console to see the Amazon EMR step logs that are archived in Amazon S3.",
+   "D": "The engineer can connect to the primary node of the cluster by using SSH to see the Spark history server logs."
+  },
+  "zh_question": "一家公司每晚在AmazonEMR叢集中執行ApacheSpark應用程式。該公司 使用AmazonEC2執行個體為EMR叢集提供運算容量。该公司已以叢集模式 部署該Spark應用程式。 Spark應用程式發生錯誤。該錯誤的日誌已儲存於應用程式的Spark驅動程 式標準錯誤日誌中。資料工程師需要調查此錯誤。 資料工程師可以在哪裡找到此錯誤日誌？"
+ },
+ {
+  "number": 249,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company processes 500 GB of audience and advertising data daily, storing CSV files in Amazon S3 with schemas registered in AWS Glue Data Catalog. They need to convert these files to Apache Parquet format and store them in an S3 bucket. The solution requires a long-running workflow with 15 GiB memory capacity to process the data concurrently, followed by a correlation process that begins only after the first two processes complete. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Use Amazon Managed Workflows for Apache Airflow (Amazon MWAA) to orchestrate the workflow by using AWS Glue. Configure AWS Glue to begin the third process after the first two processes have finished.",
+   "B": "Use Amazon EMR to run each process in the workflow. Create an Amazon Simple Queue Service (Amazon SQS) queue to handle messages that indicate the completion of the first two processes. Configure an AWS Lambda function to process the SQS queue by running the third process.",
+   "C": "Use AWS Glue workflows to run the first two processes in parallel. Ensure that the third process starts after the first two processes have finished.",
+   "D": "Use AWS Step Functions to orchestrate a workflow that uses multiple AWS Lambda functions. Ensure that the third process starts after the first two processes have finished."
+  },
+  "zh_question": "一家公司每天處理500GB的受眾與廣告數據，將CSV檔案儲存在AmazonS3 中，並在AWSGlueDataCatalog註冊其架構。他們需要將這些檔案轉換為 ApacheParquet格式，並儲存至S3儲存桶。 該解決方案需要一個長期執行的工作流程，具備15GiB的記憶體容量以並行處 理資料，隨後進行關聯處理程序，且此程序僅在前兩個程序完成後才會啟動。 哪項解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 250,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company uses an organization in AWS Organizations to manage multiple AWS accounts. The company uses an enhanced fanout data stream in Amazon Kinesis Data Streams to receive streaming data from multiple producers. The company runs the data stream in an account named Account A. The company wants to use an AWS Lambda function in an account named Account В to process the data from the data stream. The company creates a Lambda execution role in Account В that has permissions to access data from the data stream in Account A. What additional step must the company take to meet this requirement?",
+  "en_options": {
+   "A": "Create a service control policy (SCP) to grant the data stream read access to the cross- account Lambda execution role. Attach the SCP to Account A.",
+   "B": "Add a resource-based policy to the data stream to allow read access for the cross-account Lambda execution role.",
+   "C": "Create a service control policy (SCP) to grant the data stream read access to the cross- account Lambda execution role. Attach the SCP to Account B.",
+   "D": "Add a resource-based policy to the cross-account Lambda function to grant the data stream read access to the function."
+  },
+  "zh_question": "一家公司使用AWSOrganizations中的組織來管理多個AWS帳戶。該公司在 AmazonKinesisDataStreams中使用增強型扇出資料串流，以接收來自多個生 產者的串流資料。該資料串流在名為「帳戶A」的帳戶中執行。該公司希望在使用 名為「帳戶B」的帳戶中，透過AWSLambda函數處理來自該資料串流的資料。 該公司在「帳戶B」中建立了一個Lambda執行角色，並賦予其存取「帳戶A」 中資料串流資料的權限。 公司必須採取哪項額外步驟才能符合此要求？"
+ },
+ {
+  "number": 251,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company needs to use Amazon Athena to analyze data that is in an Amazon S3 bucket. A data engineer needs to configure AWS Glue table partitions for year, month, and day. The data engineer needs to create the partitions every day to adjust to schema changes in the data. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Use AWS Glue DataBrew to create the partitions for the AWS Glue table.",
+   "B": "Use an AWS Lambda function to create the partitions for the AWS Glue table.",
+   "C": "Set partition projection properties for the AWS Glue table.",
+   "D": "Configure an AWS Glue crawler to run on a set schedule."
+  },
+  "zh_question": "某公司需要使用AmazonAthena來分析位於AmazonS3儲存桶中的資料。資 料工程師需要設定AWSGlue資料表的年份、月份和日期分區。該工程師必須每 天建立這些分區，以因應資料結構描述的變更。 哪項解決方案能符合這些需求？"
+ },
+ {
+  "number": 252,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A hotel management company receives daily data files from each of its hotels. The company wants to upload its data to AWS. The company plans to use Amazon Athena to access the files. The company needs to protect the files from accidental deletion. The company will develop an application on its on- premises servers to automatically forward the files to a fully managed AWS ingestion service. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Use AWS DataSync to replicate data from the on-premises servers to Amazon Elastic File System (Amazon EFS). Configure automatic backups in AWS Backup.",
+   "B": "Use the Amazon Kinesis Agent on the on-premises servers to send data to Amazon Data Firehose. Store the data in an Amazon S3 bucket that has versioning enabled.",
+   "C": "Use AWS Glue jobs to ingest data from the on-premises servers into Amazon RDS. Enable automated backups for data protection.",
+   "D": "Use a self-managed Apache Kafka agent on the on-premises servers to stream data to Amazon Managed Streaming for Apache Kafka (Amazon MSK). Store the data in an Amazon S3 bucket with versioning enabled."
+  },
+  "zh_question": "一家飯店管理公司每天會從其旗下的每家飯店接收資料檔案。該公司希望將資料 上傳至AWS，並計畫使用AmazonAthena來存取這些檔案。公司需要保護這 些檔案以免被意外刪除。此外，公司將在內部部署的伺服器上開發應用程式，以 自動將檔案轉送至完全託管的AWS資料擷取服務。 哪種解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 253,
+  "answer": "BD",
+  "multi": true,
+  "en_question": "A company wants to use Apache Spark jobs that run on an Amazon EMR cluster to process streaming data. The Spark jobs will transform and store the data in an Amazon S3 bucket. The company will use Amazon Athena to perform analysis. The company needs to optimize the data format for analytical queries. Which solutions will meet these requirements with the SHORTEST query times? (Choose two.)",
+  "en_options": {
+   "A": "Use Avro format. Use AWS Glue Data Catalog to track schema changes.",
+   "B": "Use ORC format. Use AWS Glue Data Catalog to track schema changes.",
+   "C": "Use Apache Parquet format. Use an external Amazon DynamoDB table to track schema changes.",
+   "D": "Use Apache Parquet format. Use AWS Glue Data Catalog to track schema changes.",
+   "E": "Use ORC format. Store schema definitions in separate files in Amazon S3."
+  },
+  "zh_question": "一家公司希望使用在AmazonEMR叢集上執行的ApacheSpark工作來處理串 流資料。這些Spark工作將轉換並儲存資料至AmazonS3儲存貯體，而該公司 將使用AmazonAthena進行分析。 該公司需要最佳化資料格式以用於分析查詢。 哪些解決方案能以最短的查詢時間符合這些需求？（請選擇兩項。）"
+ },
+ {
+  "number": 254,
+  "answer": "B",
+  "multi": false,
+  "en_question": "A company adds new data to a large CSV file in an Amazon S3 bucket every day. The file contains company sales data from the previous 5 years. The file currently includes more than 5,000 rows. The CSV file structure is shown below with sample data: The company needs to use Amazon Athena to run queries on the CSV file to fetch data from a specific time period. Which solution will meet this requirement MOST cost-effectively?",
+  "en_options": {
+   "A": "Write an Apache Spark script to convert the CSV data to JSON format. Create an AWS Glue job to run the script every day. Catalog the JSON data in AWS Glue. Run the Athena queries on the JSON data.",
+   "B": "Use prefixes to partition the data in the S3 bucket. Use the SALE_DATE column to create a partition for each day. Catalog the data in AWS Glue and ensure that the partitions are added. Update the Athena queries to use the new partitions.",
+   "C": "Launch an Amazon EMR cluster. Specify AWS Glue Data Catalog as the default Apache Hive metastore. Use Presto in Trino to run queries on the data.",
+   "D": "Create an Amazon RDS database. Create a table named SALES that matches the schema of the CSV file. Create an index on the SALE_DATE column. Create an AWS Lambda function to load the CSV data into the RDS database. Use S3 Event Notifications to invoke the Lambda function."
+  },
+  "zh_question": "一家公司每天將新資料新增至AmazonS3儲存桶中的大型CSV檔案。該檔案包 含過去5年的公司銷售資料，目前已有超過5,000列。下方的CSV檔案結構顯 示了範例資料： 該公司需要使用AmazonAthena對該CSV檔案執行查詢，以擷取特定時間 區間的資料。 哪項解決方案能以最具成本效益的方式滿足此需求？"
+ },
+ {
+  "number": 255,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer must implement a data cataloging solution to track schema changes in an Amazon Redshift table. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Schedule an AWS Glue crawler to run every day on the table by using the Java Database Connectivity (JDBC) driver. Configure the crawler to update an AWS Glue Data Catalog.",
+   "B": "Use AWS DataSync to log the table metadata to an AWS Glue Data Catalog. Use an AWS Glue crawler to update the Data Catalog every day.",
+   "C": "Use the AWS Schema Conversion Tool (AWS SCT) to log the table metadata to an Apache Hive metastore. Use Amazon EventBridge Scheduler to update the metastore every day.",
+   "D": "Schedule an AWS Glue crawler to run every day on the table. Configure the crawler to update an Apache Hive metastore."
+  },
+  "zh_question": "資料工程師必須實作資料目錄解決方案，以追蹤AmazonRedshift資料表中 的結構描述變更。 哪項解決方案符合這些需求？"
+ },
+ {
+  "number": 256,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer is building a solution to detect sensitive information that is stored in a data lake across multiple Amazon S3 buckets. The solution must detect personally identifiable information (PII) that is in a proprietary data format. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Use the AWS Glue Detect PII transform with specific patterns.",
+   "B": "Use Amazon Made with managed data identifiers.",
+   "C": "Use an AWS Lambda function with custom regular expressions.",
+   "D": "Use Amazon Athena with a SQL query to match the custom formats."
+  },
+  "zh_question": "一位資料工程師正在建構解決方案，以偵測儲存在跨多個AmazonS3儲存桶 之資料湖中的敏感資訊。該解決方案必須能偵測位於專有資料格式中的個人識 別資訊(PII)。 哪種解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 257,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer is building a new data pipeline that stores metadata in an Amazon DynamoDB table. The data engineer must ensure that all items that are older than a specified age are removed from the DynamoDB table daily. Which solution will meet this requirement with the LEAST configuration effort?",
+  "en_options": {
+   "A": "Enable DynamoDB TTL on the DynamoDB table. Adjust the application source code to set the TTL attribute appropriately.",
+   "B": "Create an Amazon EventBridge rule that uses a daily cron expression to trigger an AWS Lambda function to delete items that are older than the specified age.",
+   "C": "Add a lifecycle configuration to the DynamoDB table that deletes items that are older than the specified age.",
+   "D": "Create a DynamoDB stream that has an AWS Lambda function that reacts to data modifications. Configure the Lambda function to delete items that are older than the specified age."
+  },
+  "zh_question": "資料工程師正在建置新的資料管線，將中繼資料儲存於AmazonDynamoDB資 料表中。該工程師必須確保每日從DynamoDB資料表中移除所有超過指定年限 的項目。 哪項解決方案能以最小的設定工作量符合此需求？"
+ },
+ {
+  "number": 258,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A ride-sharing company stores records for all rides in an Amazon DynamoDB table. The table includes the following columns and types of values: The table currently contains billions of items. The table is partitioned by RideID and uses TripStartTime as the sort key. The company wants to use the data to build a personal interface to give drivers the ability to view the rides that each driver has completed, based on RideStatus. The solution must access the necessary data without scanning the entire table. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Create a local secondary index (LSI) on DriverID.",
+   "B": "Create a global secondary index (GSI) that uses RiderID as the partition key and RideStatus as the sort key.",
+   "C": "Create a global secondary index (GSI) that uses DriverID as the partition key and RideStatus as the sort key.",
+   "D": "Create a filter expression that uses RiderID and RideStatus."
+  },
+  "zh_question": "一家共乘服務公司將所有行程記錄儲存在AmazonDynamoDB資料表中。該 資料表包含以下欄位與數值類型： 該表格目前包含數十億筆項目。表格以RideID作為分割鍵，並使用 TripStartTime作為排序鍵。公司希望利用這些資料建置一個個人化介面，讓司 機能夠根據RideStatus檢視每位司機已完成的行程。此解決方案必須能在不掃描 整個表格的情況下存取必要的資料。 哪項解決方案符合這些需求？"
+ },
+ {
+  "number": 259,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company stores information about its subscribers in an Amazon S3 bucket. The company runs an analysis every time a subscriber ends their subscription. The company uses AWS Lambda functions to respond to events from the S3 bucket by performing analyses. The Lambda functions clean data from the S3 bucket and initiate an AWS Glue workflow. The Lambda functions have 128 MB of memory and 512 MB of ephemeral storage. The Lambda functions have a timeout of 15 seconds. All three functions successfully finish running. However, CPU usage is often near 100%, which causes slow performance. The company wants to improve the performance of the functions and reduce the total runtime of the pipeline. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Increase the memory of the Lambda functions to 512 MB.",
+   "B": "Increase the number of retries by using the Maximum Retry Attempts setting.",
+   "C": "Configure the Lambda functions to run in the company's VPC.",
+   "D": "Increase the timeout value for the Lambda functions from 15 seconds to 30 seconds."
+  },
+  "zh_question": "一家公司將其訂閱者的資訊儲存在AmazonS3儲存貯體中。每當有訂閱者結束 訂閱時，該公司便會執行分析作業。該公司使用AWSLambda腳本來回應來自 S3儲存貯體的事件，並執行相關分析。 Lambda函數會清理S3儲存貯桶中的資料，並啟動AWSGlue工作流程。這 些Lambda函數擁有128MB的記憶體和512MB的暫存儲存空間，超時設定 為15秒。 所有三個函數均成功執行完畢。然而，CPU使用率經常接近100%，導致效能緩 慢。該公司希望提升函數效能並縮短管道的總執行時間。 哪項解決方案符合這些需求？"
+ },
+ {
+  "number": 260,
+  "answer": "D",
+  "multi": false,
+  "en_question": "A company uses a data stream in Amazon Kinesis Data Streams to collect transactional data from multiple sources. The company uses an AWS Glue extract, transform, and load (ETL) pipeline to look for outliers in the data from the stream. When the workflow detects an outlier, it sends a notification to an Amazon Simple Notification Service (Amazon SNS) topic. The SNS topic initiates a second workflow to retrieve logs for the outliers and stores the logs in an Amazon S3 bucket. The company experiences delays in the notifications to the SNS topic during periods when the data stream is processing a high volume of data. When the company examines Amazon CloudWatch logs, the company notices a high value for the glue.driver.BlockManager.disk.diskSpaceUsed_MB metric when the traffic is high. The company must resolve this issue. Which solution will meet this requirement with the LEAST operational effort?",
+  "en_options": {
+   "A": "Increase the number of data processing units (DPUs) in AWS Glue ETL jobs.",
+   "B": "Use Amazon EMR to manage the ETL pipeline instead of AWS Glue.",
+   "C": "Use AWS Step Functions to orchestrate a parallel workflow state.",
+   "D": "Enable auto scaling for the AWS Glue ETL jobs."
+  },
+  "zh_question": "某公司使用AmazonKinesisDataStreams中的資料串流，從多個來源收集交 易資料。該公司使用AWSGlue提取、轉換和載入(ETL)管線，以偵測來自該串 流的資料中的異常值。當工作流程偵測到異常值時，它會將通知傳送至 AmazonSimpleNotificationService(AmazonSNS)主題。該SNS主題會啟 動第二個工作流程，以檢索異常值的日誌，並將這些日誌儲存在AmazonS3儲 存貯桶中。 該公司在資料串流處理大量資料期間，經歷了通知发送至SNS主題的延遲。當公 司檢查AmazonCloudWatch日誌時，發現流量高時， glue.driver.BlockManager.disk.diskSpaceUsed_MB指標的值很高。公司必 須解決此問題。 哪種解決方案能以最少的工作量滿足此需求？"
+ },
+ {
+  "number": 261,
+  "answer": "BE",
+  "multi": true,
+  "en_question": "A company has a data processing pipeline that runs multiple SQL queries in sequence against an Amazon Redshift cluster. The company merges with a second company. The original company modifies a query that aggregates sales revenue data to join sales tables from both companies. The sales table for the first company is named Table S1. The sales table for the second company is named Table S2. Table S1 contains 10 billion records. Table S2 contains 900 million records. The query becomes slow after the modification. A data engineer must improve the query performance. Which solutions will meet these requirements? (Choose two.)",
+  "en_options": {
+   "A": "Use the KEY distribution style for both sales tables. Select a low cardinality column to use for the join.",
+   "B": "Use the KEY distribution style for both sales tables. Select a high cardinality column to use for the join.",
+   "C": "Use the EVEN distribution style for Table S1. Use the ALL distribution style for Table S2.",
+   "D": "Use the Amazon Redshift query optimizer to review and select optimizations to implement.",
+   "E": "Use Amazon Redshift Advisor to review and select optimizations to implement."
+  },
+  "zh_question": "某公司擁有一個資料處理管線，會依序對AmazonRedshift叢集執行多個 SQL查詢。該公司與另一家公司合併後，原公司修改了一個彙總銷售營收資料的 查詢，以聯結兩家公司的銷售資料表。第一家公司的銷售資料表名為TableS1， 第二家公司的銷售資料表名為TableS2。TableS1包含100億筆記錄，Table S2包含9億筆記錄。 修改後查詢變慢。資料工程師必須提升查詢效能。 哪些解決方案符合這些需求？（請選擇兩項。）"
+ },
+ {
+  "number": 262,
+  "answer": "BD",
+  "multi": true,
+  "en_question": "A gaming company uses AWS Glue to perform read and write operations on Apache Iceberg tables for real-time streaming data. The data in the Iceberg tables is in Apache Parquet format. The company is experiencing slow query performance. Which solutions will improve query performance? (Choose two.)",
+  "en_options": {
+   "A": "Use AWS Glue Data Catalog to generate column-level statistics for the Iceberg tables on a schedule.",
+   "B": "Use AWS Glue Data Catalog to automatically compact the Iceberg tables.",
+   "C": "Use AWS Glue Data Catalog to automatically optimize indexes for the Iceberg tables.",
+   "D": "Use AWS Glue Data Catalog to enable copy-on-write for the Iceberg tables.",
+   "E": "Use AWS Glue Data Catalog to generate views for the Iceberg tables."
+  },
+  "zh_question": "一家遊戲公司使用AWSGlue對ApacheIceberg表格執行讀取和寫入作業， 以處理即時串流資料。Iceberg表格中的資料採用ApacheParquet格式。該 公司正面臨查詢效能緩慢的問題。 哪些解決方案可以改善查詢效能？（請選擇兩項。）"
+ },
+ {
+  "number": 263,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A data engineer at a company is optimizing extract, transform, and load (ETL) workflows. The current architecture uses Amazon EMR and Apache Spark for large-scale transformations and AWS Glue for other ETL tasks. The workflows load processed data into an Amazon S3 based data lake. The company wants to move to a fully managed serverless solution that can orchestrate multiple ETL jobs and automate execution. The new solution must continue to use Spark to process data. The company needs to orchestrate and automate the ETL workflows with minimal manual intervention. Which solution will meet these requirements?",
+  "en_options": {
+   "A": "Migrate all ETL jobs to AWS Glue. Use AWS Glue workflows to orchestrate the pipeline.",
+   "B": "Configure AWS Step Functions and Amazon EventBridge to orchestrate and invoke ETL workflows in AWS Glue and Amazon EMR.",
+   "C": "Configure AWS Lambda functions to process Amazon S3 event notifications for data transformation tasks when new data is uploaded.",
+   "D": "Use Amazon Managed Workflows for Apache Airflow automatic scheduling to orchestrate the Spark-based ETL jobs."
+  },
+  "zh_question": "某公司的資料工程師正在最佳化提取、轉換與載入(ETL)工作流程。目前的架 構使用AmazonEMR和ApacheSpark進行大規模轉換，並使用AWS Glue執行其他ETL任務。這些工作流程將處理後的資料載入基於Amazon S3的資料湖中。 該公司希望遷移至完全託管的無伺服器解決方案，以協調多個ETL作業並自動 化執行。新解決方案必須繼續使用Spark來處理資料。該公司需要以最少的人 工干預來協調和自動化ETL工作流程。 哪種解決方案能符合這些需求？"
+ },
+ {
+  "number": 264,
+  "answer": "A",
+  "multi": false,
+  "en_question": "A company that operates globally must follow regulations that require data from an AWS Region to be accessible only within that Region. A data engineer is creating a data pipeline that will create resources in the Region where the data engineer works. The data pipeline should have access to data only from the Region where the data engineer works. The pipeline uses Active Directory as an identity and authentication system. The pipeline uses a custom identity broker application to verify that employees are signed in to Active Directory and to obtain temporary credentials by using the AssumeRole API operation. Which solution will meet the locality requirements with the LEAST administrative effort?",
+  "en_options": {
+   "A": "Create an IAM role that has permissions to create resources. Create a policy for each Region that ensures users can create resources only in that Region. Pass the policy as the session policy when employees obtain the temporary credentials.",
+   "B": "Create an IAM role for data engineers in each Region separately. Instruct each data engineer to obtain temporary credentials by assuming the appropriate Region specific IAM role.",
+   "C": "Create an IAM group for each Region. Include the required IAM policies for each IAM group. Add users to each IAM group so that when users log in by obtaining the temporary credentials, the users will receive the appropriate access based on the IAM group.",
+   "D": "Create individual IAM policies that allow users to create resources in a specific Region. Assign the policies to each data engineer. Allow users to assume the individually assigned role when the users log in to AWS."
+  },
+  "zh_question": "一家在全球營運的公司必須遵循相關法規，要求來自特定AWS區域的資料僅 能在該區域內存取。 一名資料工程師正在建立一個資料管線，該管線將在資料工程師所在的區域中建 立資源。此資料管線應僅能存取資料工程師所在區域的資料。該管線使用 ActiveDirectory作為身分識別與驗證系統。此管線使用自訂的身分識別代理應 用程式，以驗證員工已登入ActiveDirectory，並透過呼叫AssumeRoleAPI作 業來取得臨時憑證。 哪種解決方案能以最小的管理努力滿足地域性要求？"
+ },
+ {
+  "number": 265,
+  "answer": "D",
+  "multi": false,
+  "en_question": "A company needs a solution to automatically ingest data from an Amazon S3 bucket to an Amazon Redshift table every day. The company must obfuscate sensitive data in Amazon Redshift. Users must not be able to view the sensitive data as plaintext. Which solution will meet these requirements with the LEAST operational overhead?",
+  "en_options": {
+   "A": "Enable Amazon Macie for the company's AWS account. Configure a sensitive data discovery job for the S3 bucket. Configure an AWS Glue job to load the data into Amazon Redshift.",
+   "B": "Enable Amazon Macie for the company's AWS account. Configure an AWS Glue job to flag and obfuscate data columns based on the Macie analysis. Load the data into Amazon Redshift.",
+   "C": "Configure an AWS Glue job to read the data from the S3 bucket, detect and obfuscate sensitive data, and load the data into Amazon Redshift.",
+   "D": "Configure an AWS Glue job to load the data into Amazon Redshift. Use Amazon Redshift to detect the sensitive data, create masking policies, and apply dynamic masking."
+  },
+  "zh_question": "某公司需要一種解決方案，能夠每天自動將資料從AmazonS3儲存桶匯入至 AmazonRedshift資料表。該公司必須在AmazonRedshift中對敏感資料進行 混淆處理，確保使用者無法以純文字形式檢視這些敏感資料。 哪項解決方案能以最低的營運負擔滿足這些需求？"
+ },
+ {
+  "number": 266,
+  "answer": "C",
+  "multi": false,
+  "en_question": "A company needs to aggregate and filter a large amount of streaming data in real-time with low latency. The company needs to store the data in Amazon S3 for analysis. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "en_options": {
+   "A": "Use Amazon Kinesis Data Streams with provisioned capacity and AWS Lambda functions to perform custom transformations and to integrate with Amazon S3.",
+   "B": "Use Amazon Data Firehose with built-in data transformations. Deliver the data directly to Amazon S3.",
+   "C": "Use Amazon Kinesis Data Streams and Amazon Managed Service for Apache Flink to perform complex processing and to integrate with Amazon S3.",
+   "D": "Use Amazon Data Firehose and AWS Lambda functions to perform custom transformations and to deliver the data to Amazon S3."
+  },
+  "zh_question": "一家公司需要以低延遲即時彙總並過濾大量串流資料。該公司需要將資料儲存於 AmazonS3以供分析。 哪種解決方案能以最符合營運效率的方式滿足這些需求？"
+ }
+]
