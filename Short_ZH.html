@@ -53,8 +53,9 @@ body.num .ch{display:none}
 </style></head><body>
 <header><b>DEA-C01 精簡 342 題</b>
 <select id="ord"><option value="topic">依主題</option><option value="num">依題號</option></select>
+<select id="st"><option value="all">全部狀態</option><option value="todo">未作答</option><option value="done">已作答</option></select>
 <select id="flt"><option value="all">全部</option><optgroup label="主題"><option value="c1">1. S3 儲存・生命週期・資料湖表格</option><option value="c2">2. 資料匯入：DMS・DataSync・AppFlow</option><option value="c3">3. 串流：Kinesis・Firehose・MSK・Flink</option><option value="c4">4. Catalog・Crawler・分區登記</option><option value="c5">5. Glue ETL・DataBrew・資料品質</option><option value="c6">6. EMR・Spark 效能</option><option value="c7">7. 編排：Step Functions・MWAA・Lambda</option><option value="c8">8. Athena 與查詢最佳化</option><option value="c9">9. Redshift</option><option value="c10">10. DynamoDB・RDS・圖形資料庫</option><option value="c11">11. QuickSight・OpenSearch・AI</option><option value="c12">12. 治理・IAM・加密・PII</option><option value="c13">13. 網路：VPC・端點・私有連線</option><option value="c14">14. 監控・日誌・稽核</option></optgroup>
-<optgroup label="篩選"><option value="todo">只看未作答</option><option value="wrong">只看錯題</option>
+<optgroup label="篩選"><option value="wrong">只看錯題</option>
 <option value="star">只看星號</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號"><option value="1-50">Q1–50</option><option value="51-100">Q51–100</option><option value="101-150">Q101–150</option><option value="151-200">Q151–200</option><option value="201-250">Q201–250</option><option value="251-300">Q251–300</option><option value="301-342">Q301–342</option></optgroup></select>
 <button id="go">接續</button><button id="wk">弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
@@ -100,9 +101,9 @@ function layout(){
   if(num){[...cards].sort((a,b)=>key(a)-key(b)).forEach(c=>main.appendChild(c))}
   else heads.forEach(h=>{main.appendChild(h);cards.filter(c=>c.dataset.c===h.dataset.c).sort((a,b)=>key(a)-key(b)).forEach(c=>main.appendChild(c))})}
 function apply(){
-  const v=$('flt').value;localStorage.setItem(LS+'flt',v);
-  cards.forEach(c=>{const n=c.dataset.n;let s=true;
-    if(v==='wrong')s=res[n]===0;else if(v==='todo')s=!(n in res);else if(v==='star')s=star.has(n);
+  const v=$('flt').value,st=$('st').value;localStorage.setItem(LS+'flt',v);localStorage.setItem(LS+'st',st);
+  cards.forEach(c=>{const n=c.dataset.n;let s=st==='all'||(st==='done')===(n in res);
+    if(!s);else if(v==='wrong')s=res[n]===0;else if(v==='star')s=star.has(n);
     else if(v==='multi')s=c.dataset.a.length>1;else if(v==='dis')s=!!c.dataset.d;
     else if(v[0]==='c')s=c.dataset.c===v.slice(1);
     else if(v.includes('-')){const[a,b]=v.split('-').map(Number);s=+n>=a&&+n<=b}
@@ -118,13 +119,15 @@ cards.forEach(c=>{
 });
 $('show').onclick=e=>{document.body.classList.toggle('show');e.target.classList.toggle('on')};
 $('reset').onclick=()=>cards.forEach(c=>{c.classList.remove('done');c.querySelectorAll('.pick').forEach(p=>p.classList.remove('pick'))});
-$('flt').onchange=apply;
+$('flt').onchange=apply;$('st').onchange=apply;
 $('ord').onchange=()=>{localStorage.setItem(LS+'ord',$('ord').value);rnd=false;layout();scrollTo(0,0)};
 $('go').onclick=resume;
 $('shuf').onclick=()=>{rnd=true;cards.forEach(c=>c.dataset.r=Math.random());layout();scrollTo(0,0)};
 $('wk').onclick=e=>{$('weak').classList.toggle('on');e.target.classList.toggle('on')};
-const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt');
+let so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),ss=localStorage.getItem(LS+'st');
+if(sf==='todo'){sf='all';ss='todo'}
 if(so)$('ord').value=so;
+if(ss)$('st').value=ss;
 if(sf&&[...$('flt').options].some(o=>o.value===sf))$('flt').value=sf;
 layout();weak();apply();cards.forEach(mark);
 if(last)resume();

@@ -228,9 +228,9 @@ function layout(){
   if(num){[...cards].sort((a,b)=>key(a)-key(b)).forEach(c=>main.appendChild(c))}
   else heads.forEach(h=>{main.appendChild(h);cards.filter(c=>c.dataset.c===h.dataset.c).sort((a,b)=>key(a)-key(b)).forEach(c=>main.appendChild(c))})}
 function apply(){
-  const v=$('flt').value;localStorage.setItem(LS+'flt',v);
-  cards.forEach(c=>{const n=c.dataset.n;let s=true;
-    if(v==='wrong')s=res[n]===0;else if(v==='todo')s=!(n in res);else if(v==='star')s=star.has(n);
+  const v=$('flt').value,st=$('st').value;localStorage.setItem(LS+'flt',v);localStorage.setItem(LS+'st',st);
+  cards.forEach(c=>{const n=c.dataset.n;let s=st==='all'||(st==='done')===(n in res);
+    if(!s);else if(v==='wrong')s=res[n]===0;else if(v==='star')s=star.has(n);
     else if(v==='multi')s=c.dataset.a.length>1;else if(v==='dis')s=!!c.dataset.d;
     else if(v[0]==='c')s=c.dataset.c===v.slice(1);
     else if(v.includes('-')){const[a,b]=v.split('-').map(Number);s=+n>=a&&+n<=b}
@@ -246,13 +246,15 @@ cards.forEach(c=>{
 });
 $('show').onclick=e=>{document.body.classList.toggle('show');e.target.classList.toggle('on')};
 $('reset').onclick=()=>cards.forEach(c=>{c.classList.remove('done');c.querySelectorAll('.pick').forEach(p=>p.classList.remove('pick'))});
-$('flt').onchange=apply;
+$('flt').onchange=apply;$('st').onchange=apply;
 $('ord').onchange=()=>{localStorage.setItem(LS+'ord',$('ord').value);rnd=false;layout();scrollTo(0,0)};
 $('go').onclick=resume;
 $('shuf').onclick=()=>{rnd=true;cards.forEach(c=>c.dataset.r=Math.random());layout();scrollTo(0,0)};
 $('wk').onclick=e=>{$('weak').classList.toggle('on');e.target.classList.toggle('on')};
-const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt');
+let so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),ss=localStorage.getItem(LS+'st');
+if(sf==='todo'){sf='all';ss='todo'}
 if(so)$('ord').value=so;
+if(ss)$('st').value=ss;
 if(sf&&[...$('flt').options].some(o=>o.value===sf))$('flt').value=sf;
 layout();weak();apply();cards.forEach(mark);
 if(last)resume();
@@ -309,8 +311,9 @@ def render(data, meta):
 <title>DEA-C01 中文精簡版</title><style>{CSS}</style></head><body>
 <header><b>DEA-C01 精簡 342 題</b>
 <select id="ord"><option value="topic">依主題</option><option value="num">依題號</option></select>
+<select id="st"><option value="all">全部狀態</option><option value="todo">未作答</option><option value="done">已作答</option></select>
 <select id="flt"><option value="all">全部</option><optgroup label="主題">{ch_opts}</optgroup>
-<optgroup label="篩選"><option value="todo">只看未作答</option><option value="wrong">只看錯題</option>
+<optgroup label="篩選"><option value="wrong">只看錯題</option>
 <option value="star">只看星號</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號">{ranges}</optgroup></select>
 <button id="go">接續</button><button id="wk">弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
