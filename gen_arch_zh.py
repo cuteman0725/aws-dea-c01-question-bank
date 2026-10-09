@@ -306,6 +306,7 @@ function applyFlt(v,keep){
   localStorage.setItem(LS+'flt',v);$('flt').value=v;
   if(v==='all')set=Q.map(q=>q.n);
   else if(v==='dis')set=Q.filter(q=>q.d).map(q=>q.n);
+  else if(v==='wrong'){let r={};try{r=JSON.parse(localStorage.getItem('dea_short_zh_res')||'{}')}catch(e){}set=Q.filter(q=>r[q.n]===0).map(q=>q.n)}
   else if(v[0]==='c'){const c=v.slice(1);set=Q.filter(q=>q.s.split('.')[0]===c).sort((a,b)=>a.o-b.o).map(q=>q.n)}
   else{const id=v.slice(2);set=Q.filter(q=>q.p.includes(id)||q.x.includes(id)).map(q=>q.n)}
   const inSet=new Set(set);
@@ -406,7 +407,7 @@ def render(answers, items, meta):
 <div id="layout"><div id="stage"><div id="map">{svg_markup()}</div>
 <div id="zoom"><button id="zin" aria-label="放大">＋</button><button id="zout" aria-label="縮小">－</button><button id="zfit">全圖</button></div>
 <div id="bar"><button id="prev" aria-label="上一題">◀</button>
-<select id="flt"><option value="all">全部題目</option><option value="dis">只看爭議題</option>
+<select id="flt"><option value="all">全部題目</option><option value="wrong">只看練習版錯題</option><option value="dis">只看爭議題</option>
 <optgroup label="主題">{ch_opts}</optgroup><optgroup label="服務">{nd_opts}</optgroup></select>
 <span id="pos"></span><button id="next" aria-label="下一題">▶</button></div><div id="chips"></div></div>
 <div id="side"><article id="info"></article></div></div>

@@ -179,6 +179,10 @@ body.num .ch{display:none}
 #weak b{display:block;height:6px;border-radius:3px;background:var(--ng)}
 #weak b.g{background:var(--ok)}
 #weak b.y{background:var(--acc)}
+#weak .wl{padding:4px 2px 8px;line-height:2}
+#weak .wl a{display:inline-block;min-width:36px;margin:0 2px;padding:0 5px;line-height:1.7;border:1px solid var(--ng);border-radius:6px;color:var(--ng);text-align:center;text-decoration:none}
+#weak .wl a.all{border-color:var(--acc);color:var(--fg);background:var(--acc)}
+#weak .wl button{font-size:13px;padding:2px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
 .c.a1{border-left:4px solid var(--ok)}
 .c.a0{border-left:4px solid var(--ng)}
 .c.last{outline:2px solid var(--acc)}
@@ -212,10 +216,16 @@ function weak(){
     d=cs.filter(x=>x.dataset.n in res).length,ok=cs.filter(x=>res[x.dataset.n]===1).length;
     return {c,name:h.dataset.name,t:cs.length,d,p:d?ok/d:-1}});
   rows.sort((a,b)=>(a.p<0)-(b.p<0)||a.p-b.p);
-  $('weak').innerHTML='<div style="cursor:default"><span>弱→強（點選只看該章）</span><i>作答</i><i>答對</i><u></u></div>'+
+  // 錯題題號：點題號開速讀版的那一題，或一次在速讀版只看這些錯題
+  const wrong=Object.keys(res).filter(n=>res[n]===0).map(Number).sort((a,b)=>a-b);
+  const wl=wrong.length?`<strong>錯題 ${wrong.length} 題</strong> <button id="cpw">複製題號</button> <a class="all" href="Answer_ZH.html?q=${wrong.join(',')}">速讀版只看這些錯題 →</a><br>`+
+    wrong.map(n=>`<a href="Answer_ZH.html#q${n}">${n}</a>`).join(''):'<strong>目前沒有錯題</strong>';
+  $('weak').innerHTML=`<section class="wl">${wl}</section>`+'<div style="cursor:default"><span>弱→強（點選只看該章）</span><i>作答</i><i>答對</i><u></u></div>'+
     rows.map(r=>`<div data-c="${r.c}"><span>${r.c}. ${r.name}</span><i>${r.d}/${r.t}</i><i>${r.p<0?'—':Math.round(r.p*100)+'%'}</i>`+
     `<u><b class="${r.p>=.8?'g':r.p>=.6?'y':''}" style="width:${r.p<0?0:Math.max(4,r.p*40)}px"></b></u></div>`).join('');
-  $('weak').querySelectorAll('div[data-c]').forEach(e=>e.onclick=()=>{$('flt').value='c'+e.dataset.c;apply();$('wk').click()})}
+  $('weak').querySelectorAll('div[data-c]').forEach(e=>e.onclick=()=>{$('flt').value='c'+e.dataset.c;apply();$('wk').click()});
+  const cp=$('cpw');if(cp)cp.onclick=()=>{const t=wrong.join(', ');
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>cp.textContent='已複製',()=>prompt('複製錯題題號',t))}}
 function judge(c){
   const need=c.dataset.a.length,picks=[...c.querySelectorAll('.o.pick')];
   if(picks.length<need)return;
@@ -316,7 +326,7 @@ def render(data, meta):
 <optgroup label="篩選"><option value="wrong">只看錯題</option>
 <option value="star">只看星號</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號">{ranges}</optgroup></select>
-<button id="go">接續</button><button id="wk">弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
+<button id="go">接續</button><button id="wk">錯題・弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
 <div id="stat"></div><div id="weak"></div></header>
 <main>{heads}{''.join(cards)}</main><script>{JS}</script></body></html>"""
 

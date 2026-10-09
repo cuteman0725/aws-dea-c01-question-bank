@@ -152,6 +152,7 @@ main{padding:6px 4px}
 .f.w i{line-height:1.2;padding-left:14px}
 .f.w i::before{content:"↓"}}
 .n{margin-top:6px;font-size:13px;color:var(--sub)}
+.c.hit{outline:3px solid var(--acc)}
 .ch{font-size:15px;margin:14px 2px 8px;padding:6px 8px;border-left:4px solid var(--acc);background:var(--card);border-radius:4px}
 .ch small{color:var(--sub);font-weight:400;margin-left:6px}
 body.num .ch{display:none}
@@ -161,6 +162,12 @@ JS = """
 const LS='dea_answer_zh_',$=id=>document.getElementById(id);
 history.scrollRestoration='manual';
 const main=document.querySelector('main'),cards=[...document.querySelectorAll('.c')],heads=[...document.querySelectorAll('.ch')],hdr=document.querySelector('header');
+// 練習版（Short_ZH）的錯題：同一個網站共用 localStorage
+function wrongSet(){try{const r=JSON.parse(localStorage.getItem('dea_short_zh_res')||'{}');return new Set(Object.keys(r).filter(n=>r[n]===0))}catch(e){return new Set()}}
+const WR=wrongSet(),qp=new URLSearchParams(location.search).get('q');
+const LIST=qp?new Set(qp.split(',').map(x=>x.trim()).filter(x=>/^\d+$/.test(x))):null;
+$('flt').querySelector('option[value="wrong"]').textContent=`只看練習版錯題（${WR.size}）`;
+if(LIST)$('flt').querySelector('optgroup[label="篩選"]').prepend(new Option(`連結指定的 ${LIST.size} 題`,'list'));
 function layout(){
   const num=$('ord').value==='num';document.body.classList.toggle('num',num);
   if(num)[...cards].sort((a,b)=>a.dataset.n-b.dataset.n).forEach(c=>main.appendChild(c));
@@ -169,6 +176,7 @@ function apply(){
   const v=$('flt').value,k=$('kw').value.trim().toLowerCase();
   cards.forEach(c=>{const n=c.dataset.n;let s=true;
     if(v==='multi')s=c.dataset.a.length>1;else if(v==='dis')s=!!c.dataset.d;
+    else if(v==='wrong')s=WR.has(n);else if(v==='list')s=LIST.has(n);
     else if(v[0]==='c')s=c.dataset.c===v.slice(1);
     else if(v.includes('-')){const[a,b]=v.split('-').map(Number);s=+n>=a&&+n<=b}
     if(s&&k)s=('q'+n+' '+c.textContent).toLowerCase().includes(k);
@@ -184,8 +192,14 @@ $('kw').oninput=()=>{apply();scrollTo(0,0)};
 const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),at=localStorage.getItem(LS+'at');
 if(so)$('ord').value=so;
 if(sf&&[...$('flt').options].some(o=>o.value===sf))$('flt').value=sf;
+if(LIST)$('flt').value='list';
+// #q17：從練習版點題號過來，直接捲到那一題
+function hashGo(){const m=location.hash.match(/^#q(\d+)$/),c=m&&cards.find(x=>x.dataset.n===m[1]);if(!c)return false;
+  if(c.style.display==='none'){$('kw').value='';$('flt').value='all';apply()}
+  cards.forEach(x=>x.classList.toggle('hit',x===c));go(c);return true}
+addEventListener('hashchange',hashGo);
 layout();apply();
-const c0=cards.find(c=>c.dataset.n===at&&c.style.display!=='none');if(c0)go(c0);
+if(!hashGo()&&!LIST){const c0=cards.find(c=>c.dataset.n===at&&c.style.display!=='none');if(c0)go(c0)}
 """
 
 
@@ -248,7 +262,7 @@ def render(data, meta):
 <header><b>DEA-C01 答案速讀 <span id="cnt">342</span> 題</b><a href="Short_ZH.html">作答練習版 →</a>
 <div style="width:100%;display:flex;gap:6px"><select id="ord"><option value="topic">依主題</option><option value="num">依題號</option></select>
 <select id="flt"><option value="all">全部</option><optgroup label="主題">{ch_opts}</optgroup>
-<optgroup label="篩選"><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
+<optgroup label="篩選"><option value="wrong">只看練習版錯題</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號">{ranges}</optgroup></select>
 <input id="kw" type="search" placeholder="搜尋"></div></header>
 <main>{heads}{''.join(cards)}</main><script>{JS}</script></body></html>"""
