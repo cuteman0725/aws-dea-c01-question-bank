@@ -35,6 +35,16 @@
 | `gen_html_v4.md` | HTML 產生腳本的 Mermaid 圖表 |
 | `README.md` | 本說明文件 |
 
+## 線上網址（GitHub Pages）
+
+推到 `main` 後約 1 分鐘自動更新，手機、平板、電腦都能直接開：
+
+| 版本 | 網址 |
+|------|------|
+| 完整版總覽（中英對照） | https://cuteman0725.github.io/aws-dea-c01-question-bank/ |
+| 中文精簡版（作答練習） | https://cuteman0725.github.io/aws-dea-c01-question-bank/Short_ZH.html |
+| 答案速讀版（只看正確答案） | https://cuteman0725.github.io/aws-dea-c01-question-bank/Answer_ZH.html |
+
 ## 使用方式
 
 ### 本機瀏覽
