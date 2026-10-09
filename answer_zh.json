@@ -1,0 +1,5485 @@
+[
+ {
+  "number": 1,
+  "q": "Glue job 讀 S3 時出現 S3 VPC 閘道端點錯誤，Glue 連線與 IAM 角色已設好，如何修正？",
+  "answer": "D",
+  "answer_text": {
+   "D": "確認 VPC 路由表含 S3 閘道端點路由"
+  },
+  "section": "13.1",
+  "why": "錯誤指向 S3 閘道端點，而閘道端點是靠 VPC route table 生效：Glue 所在 subnet 的路由表要有指向 S3 prefix list 的路由才連得到。SG、bucket policy、FQDN 都不是這個錯誤的原因。",
+  "flow": [
+   "Glue job（VPC subnet）",
+   "*路由表：S3 prefix list",
+   "S3 gateway endpoint",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 2,
+  "q": "S3 客戶資料中心，分析師只能存取同國家客戶的資料，最少營運工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "S3 註冊 Lake Formation+列級安全"
+  },
+  "section": "12.1",
+  "why": "要依分析師所在國家限制可見的客戶列。S3 註冊到 Lake Formation 後，用 row-level security 依 country 過濾，集中管理最省事；拆表、搬 Region、每國建 Redshift view 都要額外維護。",
+  "flow": [
+   "S3 customer data hub",
+   "Lake Formation 註冊位置",
+   "*row filter：country",
+   "同國分析師查詢"
+  ]
+ },
+ {
+  "number": 3,
+  "q": "推薦系統要整合第三方資料集，希望最少工作量與時間，最低營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "API 從 AWS Data Exchange 取資料"
+  },
+  "section": "2.4",
+  "why": "要用最少時間與工作量取得第三方資料集。AWS Data Exchange 就是第三方資料集的訂閱市集，訂閱後用 API 整合進現有分析平台；DataSync 是搬自家資料，CodeCommit、ECR 不是資料集來源。",
+  "flow": [
+   "*AWS Data Exchange",
+   "訂閱第三方 dataset",
+   "API 存取",
+   "既有分析平台"
+  ]
+ },
+ {
+  "number": 4,
+  "q": "建 data mesh，需集中治理、資料分析與存取控制，已用 Glue 做目錄與 ETL，選哪兩項？（選2）",
+  "answer": "BE",
+  "answer_text": {
+   "B": "S3 存資料，Athena 分析",
+   "E": "Lake Formation 做集中治理與權限"
+  },
+  "section": "12.2",
+  "why": "Data mesh 要共享儲存、分析與集中治理：S3 當共用 data lake，Athena 用 serverless SQL 直接查（B）；Lake Formation 搭配 Glue Catalog 做集中治理與細粒度權限（E）。",
+  "flow": [
+   "S3 data lake",
+   "Glue Data Catalog",
+   "*Lake Formation 治理/權限",
+   "Athena 分析"
+  ]
+ },
+ {
+  "number": 5,
+  "q": "多個 Lambda 共用自訂 Python 腳本，改腳本就要逐一更新函式，如何減少手動？",
+  "answer": "B",
+  "answer_text": {
+   "B": "腳本打包成 Lambda layer 掛到各函式"
+  },
+  "section": "7.7",
+  "why": "共用腳本一改就要逐一更新每支 Lambda。打包成 Lambda layer 讓各函式引用，之後只要發布新 layer 版本即可集中更新；S3 指標、環境變數或 alias 都不是共用程式碼的機制。",
+  "flow": [
+   "共用 Python 腳本",
+   "*Lambda layer（新版本）",
+   "掛到各 Lambda 函式"
+  ]
+ },
+ {
+  "number": 6,
+  "q": "Glue ETL 管線需爬取 SQL Server 表、ETL 到 S3 並編排管線，最具成本效益？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue workflows"
+  },
+  "section": "7.1",
+  "why": "整條 pipeline 都在 Glue 內：crawler 爬 SQL Server、Glue job 做 ETL 寫到 S3。Glue workflows 用 trigger 串起 crawler 與 job，不必另養編排服務，比 Step Functions 或 MWAA 省錢。",
+  "flow": [
+   "*Glue workflows",
+   "Glue crawler（SQL Server）",
+   "Glue ETL job",
+   "S3 output"
+  ]
+ },
+ {
+  "number": 7,
+  "q": "Web 交易 App 要直接對 Redshift 財務資料即時查詢，最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "使用 Redshift Data API"
+  },
+  "section": "9.1",
+  "why": "要在 Web 交易 App 內直接對 Redshift 下 SQL 且維運最低。Redshift Data API 走 HTTPS 呼叫，不必管理 JDBC driver 或 WebSocket 長連線；S3 Select 查的是 S3，不是 Redshift。",
+  "flow": [
+   "Web 交易 App",
+   "*Redshift Data API（HTTPS）",
+   "Redshift SQL",
+   "查詢結果"
+  ]
+ },
+ {
+  "number": 8,
+  "q": "同一帳號內多種 Athena 用途，需依使用者/團隊/App 隔離查詢與查詢歷史的權限？",
+  "answer": "B",
+  "answer_text": {
+   "B": "每用途一個 workgroup+標籤 IAM"
+  },
+  "section": "8.5",
+  "why": "要在同帳號內隔離各用途的查詢與查詢歷史。Athena workgroup 本身就隔離查詢設定與 history，每個 use case 建一個，再用 tag-based IAM policy 控權；bucket policy 管不到查詢歷史。",
+  "flow": [
+   "使用者/團隊/App",
+   "tag-based IAM policy",
+   "*Athena workgroup（tags）",
+   "隔離查詢與歷史"
+  ]
+ },
+ {
+  "number": 9,
+  "q": "每天跑一組 Glue job，不要求特定時間開始或完成，最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue job 選 FLEX 執行類別"
+  },
+  "section": "6.6",
+  "why": "Glue job 不必準時開始或完成，正是 FLEX execution class 的情境：用閒置資源執行，成本比 STANDARD 低，代價是啟動與執行時間不固定。Glue 沒有 Spot 選項，升級版本也不保證省錢。",
+  "flow": [
+   "每日 Glue jobs（不趕時間）",
+   "*FLEX execution class",
+   "較低成本執行"
+  ]
+ },
+ {
+  "number": 10,
+  "q": "只有上傳 .csv 到 S3 時才觸發 Lambda 轉 Parquet，最低營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "ObjectCreated:*+後綴.csv→Lambda"
+  },
+  "section": "7.5",
+  "why": "只在上傳 .csv 時觸發：事件型別選 s3:ObjectCreated:* 涵蓋各種上傳，加 suffix .csv 篩選，目的地直接設 Lambda ARN，不經 SNS 最省維運。s3:* 連刪除都會觸發，tagging 事件也不對。",
+  "flow": [
+   "上傳 .csv 到 S3",
+   "*ObjectCreated:* + .csv",
+   "Lambda",
+   "轉成 Parquet"
+  ]
+ },
+ {
+  "number": 11,
+  "q": "Athena 查詢未壓縮 .csv，多數查詢只選特定欄位，哪個做法最能加速？",
+  "answer": "C",
+  "answer_text": {
+   "C": "改 Parquet+Snappy 壓縮"
+  },
+  "section": "8.2",
+  "why": "查詢多半只選特定欄位，但 CSV 是 row-based 又未壓縮，每次都得掃整列。改成欄式的 Parquet 只讀需要的欄位，加 Snappy 壓縮再減少掃描量；只壓縮 CSV 或改 JSON 仍要讀整列。",
+  "flow": [
+   "未壓縮 CSV（S3）",
+   "*Parquet + Snappy",
+   "只掃需要的欄位",
+   "Athena 查詢變快"
+  ]
+ },
+ {
+  "number": 12,
+  "q": "感測器資料經 KDS→Firehose→S3，需在工廠大螢幕顯示即時營運效率，最低延遲？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Flink→連接器寫 Timestream→Grafana"
+  },
+  "section": "3.5",
+  "why": "要最低延遲，就不能等 Firehose 把資料落到 S3 才處理。Managed Flink 直接消費 Kinesis Data Streams 即時運算，用 Flink connector 寫入時序資料庫 Timestream，再由 Grafana 即時呈現。",
+  "flow": [
+   "感測器",
+   "Kinesis Data Streams",
+   "*Managed Flink",
+   "Timestream",
+   "Grafana 看板"
+  ]
+ },
+ {
+  "number": 13,
+  "q": "Glue crawler 爬 S3 的每日 .csv，需讓資料每天可在 Glue Data Catalog 存取？",
+  "answer": "B",
+  "answer_text": {
+   "B": "GlueServiceRole，每日排程，輸出 DB"
+  },
+  "section": "4.2",
+  "why": "crawler 用含 AWSGlueServiceRole 的 role，指定 S3 路徑並設每日排程，輸出指定 database 才會在 Data Catalog 建表。AmazonS3FullAccess 沒有 Glue 權限，輸出到 S3 也進不了 Catalog。",
+  "flow": [
+   "IAM：AWSGlueServiceRole",
+   "*Glue crawler 每日排程",
+   "爬 S3 來源路徑",
+   "Data Catalog database"
+  ]
+ },
+ {
+  "number": 14,
+  "q": "Redshift 每日載入後，要觸發 Lambda 把各表載入狀態寫入 DynamoDB，如何呼叫 Lambda？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Data API 發事件→EventBridge→Lambda"
+  },
+  "section": "14.2",
+  "why": "Redshift Data API 可把 SQL 執行狀態事件送到 EventBridge，再由 rule 呼叫 Lambda 寫入 DynamoDB，事件驅動又低耦合；另用一支 Lambda 監聽 CloudTrail 是多繞一層。",
+  "flow": [
+   "Redshift 載入",
+   "Data API 發事件",
+   "*EventBridge rule",
+   "Lambda",
+   "DynamoDB 狀態表"
+  ]
+ },
+ {
+  "number": 15,
+  "q": "地端 5TB 多格式檔案安全傳到 S3，每天約 5% 變動，需自動排程定期同步，最具營運效率？",
+  "answer": "A",
+  "answer_text": {
+   "A": "AWS DataSync"
+  },
+  "section": "2.1",
+  "why": "5TB 檔案每天約 5% 變動，要定期自動同步到 S3。DataSync 用 agent 連地端，task 可排程、只傳變動檔案並加密驗證，維運最省；Direct Connect 只是線路，Transfer Acceleration 不會排程。",
+  "flow": [
+   "地端 NAS/檔案系統",
+   "DataSync agent",
+   "*DataSync task（排程增量）",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 16,
+  "q": "每月把地端 SQL Server 交易資料遷到 RDS，成本上升，需具成本效益且停機最少？",
+  "answer": "B",
+  "answer_text": {
+   "B": "AWS DMS"
+  },
+  "section": "2.2",
+  "why": "每月把地端 SQL Server 搬到 RDS，要省成本又停機最少。DMS 先 full load 再用 CDC 持續複寫，切換只需短暫停機；DataSync 搬檔案、Direct Connect 只是網路，都不做 DB 複寫。",
+  "flow": [
+   "地端 SQL Server",
+   "*DMS（full load + CDC）",
+   "RDS for SQL Server"
+  ]
+ },
+ {
+  "number": 17,
+  "q": "Glue ETL 處理 RDS 與 MongoDB 資料並載入 Redshift，每小時更新，最低營運負擔？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "Glue trigger 每小時執行 ETL",
+   "D": "Glue connection 連來源與 Redshift"
+  },
+  "section": "7.1",
+  "why": "每小時跑 Glue ETL 且維運最低：Glue trigger 內建排程，不必另用 Lambda 定時啟動（A）；Glue connection 封裝 RDS、MongoDB、Redshift 的網路與憑證設定，job 直接引用即可連線（D）。",
+  "flow": [
+   "*Glue trigger（每小時）",
+   "Glue job + connections",
+   "讀 RDS / MongoDB",
+   "載入 Redshift"
+  ]
+ },
+ {
+  "number": 18,
+  "q": "RA3 節點的 Redshift 叢集要擴充讀寫容量，如何開啟 concurrency scaling？",
+  "answer": "B",
+  "answer_text": {
+   "B": "在叢集 WLM 佇列層級開啟"
+  },
+  "section": "9.6",
+  "why": "RA3 是 provisioned 叢集，Concurrency Scaling 要在 WLM queue 層級開啟：哪個 queue 壓力大就對它開，自動加臨時容量。Serverless workgroup、建叢集設定、usage quota 都不是這個開關。",
+  "flow": [
+   "RA3 provisioned 叢集",
+   "*WLM queue 開啟",
+   "Concurrency Scaling",
+   "臨時擴充讀寫容量"
+  ]
+ },
+ {
+  "number": 19,
+  "q": "每天編排一系列 Athena 查詢，每個可能跑超過 15 分鐘，最具成本效益？（選2）",
+  "answer": "AB",
+  "answer_text": {
+   "A": "Lambda 呼叫 start_query_execution",
+   "B": "Step Functions Wait 狀態輪詢完成"
+  },
+  "section": "7.2",
+  "why": "每段查詢可能跑超過 Lambda 15 分鐘上限，Lambda 只負責 start_query_execution 送出（A）；Step Functions 用 Wait state 定期以 get_query_execution 檢查，完成再接下一段（B）。",
+  "flow": [
+   "Step Functions 每日啟動",
+   "Lambda 送出查詢",
+   "*Wait state 輪詢狀態",
+   "下一段 Athena 查詢"
+  ]
+ },
+ {
+  "number": 20,
+  "q": "地端用 Pig、Oozie、Spark、HBase、Flink 秒級處理 PB 資料，遷 AWS 需維持效能並降營運負擔，選哪個？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Amazon EMR"
+  },
+  "section": "6.1",
+  "why": "Pig、Oozie、Spark、HBase、Flink 是整套 Hadoop 生態系，要維持效能又少維運。EMR 是託管的 Hadoop/Spark 平台，這些元件可直接上叢集並彈性擴展；Glue 只是 serverless ETL，撐不起整套。",
+  "flow": [
+   "地端 Hadoop 生態系",
+   "*Amazon EMR 叢集",
+   "同元件託管執行",
+   "彈性擴展 PB 級處理"
+  ]
+ },
+ {
+  "number": 21,
+  "q": "資料集含 PII，匯入 S3 資料湖時需剖析並模糊化 PII，最低營運工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue Detect PII 遮蔽+Step Functions"
+  },
+  "section": "12.7",
+  "why": "匯入 S3 前要剖析並遮蔽 PII。Glue Studio 內建 Detect PII transform 能自動偵測並遮蔽，再用 Step Functions 編排匯入 data lake；Firehose 加 Lambda、DynamoDB 方案都要自寫偵測程式。",
+  "flow": [
+   "原始資料集",
+   "*Glue Detect PII 遮蔽",
+   "Step Functions 編排匯入",
+   "S3 data lake"
+  ]
+ },
+ {
+  "number": 22,
+  "q": "多個 ETL 流程用 Glue 與 EMR 寫入 S3 資料湖，需自動編排且最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Step Functions tasks"
+  },
+  "section": "7.2",
+  "why": "ETL 同時用到 Glue 與 EMR，需要跨服務編排。Step Functions 的 task state 能直接啟動 Glue job 與 EMR step，並處理相依、重試與錯誤；Glue workflows 只管 Glue，MWAA 要養 Airflow。",
+  "flow": [
+   "*Step Functions workflow",
+   "Glue job task",
+   "EMR step task",
+   "寫入 S3 data lake"
+  ]
+ },
+ {
+  "number": 23,
+  "q": "S3 Standard 資料：前6個月每天多次存取，6個月~2年每月1-2次，2年後每年1-2次；需維持高可用，最省成本？",
+  "answer": "C",
+  "answer_text": {
+   "C": "6M→Standard-IA，2Y→Deep Archive"
+  },
+  "section": "1.2",
+  "why": "存取頻率隨時間下降且要維持高可用：6 個月後每月讀 1～2 次，轉多 AZ 的 Standard-IA（One Zone-IA 只有單一 AZ）；2 年後每年只讀 1～2 次，轉 Glacier Deep Archive 成本最低。",
+  "flow": [
+   "S3 Standard（0～6月）",
+   "Standard-IA（6月～2年）",
+   "*Deep Archive（2年後）"
+  ]
+ },
+ {
+  "number": 24,
+  "q": "業務 BI 叢集需每週 join ETL Redshift 叢集資料，不可干擾關鍵分析，且最少用 ETL 叢集運算？",
+  "answer": "A",
+  "answer_text": {
+   "A": "data sharing，BI 叢集為 consumer"
+  },
+  "section": "9.9",
+  "why": "BI 叢集要 join ETL 叢集資料且不能干擾 ETL。Redshift data sharing 讓 BI 叢集當 consumer 直接讀同一份資料，運算由 consumer 負擔；直連 ETL 叢集或每週 UNLOAD 都吃 ETL 資源。",
+  "flow": [
+   "ETL 叢集（producer）",
+   "*Redshift data sharing",
+   "BI 叢集（consumer）",
+   "join 後每週分析"
+  ]
+ },
+ {
+  "number": 25,
+  "q": "一次性分析需 join DynamoDB、RDS、Redshift、S3 的資料，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Athena Federated Query 直接 join"
+  },
+  "section": "8.1",
+  "why": "一次性 join DynamoDB、RDS、Redshift、S3，不值得建叢集或搬資料。Athena Federated Query 靠 connector 一個 SQL 跨來源 join，serverless 按用量付費；開 EMR 叢集或先搬到 S3 都更花錢。",
+  "flow": [
+   "*Athena Federated Query",
+   "data source connectors",
+   "DynamoDB/RDS/Redshift/S3",
+   "一次 SQL join 結果"
+  ]
+ },
+ {
+  "number": 26,
+  "q": "長期運行的 EMR Spark 叢集，需高可靠、維持效能且最具成本效益，選哪兩項？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "用 S3 作持久資料儲存",
+   "D": "core/task 節點用 Graviton"
+  },
+  "section": "6.3",
+  "why": "長跑 Spark 要高可靠又省錢：資料放 S3 當持久儲存，叢集故障或重建資料都還在（B）；core 與 task 節點用 Graviton，維持效能且成本更低（D）。HDFS 綁叢集，primary 用 Spot 有中斷風險。",
+  "flow": [
+   "EMR Spark 叢集",
+   "Graviton core/task 節點",
+   "*S3 持久資料儲存"
+  ]
+ },
+ {
+  "number": 27,
+  "q": "KDS 每秒數 GB 串流要進 Redshift，需近即時供現有 BI 工具使用，最低營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "外部 schema 對應 KDS，MV 自動刷新"
+  },
+  "section": "9.3",
+  "why": "Redshift streaming ingestion 正對題：external schema 對應 Kinesis stream，materialized view 直接讀串流並 auto refresh，不經 S3 暫存，BI 即可近即時查；先落 S3 再 COPY 延遲高。",
+  "flow": [
+   "Kinesis Data Streams",
+   "Redshift external schema",
+   "*MV auto refresh",
+   "既有 BI 工具"
+  ]
+ },
+ {
+  "number": 28,
+  "q": "QS 儀表板變慢，主因是 Glue job 執行太久；資料存單一 S3 bucket 且每日新增，如何改善 Glue 效能？（選2）",
+  "answer": "AB",
+  "answer_text": {
+   "A": "S3 資料依年/月/日分區",
+   "B": "提升 Glue worker type 規格"
+  },
+  "section": "6.6",
+  "why": "瓶頸是 Glue job 跑太久，資料每天堆在同一處。依年/月/日分區後 Glue 只處理相關日期，掃描量大減（A）；升級 worker type 給更多 CPU 與記憶體加速（B）。減少排程或改 IAM 無助效能。",
+  "flow": [
+   "S3 每日新增資料",
+   "*依 year/month/day 分區",
+   "較大 Glue worker type",
+   "QuickSight 變快"
+  ]
+ },
+ {
+  "number": 29,
+  "q": "Step Functions 要平行處理大量資料檔，對每個檔案套用相同轉換，用哪種 state？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Map state"
+  },
+  "section": "7.3",
+  "why": "對大量檔案逐一套用同一段轉換並平行處理，就是對清單迭代。Map state 對輸入陣列每一項各跑一次相同流程，可設定並行數；Parallel state 是同時跑不同分支，Choice、Wait 是判斷與等待。",
+  "flow": [
+   "檔案清單（陣列）",
+   "*Map state（每個檔案）",
+   "Transform task",
+   "彙整輸出"
+  ]
+ },
+ {
+  "number": 30,
+  "q": "舊系統資料遷入 S3 資料湖，含重複資料需識別並移除，最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue ETL 用 FindMatches ML 轉換"
+  },
+  "section": "5.4",
+  "why": "要識別並移除重複資料且維運最低。Glue ETL 內建 FindMatches ML transform，能自動比對相似或重複的紀錄，不必自寫去重規則；Pandas drop_duplicates 或 dedupe 程式庫都得自建並維護。",
+  "flow": [
+   "舊系統資料",
+   "Glue ETL job",
+   "*FindMatches ML 去重",
+   "S3 data lake"
+  ]
+ },
+ {
+  "number": 31,
+  "q": "用 Redshift Spectrum 查詢 S3 資料湖，哪些做法查詢最快？（選2）",
+  "answer": "BC",
+  "answer_text": {
+   "B": "使用欄式儲存格式",
+   "C": "依最常用查詢條件分區"
+  },
+  "section": "9.4",
+  "why": "Spectrum 速度取決於掃多少 S3 資料。欄式格式（如 Parquet）只讀用到的欄位（B）；依最常用的 WHERE 條件分區可跳過無關分區（C），兩者一起大減掃描量。小檔或不可分割格式反而更慢。",
+  "flow": [
+   "S3 data lake",
+   "*欄式格式 + 分區",
+   "Spectrum 只掃必要資料",
+   "查詢更快"
+  ]
+ },
+ {
+  "number": 32,
+  "q": "預設設定的 Lambda 需私有連線到私有子網中的 RDS，不走公網，最低營運負擔？（選2）",
+  "answer": "CD",
+  "answer_text": {
+   "C": "Lambda 設在 DB 相同子網執行",
+   "D": "兩者同 SG，自我參照規則開 DB 埠"
+  },
+  "section": "13.2",
+  "why": "預設 Lambda 不在 VPC 內，連不到私有子網的 RDS。讓 Lambda 跑在 DB 的同一 subnet（C）；兩者掛同一個 SG，以自我參照規則開放 DB port，免維護 IP（D）。public access 會走公網。",
+  "flow": [
+   "Lambda（同 subnet）",
+   "*同 SG 自我參照規則",
+   "DB port",
+   "RDS（private subnet）"
+  ]
+ },
+ {
+  "number": 33,
+  "q": "API Gateway 偶爾呼叫 Python 腳本並需回傳結果，最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Lambda Python 函式+佈建並行"
+  },
+  "section": "7.7",
+  "why": "API Gateway 偶爾呼叫並回傳結果，Lambda 是維運最低的 serverless 做法；provisioned concurrency 讓環境保持預熱，免冷啟動。ECS、EKS 要管叢集，EventBridge 定時假呼叫保溫是土法煉鋼。",
+  "flow": [
+   "ReactJS 網站",
+   "API Gateway",
+   "*Lambda + 佈建並行",
+   "回傳結果"
+  ]
+ },
+ {
+  "number": 34,
+  "q": "生產帳號 CW Logs 的安全日誌需經 KDS 送到安全帳號，如何設定？",
+  "answer": "D",
+  "answer_text": {
+   "D": "KDS 在安全帳號，訂閱篩選器在生產帳號"
+  },
+  "section": "14.3",
+  "why": "集中分析在安全帳號，Kinesis stream 就建在那裡，並以 IAM role 與 trust policy 允許 CloudWatch Logs 寫入；subscription filter 則要建在產生日誌的生產帳號，建在安全帳號是建錯邊。",
+  "flow": [
+   "生產帳號 CloudWatch Logs",
+   "*subscription filter",
+   "安全帳號 Kinesis stream",
+   "安全分析"
+  ]
+ },
+ {
+  "number": 35,
+  "q": "S3 交易型資料湖有小檔也有數十 TB 檔，來源每天送完整 JSON 快照，需做 CDC 擷取變更，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "開源湖格式(Iceberg)做 MERGE"
+  },
+  "section": "1.6",
+  "why": "每天收到全量 JSON snapshot，CDC 就是比對後 upsert。Iceberg 等開源 table format 用 MERGE 直接插入新資料、更新舊資料，大檔也能處理；Lambda 撐不住數十 TB，繞 RDS 跑 DMS 更貴。",
+  "flow": [
+   "每日 JSON 全量 snapshot",
+   "*Iceberg/Hudi 表 MERGE",
+   "insert 新/update 舊",
+   "S3 data lake"
+  ]
+ },
+ {
+  "number": 36,
+  "q": "Athena 用 Glue Data Catalog，S3 分區過多造成查詢規劃瓶頸，如何縮短規劃時間？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "建 Glue partition index+分區過濾",
+   "C": "Athena partition projection"
+  },
+  "section": "8.4",
+  "why": "規劃慢在於要從 Catalog 撈大量分區 metadata。Glue partition index 搭 partition filtering 加快分區查找（A）；partition projection 依 S3 prefix 規則推算分區，免查 Catalog（C）。",
+  "flow": [
+   "Athena 查詢",
+   "*partition projection",
+   "Glue partition index",
+   "規劃時間縮短"
+  ]
+ },
+ {
+  "number": 37,
+  "q": "即時串流需做最長 30 分鐘的時間視窗聚合分析，需高容錯，最低營運負擔？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Flink 多種聚合做 30 分鐘時間視窗"
+  },
+  "section": "3.5",
+  "why": "30 分鐘視窗聚合是 stateful 串流處理，要保存狀態與 checkpoint 才能高容錯。Managed Flink 原生支援時間視窗聚合，容錯與擴展由 AWS 託管；Lambda 的 tumbling window 最多 15 分鐘。",
+  "flow": [
+   "即時串流資料",
+   "*Managed Flink 視窗聚合",
+   "state + checkpoint",
+   "即時分析結果"
+  ]
+ },
+ {
+  "number": 38,
+  "q": "EBS gp2 升級為 gp3，遷移中不可讓 EC2 中斷導致資料遺失，最低營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "直接修改現有 volume 類型為 gp3"
+  },
+  "section": "1.1",
+  "why": "gp2 升 gp3 可直接修改現有 volume 的類型，同時設定 size、IOPS、throughput，屬於原地變更，EC2 不必停機也不用搬資料；snapshot 重建、逐步搬移或 DataSync 都多出切換步驟與風險。",
+  "flow": [
+   "EC2 掛載 gp2 volume",
+   "*直接修改為 gp3",
+   "設定 IOPS/throughput",
+   "原地升級不中斷"
+  ]
+ },
+ {
+  "number": 39,
+  "q": "EC2 上 SQL Server 遷移至 RDS 期間，每日需匯出多表 JOIN 結果為 Parquet 存 S3。最具營運效率？",
+  "answer": "A",
+  "answer_text": {
+   "A": "View＋Glue job 直讀轉 Parquet"
+  },
+  "section": "5.1",
+  "why": "每天要把多表 JOIN 結果以 Parquet 存 S3 且最省維運：SQL Server 建 view 固化 join，Glue job 直接讀 view、轉 Parquet 寫 S3 並每日排程。自寫 Lambda 或 SQL Agent 較費工。",
+  "flow": [
+   "SQL Server view（join）",
+   "*Glue job（每日排程）",
+   "Parquet",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 40,
+  "q": "Redshift 要在查詢最佳化器偵測到可能造成效能問題的條件時記錄異常，應使用哪個系統表？",
+  "answer": "B",
+  "answer_text": {
+   "B": "STL_ALERT_EVENT_LOG"
+  },
+  "section": "14.1",
+  "why": "要在 query optimizer 偵測到可能影響效能的條件時記錄異常，正是 STL_ALERT_EVENT_LOG 的用途，還附建議解法。STL_QUERY_METRICS 記查詢指標，STL_PLAN_INFO 記執行計畫。",
+  "flow": [
+   "長時間 query",
+   "query optimizer 偵測異常",
+   "*STL_ALERT_EVENT_LOG",
+   "依建議調校"
+  ]
+ },
+ {
+  "number": 41,
+  "q": "15 欄 csv 匯入 S3 資料湖，分析師用 Athena 多只查 1~2 欄。最具成本效益？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Glue ETL 存成 Parquet"
+  },
+  "section": "8.2",
+  "why": "Athena 依掃描量計費，分析師只查 15 欄中的 1～2 欄。Glue ETL 轉成欄式 Parquet 後只讀需要的欄位且有壓縮，掃描量大降最省；留 CSV 或轉 Avro（列式）都要掃整列。",
+  "flow": [
+   "CSV（15 欄）",
+   "*Glue ETL 轉 Parquet",
+   "S3 data lake",
+   "Athena 只掃 1～2 欄"
+  ]
+ },
+ {
+  "number": 42,
+  "q": "5 區域 HR 各有 IAM 角色，S3 資料湖員工記錄需限制只能看自己區域。最少營運負擔？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "將 S3 路徑註冊為 Lake Formation 位置",
+   "D": "啟用 LF 細粒度存取＋各區 data filter"
+  },
+  "section": "12.1",
+  "why": "各區 HR 只能看自己區域的記錄：B 把 S3 路徑註冊為 Lake Formation location；D 啟用細粒度存取控制，每個 Region 建 data filter 授權給對應 role。拆 bucket 或改 IAM 都較費工。",
+  "flow": [
+   "S3 data lake",
+   "註冊為 LF location",
+   "*LF data filter（每區）",
+   "各區 HR IAM role"
+  ]
+ },
+ {
+  "number": 43,
+  "q": "Step Functions 手動建置，EMR 叢集在 VPC 內，狀態機無法執行 EMR job。如何找出原因？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "查狀態機 IAM 權限(EMR/S3)",
+   "D": "查 VPC Flow Logs 與 SG 連線"
+  },
+  "section": "13.5",
+  "why": "狀態機跑不動 EMR job，從權限與網路排查：B 檢查狀態機有沒有執行 EMR job 與存取 S3 的 IAM 權限；D 查 VPC flow logs 與 security group，確認 EMR 連得到資料來源。",
+  "flow": [
+   "Step Functions 狀態機",
+   "*查 IAM 權限（EMR／S3）",
+   "EMR cluster（VPC）",
+   "查 flow logs／SG",
+   "資料來源"
+  ]
+ },
+ {
+  "number": 44,
+  "q": "從 AMI 啟動新 EC2，應用資料需在執行個體終止後仍保留。哪個方案可行？",
+  "answer": "C",
+  "answer_text": {
+   "C": "instance store AMI＋另掛 EBS 存資料"
+  },
+  "section": "1.1",
+  "why": "instance store 是暫存，執行個體終止資料就消失；要保留資料應放在另掛的 EBS volume，非 root EBS 預設不隨終止刪除。root EBS 預設 DeleteOnTermination，會一起被刪。",
+  "flow": [
+   "AMI 啟動 EC2",
+   "*另掛 EBS volume（資料）",
+   "EC2 終止",
+   "EBS 資料保留"
+  ]
+ },
+ {
+  "number": 45,
+  "q": "公司用 Athena CTAS 做 ETL，需改用 Apache Spark 產生分析。哪個方案可讓 Spark 存取 Athena？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Athena workgroup"
+  },
+  "section": "8.5",
+  "why": "Athena 要跑 Apache Spark，得建立以 Spark 為引擎的 workgroup，notebook 與 session 都在 workgroup 內執行。query settings、data source、query editor 只跟 SQL 查詢有關。",
+  "flow": [
+   "*Athena workgroup（Spark）",
+   "notebook／Spark session",
+   "Glue Catalog／S3",
+   "分析結果"
+  ]
+ },
+ {
+  "number": 46,
+  "q": "S3 依 year/month/day 分區，新增分區時 Glue Data Catalog 需同步。延遲最低？",
+  "answer": "C",
+  "answer_text": {
+   "C": "寫 S3 的程式呼叫 create_partition"
+  },
+  "section": "4.4",
+  "why": "要新分區最快同步到 Glue Data Catalog：寫 S3 的程式寫完就呼叫 Boto3 create_partition，分區立即可查。排程 crawler、定時手動跑 API 或 MSCK REPAIR TABLE 都得等下一次執行。",
+  "flow": [
+   "寫入 S3 分區路徑",
+   "*Boto3 create_partition",
+   "Glue Data Catalog",
+   "新分區立即可查"
+  ]
+ },
+ {
+  "number": 47,
+  "q": "從 SaaS 應用收集資料存入 S3，再用 Redshift 分析。最少營運負擔的服務？",
+  "answer": "B",
+  "answer_text": {
+   "B": "AppFlow"
+  },
+  "section": "2.4",
+  "why": "SaaS 資料要搬進 S3 給 Redshift 分析且維運最少：AppFlow 是全託管 SaaS 整合服務，內建連接器，設好來源與目的地就能傳輸。MSK、Kinesis 是串流服務，Data Catalog 只管 metadata。",
+  "flow": [
+   "SaaS 應用",
+   "*Amazon AppFlow",
+   "S3 bucket",
+   "Redshift 分析"
+  ]
+ },
+ {
+  "number": 48,
+  "q": "Athena 查詢 SELECT product_name,sum(sales_amount) … WHERE year=2023 GROUP BY 未回傳所有產品。如何修改？",
+  "answer": "B",
+  "answer_text": {
+   "B": "改 WHERE extract(year FROM …)=2023"
+  },
+  "section": "8.6",
+  "why": "WHERE year = 2023 沒篩對 2023 年資料，部分產品沒被計入；應從日期欄取出年份比對，改成 extract(year FROM …) = 2023。改 count(*)、加 HAVING 或去掉 GROUP BY 都沒修到篩選。",
+  "flow": [
+   "WHERE year = 2023（錯）",
+   "*extract(year FROM 日期欄)",
+   "篩出 2023 年資料",
+   "依產品 sum"
+  ]
+ },
+ {
+  "number": 49,
+  "q": "一次性任務：讀 S3 上 Parquet 物件，只查詢一欄。最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "S3 Select 用 SQL 取該欄"
+  },
+  "section": "8.7",
+  "why": "一次性任務且只要一欄：S3 Select 直接對 S3 上的 Parquet 物件下 SQL SELECT 取出該欄，不用部署任何資源。Lambda＋pandas 要寫程式，DataBrew 或 crawler＋Athena 要先建設定。",
+  "flow": [
+   "S3 Parquet 物件",
+   "*S3 Select（SQL）",
+   "取回單一欄位"
+  ]
+ },
+ {
+  "number": 50,
+  "q": "需自動排程重新整理 Redshift 具體化檢視（MV）。最省力？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Query Editor v2 排程重新整理"
+  },
+  "section": "9.7",
+  "why": "要排程 refresh Redshift materialized view 且最省力：query editor v2 內建排程查詢，直接排定 REFRESH MATERIALIZED VIEW 即可。Airflow、Lambda UDF、Glue workflow 都要另建。",
+  "flow": [
+   "Redshift MV",
+   "*query editor v2 排程",
+   "定期 REFRESH MV"
+  ]
+ },
+ {
+  "number": 51,
+  "q": "編排 1 個 Lambda 與 1 個 Glue job 的管線，需整合 AWS 服務。最少管理負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Step Functions 先 Lambda 後 Glue"
+  },
+  "section": "7.2",
+  "why": "依序跑一個 Lambda 和一個 Glue job：Step Functions 是無伺服器編排，state machine 可先呼叫 Lambda 再跑 Glue job。Airflow 放 EC2/EKS 要自管，Glue workflow 不能跑 Lambda。",
+  "flow": [
+   "*Step Functions",
+   "Lambda function",
+   "Glue job",
+   "完成"
+  ]
+ },
+ {
+  "number": 52,
+  "q": "RDS、Redshift 與 S3 JSON/XML 需統一資料目錄，定期更新並偵測中繼資料變更。最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue Catalog＋Crawler 定期爬所有來源"
+  },
+  "section": "4.1",
+  "why": "要集中 RDS、Redshift、S3 JSON/XML 的 metadata 並定期偵測變更：Glue Data Catalog 當中央目錄，crawler 連多種來源推斷 schema 並排程更新。Aurora、DynamoDB＋Lambda 要自己寫。",
+  "flow": [
+   "RDS／Redshift／S3",
+   "*Glue crawler（定期排程）",
+   "Glue Data Catalog（更新）"
+  ]
+ },
+ {
+  "number": 53,
+  "q": "DynamoDB 預置容量，負載可預測：週一清晨暴增、週末很低。需尖峰效能穩定，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Auto Scaling 排程尖峰調高離峰調低"
+  },
+  "section": "10.3",
+  "why": "負載可預測：週一清晨暴增、週末很低。用 Application Auto Scaling 排程在尖峰調高、離峰調低 provisioned capacity，穩又省。一直開最大量太貴，on-demand 對可預測負載不划算。",
+  "flow": [
+   "可預測尖峰／離峰",
+   "*scheduled scaling",
+   "調整 RCU／WCU",
+   "效能穩、成本低"
+  ]
+ },
+ {
+  "number": 54,
+  "q": "地端 Hadoop 遷移至 EMR，Hive metastore 目錄需遷到持久儲存，要求無伺服器。最具成本效益？",
+  "answer": "B",
+  "answer_text": {
+   "B": "EMR metastore＋Glue Catalog 外部"
+  },
+  "section": "4.1",
+  "why": "Hive metastore 要搬到持久且 serverless 的目錄：遷入 EMR 後以 Glue Data Catalog 當 external catalog，由 AWS 託管免管 DB。Aurora MySQL 要管 DB，EMR 本機 metastore 不持久。",
+  "flow": [
+   "地端 Hive metastore",
+   "遷入 EMR",
+   "*Glue Catalog（external）",
+   "EMR 查詢"
+  ]
+ },
+ {
+  "number": 55,
+  "q": "Redshift 5 節點 KEY 分佈，其中 1 節點 CPU>90%、其他<15%。不增節點要平衡負載？",
+  "answer": "B",
+  "answer_text": {
+   "B": "distribution key 改基數最大欄"
+  },
+  "section": "9.5",
+  "why": "某節點 CPU 90%、其他不到 15%，是 distribution key 選錯造成 data skew。改用基數最大（值最分散）的欄位當 dist key，資料才會平均分到各節點。改 sort key、PK 或升級都解不了。",
+  "flow": [
+   "單一節點 CPU 90%",
+   "data skew",
+   "*改高基數 distribution key",
+   "負載平均"
+  ]
+ },
+ {
+  "number": 56,
+  "q": "S3 中 IoT JSON 資料結構會隨裝置升級改變，需建資料目錄供分析部門索引。最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue Catalog＋Registry＋Glue 匯入"
+  },
+  "section": "4.3",
+  "why": "IoT JSON 結構會變，需管 schema 演進：Schema Registry 管版本、Data Catalog 供索引，再由 Glue workload 匯入 Redshift Serverless，全由 Glue 託管；改用 Lambda UDF 較繁瑣。",
+  "flow": [
+   "S3 IoT JSON",
+   "*Glue Schema Registry",
+   "Glue Data Catalog",
+   "Glue workload 匯入",
+   "Redshift Serverless"
+  ]
+ },
+ {
+  "number": 57,
+  "q": "需將 S3 bucket 的所有寫入記錄到同區域另一個 S3 bucket。最少營運工作？",
+  "answer": "D",
+  "answer_text": {
+   "D": "CloudTrail 資料事件 trail，只寫入"
+  },
+  "section": "14.4",
+  "why": "S3 物件的寫入屬於 CloudTrail data events，非 management events。建 data events trail、prefix 留空、只收 write-only，寫到 log bucket 即可。S3 事件＋Lambda 要自寫程式。",
+  "flow": [
+   "transactions bucket 寫入",
+   "*CloudTrail data events",
+   "write-only 篩選",
+   "logs S3 bucket"
+  ]
+ },
+ {
+  "number": 58,
+  "q": "需建中央中繼資料庫供 EMR 與 Athena 查詢，並從 Hive 匯入中繼資料。最少開發工作？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue Data Catalog"
+  },
+  "section": "4.1",
+  "why": "要給 EMR 與 Athena 共用、可匯入 Hive metadata 的中央目錄：Glue Data Catalog 相容 Hive metastore，Athena、EMR 都原生整合，開發最少。自建 Hive 或 RDS metastore 要自行維護。",
+  "flow": [
+   "Hive metadata 匯入",
+   "*Glue Data Catalog",
+   "EMR／Athena 查詢"
+  ]
+ },
+ {
+  "number": 59,
+  "q": "建資料湖，需對特定團隊提供列級與欄級權限，透過 Athena、Redshift Spectrum、EMR Hive 存取。最少營運負擔？",
+  "answer": "D",
+  "answer_text": {
+   "D": "S3＋Lake Formation 列/欄級權限"
+  },
+  "section": "12.1",
+  "why": "要列/欄級權限並給 Athena、Spectrum、EMR Hive 共用：Lake Formation 可集中授權 row/column 權限並整合三者，維運最少。S3 policy 做不到列欄級，自管 Ranger 維運重。",
+  "flow": [
+   "S3 data lake",
+   "*Lake Formation 列／欄權限",
+   "Athena／Spectrum／EMR"
+  ]
+ },
+ {
+  "number": 60,
+  "q": "S3 中依日期分區的 csv 用 Athena 查詢，資料量增加需最佳化儲存以提升查詢效能？（選2）",
+  "answer": "CE",
+  "answer_text": {
+   "C": "S3 bucket 與 Athena 同區域",
+   "E": "csv 預處理轉 Parquet"
+  },
+  "section": "8.2",
+  "why": "提升 Athena 效能：C 讓 S3 bucket 與 Athena 同一 Region，避免跨區延遲與傳輸成本；E 把 CSV 預先轉成欄式 Parquet，只讀需要的欄位與資料區塊，掃描量大降。轉 JSON 沒這效果。",
+  "flow": [
+   "CSV（依日期分區）",
+   "*轉 Parquet",
+   "同 Region S3 bucket",
+   "Athena 掃描量大降"
+  ]
+ },
+ {
+  "number": 61,
+  "q": "RDS MySQL 以寫入為主、讀取少，CPU 使用率過高拖慢應用，需降低 CPU？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "Performance Insights 找出並優化查詢",
+   "D": "升級較大執行個體"
+  },
+  "section": "10.5",
+  "why": "寫入為主的 RDS MySQL CPU 過高：A 用 Performance Insights 找出最吃 CPU 的查詢並優化，從根源降負載；D 升級較大的執行個體，立即增加 CPU 餘裕。快取主要救讀取，對寫入幫助小。",
+  "flow": [
+   "RDS CPU 過高",
+   "*Performance Insights",
+   "優化高 CPU 查詢",
+   "仍不足就升級規格"
+  ]
+ },
+ {
+  "number": 62,
+  "q": "Redshift Orders 表每週更新刪除，用交錯排序鍵（Region 欄）。需回收磁碟空間並分析排序鍵欄？",
+  "answer": "C",
+  "answer_text": {
+   "C": "VACUUM REINDEX Orders"
+  },
+  "section": "9.7",
+  "why": "interleaved sort key 又常更新刪除，要回收空間並分析 sort key：VACUUM REINDEX 先分析交錯鍵值分佈再完整 VACUUM。FULL 不 reindex，DELETE ONLY 不排序，SORT ONLY 不回收空間。",
+  "flow": [
+   "每週 update／delete",
+   "interleaved sort key",
+   "*VACUUM REINDEX",
+   "回收空間＋重分析 sort key"
+  ]
+ },
+ {
+  "number": 63,
+  "q": "感測器資料需近即時擷取，持久儲存為巢狀 JSON，查詢延遲<10 毫秒。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "KDS 擷取＋存 DynamoDB 查詢"
+  },
+  "section": "3.1",
+  "why": "要近即時擷取、持久存巢狀 JSON、查詢低於 10 毫秒：Kinesis Data Streams 託管串流擷取，DynamoDB 能存巢狀 JSON 並提供個位數毫秒查詢。S3 查詢達不到毫秒級，自架 Kafka 維運重。",
+  "flow": [
+   "感測器",
+   "Kinesis Data Streams",
+   "*DynamoDB（巢狀 JSON）",
+   "查詢 <10ms"
+  ]
+ },
+ {
+  "number": 64,
+  "q": "S3 資料湖含 PII，多個使用者群組需存取原始資料但只能看所需 PII。最省力？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Athena＋LF data filter 綁 IAM 角色"
+  },
+  "section": "12.1",
+  "why": "各群組只能看所需的 PII：用 Lake Formation data filter 設定列/欄範圍並綁到不同 IAM role，使用者指派到對應 role，用 Athena 查詢即受控。自建查詢介面或逐一寫 policy 較費工。",
+  "flow": [
+   "S3 data lake（PII）",
+   "*LF data filter",
+   "各群組 IAM role",
+   "Athena 查詢"
+  ]
+ },
+ {
+  "number": 65,
+  "q": "10 個來源每 15 分鐘送 csv/JSON/Parquet（10MB~20GB）到 S3，載入 Redshift 10 表，schema 變更仍需正常運作？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "EventBridge 跑 workflow：爬→job",
+   "D": "S3 到檔 Lambda 觸發 Glue workflow"
+  },
+  "section": "7.1",
+  "why": "schema 會變，先用 crawler 更新 Data Catalog 再跑 job 載入 Redshift，Glue workflow 串成「crawler 成功才跑 job」。B 用 EventBridge 每 15 分鐘、D 用 S3 到檔 Lambda 觸發。",
+  "flow": [
+   "排程或到檔觸發",
+   "*Glue workflow",
+   "crawler 更新 schema",
+   "Glue job 載入",
+   "Redshift 10 表"
+  ]
+ },
+ {
+  "number": 66,
+  "q": "Athena 查 PB 級資料供 BI，資料每天更新一次，BI 每小時刷新。不增基礎設施成本下省 Athena 費用，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "啟用 Athena 查詢結果重用"
+  },
+  "section": "8.5",
+  "why": "資料每天更新一次，BI 每小時重跑相同查詢：Athena query result reuse 直接回用先前結果、不重掃 S3，省錢又不加基礎設施。ElastiCache 要多養叢集，轉 Parquet 要改寫 PB 級資料。",
+  "flow": [
+   "每日 Glue job 更新",
+   "BI 每小時查詢",
+   "*Athena query result reuse",
+   "免重掃 S3"
+  ]
+ },
+ {
+  "number": 67,
+  "q": "Redshift 預算限制無法擴叢集，表皆用 EVEN 分佈，有數百 GB 大表與<10MB 小表。如何最佳化查詢？",
+  "answer": "C",
+  "answer_text": {
+   "C": "少更新小表改 ALL，設 PK/FK"
+  },
+  "section": "9.5",
+  "why": "不能擴叢集就調整分佈：很少更新的小表改用 ALL distribution，每個節點都有完整副本，與大表 join 時不必重分佈；再設 PK/FK 幫 optimizer 規劃 join。大表用 ALL 會浪費空間。",
+  "flow": [
+   "*小表改 DISTSTYLE ALL",
+   "各節點有完整副本",
+   "設 PK／FK",
+   "join 免重分佈"
+  ]
+ },
+ {
+  "number": 68,
+  "q": "csv 含 Door_No、Street_Name、City、Zip_Code 欄，需合併成單一 key-value 欄。最少程式碼？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DataBrew NEST_TO_MAP"
+  },
+  "section": "5.2",
+  "why": "要把四個地址欄合成單一 key-value 欄且最少寫程式：DataBrew 的 NEST_TO_MAP 會把選定欄位轉成 map，欄名當 key、值當 value。NEST_TO_ARRAY 只留值的陣列，PIVOT 是轉置。",
+  "flow": [
+   "CSV 四個地址欄",
+   "*DataBrew NEST_TO_MAP",
+   "單一 key-value 欄"
+  ]
+ },
+ {
+  "number": 69,
+  "q": "S3 通話紀錄含敏感資訊需加密，且金鑰只限特定員工存取。最省力？",
+  "answer": "C",
+  "answer_text": {
+   "C": "SSE-KMS＋IAM 限制 KMS 金鑰存取"
+  },
+  "section": "12.5",
+  "why": "要加密且金鑰只限特定員工：SSE-KMS 由 S3 搭配 KMS 加密，再用 IAM policy 限制誰能用該 KMS key，解密就被管住。SSE-S3 無法控管金鑰存取對象，CloudHSM、SSE-C 要自己管金鑰。",
+  "flow": [
+   "S3 通話紀錄",
+   "*SSE-KMS 加密",
+   "IAM 限制 KMS key",
+   "僅特定員工可解密"
+  ]
+ },
+ {
+  "number": 70,
+  "q": "PB 級資料在數千個 S3 Standard bucket，存取模式不可預測，部分數月不用但需毫秒取回。最少營運負擔省成本？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Intelligent-Tiering 預設層級"
+  },
+  "section": "1.2",
+  "why": "存取模式不可預測又要毫秒取回：Intelligent-Tiering 預設層級依存取自動搬層，各層皆毫秒存取、免管規則。Deep Archive Access 取回要數小時，Storage Lens＋Lifecycle 要自己分析。",
+  "flow": [
+   "S3 Standard（PB 級）",
+   "*Intelligent-Tiering 預設層",
+   "自動搬移存取層",
+   "毫秒取回、成本降低"
+  ]
+ },
+ {
+  "number": 71,
+  "q": "Glue job 腳本中硬編碼 Redshift 憑證，需修補並安全儲存憑證？（選2）",
+  "answer": "DE",
+  "answer_text": {
+   "D": "憑證存 Secrets Manager",
+   "E": "授權 Glue job IAM 角色讀取憑證"
+  },
+  "section": "12.6",
+  "why": "移除硬編碼的 Redshift 憑證：D 把憑證存進 Secrets Manager，可加密、輪替與稽核；E 授權 Glue job 的 IAM role 讀取該 secret 再取用。job parameters 或 S3 設定檔仍是明文。",
+  "flow": [
+   "*Secrets Manager 存憑證",
+   "Glue job IAM role 授權",
+   "執行時取 secret",
+   "連線 Redshift"
+  ]
+ },
+ {
+  "number": 72,
+  "q": "每月建 Redshift 預置叢集跑高負載分析，完成後卸載備份至 S3 並刪除。需免手動管理基礎設施，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Redshift Serverless 自動處理"
+  },
+  "section": "9.1",
+  "why": "每月跑一次重量級分析卻要手動建、刪 provisioned cluster：改用 Redshift Serverless 自動配置與擴縮容量、依用量計費，免管基礎設施。暫停叢集、CLI、CloudFormation 仍要管叢集。",
+  "flow": [
+   "每月分析工作",
+   "*Redshift Serverless",
+   "自動配置容量",
+   "依用量計費"
+  ]
+ },
+ {
+  "number": 73,
+  "q": "每日 2GB .xls 客戶檔存 S3，串接姓與名後需算不重複客戶數。最少營運工作？",
+  "answer": "D",
+  "answer_text": {
+   "D": "DataBrew 用 COUNT_DISTINCT 配方"
+  },
+  "section": "5.2",
+  "why": "每日 2 GB .xls，串接姓名後算不重複客戶數：DataBrew 可直接讀 Excel，在 recipe 串接欄位再用 COUNT_DISTINCT 聚合，免寫程式免管叢集。Spark job 要寫程式，Athena 不支援 .xls。",
+  "flow": [
+   "S3 .xls（2 GB）",
+   "*DataBrew recipe",
+   "串接 first／last name",
+   "COUNT_DISTINCT"
+  ]
+ },
+ {
+  "number": 74,
+  "q": "KDS 串流醫療即時資料，需存入 Redshift Serverless，支援近即時分析串流與前一天資料。最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Redshift 串流擷取功能"
+  },
+  "section": "9.3",
+  "why": "KDS 資料要近即時進 Redshift Serverless：streaming ingestion 直接讀入 materialized view，免 Firehose 與 S3 中繼，可和前一天資料同查。COPY 是批次，zero-ETL 不接 Kinesis。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*streaming ingestion（MV）",
+   "Redshift Serverless",
+   "即時＋前一天資料分析"
+  ]
+ },
+ {
+  "number": 75,
+  "q": "QS 儀表板基於 Athena 查詢 S3 資料，連線時出現權限不足錯誤，可能原因？（選2）",
+  "answer": "CD",
+  "answer_text": {
+   "C": "QS 無權存取 S3 bucket",
+   "D": "QS 無權解密 S3 資料"
+  },
+  "section": "12.8",
+  "why": "QuickSight 透過 Athena 查 S3，讀檔用的是 QuickSight 的權限：C 沒被授權存取 S3 bucket 就會權限不足；D 資料以 KMS 加密而 QuickSight 沒有 kms:Decrypt，也會報權限錯誤。",
+  "flow": [
+   "QuickSight 儀表板",
+   "Athena 查詢",
+   "*S3 存取＋KMS 解密",
+   "S3 資料"
+  ]
+ },
+ {
+  "number": 76,
+  "q": "S3 JSON/csv、RDS SQL Server、DynamoDB、Redshift，需讓資料科學家用類 SQL 語法查詢全部來源。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue 爬取＋Athena，JSON 用 PartiQL"
+  },
+  "section": "8.1",
+  "why": "要用類 SQL 查 S3、RDS、DynamoDB、Redshift：Glue crawler 把 metadata 收進 Data Catalog，Athena 查詢時結構化用 SQL、JSON 用 PartiQL，維運最少。Spectrum 只查 S3。",
+  "flow": [
+   "多種資料來源",
+   "Glue crawler",
+   "Glue Data Catalog",
+   "*Athena（SQL／PartiQL）"
+  ]
+ },
+ {
+  "number": 77,
+  "q": "SageMaker Studio 使用 Glue 互動式工作階段準備ML資料時出現存取拒絕，應如何修正？",
+  "answer": "B",
+  "answer_text": {
+   "B": "加 sts:AssumeRole(Glue+SM 信任)"
+  },
+  "section": "12.3",
+  "why": "存取拒絕出在呼叫端：trust policy 只決定 role 信任誰，IAM user 本身也要有 sts:AssumeRole 權限，role 則要信任 Glue 與 SageMaker principal，兩邊缺一不可。只加 managed policy 不夠。",
+  "flow": [
+   "IAM user（data engineer）",
+   "*sts:AssumeRole 權限",
+   "role trust：Glue+SageMaker",
+   "Glue interactive session"
+  ]
+ },
+ {
+  "number": 78,
+  "q": "每日約1TB，來源含SAP HANA、SQL Server、MongoDB、Kafka、DynamoDB，schema未定義或會變；須偵測schema並ETL至S3，15分鐘內載入，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue 偵測 schema+Spark ETL"
+  },
+  "section": "5.1",
+  "why": "來源 schema 未定義或會變，要自動偵測再 ETL 到 S3。Glue crawler 可推斷 schema，ETL 本體是 serverless 的 managed Spark，免管叢集維運最低；EMR 要自管叢集，Lambda 跑 PySpark 不實際。",
+  "flow": [
+   "SAP/SQL/Mongo/Kafka/DDB",
+   "*Glue（detect schema）",
+   "Glue Spark ETL",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 79,
+  "q": "S3資料集含PII，各應用程式需求不同，需依存取的應用動態遮蔽PII，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "S3 Object Lambda 讀取時動態遮蔽"
+  },
+  "section": "12.7",
+  "why": "同一份資料要依存取的應用動態遮蔽。S3 Object Lambda 在 GET 時呼叫 Lambda 即時 redact PII，不必為每個應用複製並同步多份 dataset，也不用自建 API Gateway 層，維運最省。",
+  "flow": [
+   "App GET request",
+   "*S3 Object Lambda AP",
+   "Lambda 依應用 redact",
+   "回傳無 PII 資料"
+  ]
+ },
+ {
+  "number": 80,
+  "q": "每日處理使用者上傳至S3的.csv，每個物件<100MB，最具成本效益的ETL？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Glue Python shell job+pandas"
+  },
+  "section": "5.1",
+  "why": "每個檔案小於 100 MB，用不到分散式 Spark。Glue Python shell job 以小容量跑 pandas，serverless 按用量計費最便宜；Glue PySpark、EMR、EKS 都要較大運算資源，成本不划算。",
+  "flow": [
+   "S3 每日 CSV（<100MB）",
+   "*Glue Python shell",
+   "pandas transform",
+   "S3 output"
+  ]
+ },
+ {
+  "number": 81,
+  "q": "Glue crawler 建的 Orders 表要新增2個 order_date 分割區，不可掃描整個表位置，Athena 該用哪個DDL？",
+  "answer": "A",
+  "answer_text": {
+   "A": "ALTER TABLE ADD PARTITION+LOCATION"
+  },
+  "section": "4.4",
+  "why": "要註冊新分區又不能掃描整個表位置。ALTER TABLE ADD PARTITION 搭配 LOCATION 直接把指定路徑寫進 Catalog，是純 metadata 操作；MSCK REPAIR TABLE 會掃描所有 S3 目錄，不符題意。",
+  "flow": [
+   "新 S3 分區路徑",
+   "*ALTER TABLE ADD PARTITION",
+   "Glue Data Catalog",
+   "Athena 查新分區"
+  ]
+ },
+ {
+  "number": 82,
+  "q": "S3有10~15TB未壓縮csv，用Athena查詢，要轉換以最佳化查詢時間與儲存成本，選哪種格式+壓縮？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Parquet + Snappy"
+  },
+  "section": "8.2",
+  "why": "Athena 依掃描量計費，要兼顧查詢速度與儲存成本。Parquet 是欄式格式，只讀需要的欄位且壓縮率高，Snappy 解壓快適合查詢；CSV、JSON、Avro 都是列式格式，查詢仍要讀整列。",
+  "flow": [
+   "S3 CSV（10~15 TB）",
+   "*Parquet + Snappy",
+   "Athena 掃描量變少",
+   "查得快、成本低"
+  ]
+ },
+ {
+  "number": 83,
+  "q": "地端用 Airflow 編排管線並執行SQL資料品質檢查，要遷到AWS託管服務，最少重構？",
+  "answer": "C",
+  "answer_text": {
+   "C": "遷到 MWAA，用 SQL task 檢查品質"
+  },
+  "section": "7.4",
+  "why": "要遷到託管服務且最少重構。MWAA 就是託管的 Airflow，既有 DAG 與 SQL 資料品質檢查 task 幾乎可直接搬；改寫成 Step Functions 加 Lambda 要重做流程，自架 EC2 或 Outposts 也不算託管。",
+  "flow": [
+   "地端 Airflow DAG",
+   "*Amazon MWAA",
+   "SQL data quality task",
+   "AWS data pipeline"
+  ]
+ },
+ {
+  "number": 84,
+  "q": "EMR 做多來源ETL管線，需編排管線並最大化效能，最具成本效益的服務？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Step Functions"
+  },
+  "section": "7.2",
+  "why": "要低成本編排 EMR 多步驟 ETL。Step Functions 是 serverless 狀態機，原生整合 EMR，支援平行、重試與分支，按用量計費；MWAA 要常駐 Airflow 環境，EventBridge 只負責觸發，不是完整編排。",
+  "flow": [
+   "多來源資料",
+   "*Step Functions",
+   "EMR steps（平行/重試）",
+   "S3 output"
+  ]
+ },
+ {
+  "number": 85,
+  "q": "Athena 查S3上ALB存取日誌，表未分割，資料增加後查詢變慢，要提升效能且最少營運工作？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue crawler+分類器寫分割區"
+  },
+  "section": "4.2",
+  "why": "表未分區，每次查詢都全掃。Glue crawler 加 classifier 自動辨識 ALB log schema，並把 partition 寫進 Data Catalog，讓 Athena 做 partition pruning；Glue job 或 Lambda 要自寫程式。",
+  "flow": [
+   "S3 ALB logs",
+   "*Glue crawler+classifier",
+   "Catalog partitions",
+   "Athena partition pruning"
+  ]
+ },
+ {
+  "number": 86,
+  "q": "S3 File Gateway 將地端檔案傳至S3，每次傳輸成功後要自動啟動 Glue workflow，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "EventBridge 接傳輸成功事件觸發"
+  },
+  "section": "7.5",
+  "why": "要在每次傳輸成功後自動觸發且元件最少。File Gateway 傳輸完成會發出事件，EventBridge rule 直接啟動 Glue workflow 即可；Lambda 方案多一個要維護的函式，依時間排程則無法保證檔案已到。",
+  "flow": [
+   "地端檔案",
+   "S3 File Gateway 傳輸成功",
+   "*EventBridge rule",
+   "Glue workflow / jobs"
+  ]
+ },
+ {
+  "number": 87,
+  "q": "Aurora PostgreSQL 存即時交易，Redshift 僅留近15個月、舊資料歸檔，需合併查詢即時、目前與歷史資料並降成本？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "Redshift Federated Query 查 PG",
+   "C": "UNLOAD 舊資料到 S3+Spectrum"
+  },
+  "section": "9.4",
+  "why": "Federated Query 讓 Redshift 直接查 Aurora 的即時資料；超過 15 個月的舊資料 UNLOAD 到 S3 後刪除，用 Spectrum 查詢以降低叢集成本。Spectrum 查不了 PostgreSQL，Glacier 也讀不到。",
+  "flow": [
+   "Aurora（live）",
+   "Federated Query",
+   "*Redshift（近 15 個月）",
+   "UNLOAD 舊資料至 S3",
+   "Spectrum 查歷史"
+  ]
+ },
+ {
+  "number": 88,
+  "q": "KDS 以設施ID當分割鍵，出現大量 WriteThroughputExceeded，部分分片過熱、其他閒置，如何解決？",
+  "answer": "A",
+  "answer_text": {
+   "A": "分割鍵改為隨機產生"
+  },
+  "section": "3.3",
+  "why": "facility ID 分布不均，同一 key 一律進同一 shard，造成熱 shard 而其他閒置。改用隨機產生的 partition key 能把寫入平均打散；只加 shard 不會改變 key 的分布，熱點依舊。",
+  "flow": [
+   "facility ID 當 key",
+   "hot shard 過載",
+   "*改用隨機 partition key",
+   "寫入平均分散到 shard"
+  ]
+ },
+ {
+  "number": 89,
+  "q": "Athena 要看某SQL的執行計畫，並看每個運算的計算成本，該執行哪個陳述式？",
+  "answer": "C",
+  "answer_text": {
+   "C": "EXPLAIN ANALYZE SELECT * FROM sales"
+  },
+  "section": "8.6",
+  "why": "要看執行計畫，還要看每個運算的計算成本。EXPLAIN ANALYZE 會實際執行查詢，回傳各 stage 與 operator 的統計與成本；EXPLAIN 只給靜態計畫，少了 SELECT 的寫法則語法不成立。",
+  "flow": [
+   "SQL on sales 表",
+   "*EXPLAIN ANALYZE",
+   "實際執行查詢",
+   "各 operator 成本統計"
+  ]
+ },
+ {
+  "number": 90,
+  "q": "VPC flow logs 已送 CW Logs，需近即時傳送至 Splunk 分析，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Firehose 目的地 Splunk+訂閱篩選"
+  },
+  "section": "14.3",
+  "why": "subscription filter 是 CloudWatch Logs 原生的串流出口，Firehose 可直接以 Splunk 為目的地，全託管近即時投遞。Kinesis Data Streams 不能直接送 Splunk，多寫 Lambda 轉送則增加維運。",
+  "flow": [
+   "VPC Flow Logs",
+   "CloudWatch Logs",
+   "subscription filter",
+   "*Firehose（Splunk 目的地）",
+   "Splunk"
+  ]
+ },
+ {
+  "number": 91,
+  "q": "S3資料湖+Glue Data Catalog，用Athena查詢，需依使用者角色做細粒度欄位層級存取控制？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Lake Formation 依 IAM role 設規則"
+  },
+  "section": "12.1",
+  "why": "要依使用者角色對 Athena 做欄位層級控管。Lake Formation 是 data lake 權限中心，可依 IAM role 對 table、column 授權並與 Athena 整合；IAM 或 Glue policy 只能控到 table 層級。",
+  "flow": [
+   "S3 + Glue Catalog",
+   "*Lake Formation 授權",
+   "依 IAM role 限欄位",
+   "Athena 查詢"
+  ]
+ },
+ {
+  "number": 92,
+  "q": "Glue ETL 用 DynamicFrame 讀S3，每日批次載入RDS MySQL，要只處理每日增量，最少寫程式？",
+  "answer": "B",
+  "answer_text": {
+   "B": "啟用 job bookmarks 追蹤已處理"
+  },
+  "section": "5.3",
+  "why": "要只處理每日增量且最少寫程式。Glue job bookmarks 會在每次執行後記錄已處理的 S3 物件，下次只讀新檔，只要開啟設定；自己用 DynamoDB 記狀態要寫程式，刪除已處理物件則有風險。",
+  "flow": [
+   "S3 每日新增檔案",
+   "*Glue job bookmarks",
+   "只讀新物件",
+   "RDS for MySQL"
+  ]
+ },
+ {
+  "number": 93,
+  "q": "要收集 VPC flow logs 並分析網路流量，最具成本效益？",
+  "answer": "D",
+  "answer_text": {
+   "D": "送 S3 Parquet 格式+Athena"
+  },
+  "section": "14.3",
+  "why": "要收集並分析 flow logs 且最省錢。直接發佈到 S3 並選 Parquet 格式，儲存便宜，Athena 按掃描量計費、欄式格式掃得更少；送 CloudWatch Logs 擷取費較高，OpenSearch 叢集則是持續成本。",
+  "flow": [
+   "VPC Flow Logs",
+   "*S3（Parquet 格式）",
+   "Athena 查詢分析"
+  ]
+ },
+ {
+  "number": 94,
+  "q": "Redshift 4節點，三表皆EVEN分佈；門市表幾年才更新，查詢常被廣播到所有節點，最具成本效益減少廣播？",
+  "answer": "A",
+  "answer_text": {
+   "A": "門市表改為 ALL 分佈"
+  },
+  "section": "9.5",
+  "why": "門市表小又幾乎不更新，卻在每次 join 時被廣播到所有節點。改成 DISTSTYLE ALL 讓每個節點存一份完整副本，join 不必再搬資料，很少更新也代表複製成本可接受；升級節點則會加錢。",
+  "flow": [
+   "門市小表（少更新）",
+   "*DISTSTYLE ALL",
+   "每節點一份副本",
+   "join 不再廣播"
+  ]
+ },
+ {
+  "number": 95,
+  "q": "Redshift Sales 表要找 city_name 以「San」或「El」開頭的列，哪個SQL正確？",
+  "answer": "B",
+  "answer_text": {
+   "B": "where city_name ~ '^(San|El)*'"
+  },
+  "section": "9.8",
+  "why": "要找以 San 或 El 開頭的 city_name。~ 是 POSIX 正則比對，^ 錨定字串開頭，(San|El) 表示兩個前綴擇一；$ 是錨定結尾，& 也不是正則的 OR，所以其他寫法都不對。",
+  "flow": [
+   "city_name 欄位",
+   "*~ '^(San|El)*'",
+   "開頭為 San 或 El 的列"
+  ]
+ },
+ {
+  "number": 96,
+  "q": "DMS 持續複寫地端 PostgreSQL 至 Redshift，CDC 延遲高，懷疑來源DB造成，如何確認？",
+  "answer": "D",
+  "answer_text": {
+   "D": "CW 看 CDCLatencySource 指標"
+  },
+  "section": "14.1",
+  "why": "要確認 CDC 延遲是否來自來源資料庫。CDCLatencySource 量測來源端變更到 DMS 讀取之間的延遲，數值高就代表瓶頸在 source；CDCIncomingChanges 只是待套用的變更數，判斷不出延遲來源。",
+  "flow": [
+   "PostgreSQL WAL",
+   "DMS CDC task",
+   "CloudWatch metrics",
+   "*CDCLatencySource"
+  ]
+ },
+ {
+  "number": 97,
+  "q": "IoT 感測器每10秒送100KB，下游每30秒從S3讀取，哪個方案送達S3延遲最低？",
+  "answer": "C",
+  "answer_text": {
+   "C": "KDS+KCL 應用程式5秒緩衝"
+  },
+  "section": "3.1",
+  "why": "要以最低延遲把資料送到 S3。Firehose 有 buffer 緩衝，會多一段等待；用 KCL 自寫 consumer 從 Kinesis Data Streams 讀取，以 5 秒緩衝直接寫 S3 延遲最低，而 KDS 本身無法直接寫入 S3。",
+  "flow": [
+   "IoT sensors",
+   "Kinesis Data Streams",
+   "*KCL app（5 秒緩衝）",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 98,
+  "q": "S3資料湖：每日300GB多格式資料需排程轉換，另有數TB歸檔資料一次性轉換，用MWAA編排，最具成本效益？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "每日資料用 Glue crawler 識別 schema",
+   "D": "每日+歸檔皆用 EMR 轉換"
+  },
+  "section": "6.1",
+  "why": "每日資料格式多樣，用 Glue crawler 自動辨識並登錄 schema 最省事；轉換則每日 300 GB 與 TB 級歸檔都交給 EMR，大批次運算最划算。Athena 不負責辨識 schema，SageMaker 也不是 ETL 工具。",
+  "flow": [
+   "MWAA DAG",
+   "Glue crawler 辨識 schema",
+   "*EMR 轉換每日+歸檔",
+   "S3 data lake"
+  ]
+ },
+ {
+  "number": 99,
+  "q": "Glue ETL 處理訂單資料，要實施特定驗證規則以確保準確性與一致性？",
+  "answer": "B",
+  "answer_text": {
+   "B": "自訂 Glue Data Quality 規則集"
+  },
+  "section": "5.5",
+  "why": "要套用自訂的驗證規則確保準確與一致。Glue Data Quality 自訂 ruleset 可用 DQDL 宣告具體檢核並在 ETL 中執行；內建 transform 只涵蓋標準檢查，bookmarks 與 Data Catalog 都不做資料驗證。",
+  "flow": [
+   "Glue ETL job",
+   "*自訂 DQ ruleset（DQDL）",
+   "評估訂單資料",
+   "pass/fail 結果"
+  ]
+ },
+ {
+  "number": 100,
+  "q": "gzip 壓縮的交易資料，只偶爾稽核查詢，最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glacier Flexible+Glacier Select"
+  },
+  "section": "8.7",
+  "why": "資料已 gzip 壓縮且只供偶爾稽核，重點是長期儲存成本。Glacier Flexible Retrieval 儲存費遠低於 S3 Standard，需要時用 Glacier Select 直接查封存資料；S3 加 Athena 方便但長期較貴。",
+  "flow": [
+   "gzip 交易資料",
+   "*Glacier Flexible Retrieval",
+   "Glacier Select 查詢",
+   "偶爾稽核"
+  ]
+ },
+ {
+  "number": 101,
+  "q": "已測試的 Redshift 預存程序（非關鍵），要每日自動執行，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Query editor v2 排程執行"
+  },
+  "section": "9.7",
+  "why": "stored procedure 已在 Redshift 內，只需每日排程。Query editor v2 內建排程查詢，可直接定時 CALL 預存程序，不用額外養 Lambda、EC2 Spot 或 Glue job，元件最少也最省錢。",
+  "flow": [
+   "*Query editor v2 排程",
+   "每日 CALL procedure",
+   "Redshift 寫入資料表"
+  ]
+ },
+ {
+  "number": 102,
+  "q": "點擊流經 Firehose 存S3，數百名跨部門使用者用QS儀表板，需可擴展、每日更新，最具成本效益？（選2）",
+  "answer": "BE",
+  "answer_text": {
+   "B": "Athena 查詢點擊流",
+   "E": "QS SPICE+每日重新整理"
+  },
+  "section": "11.1",
+  "why": "資料已由 Firehose 落在 S3，Athena 可 serverless 直接查，不必另建 Redshift。SPICE 把結果載入記憶體供數百名使用者共用，設每日 refresh 即可，比 direct query 每次打 Athena 省又快。",
+  "flow": [
+   "Firehose",
+   "S3 clickstream",
+   "Athena 查詢",
+   "*SPICE（每日 refresh）",
+   "QuickSight dashboards"
+  ]
+ },
+ {
+  "number": 103,
+  "q": "混合架構（地端+雲端）資料編排，優先可攜性與開源，兩邊都用哪個服務？",
+  "answer": "C",
+  "answer_text": {
+   "C": "MWAA (Apache Airflow)"
+  },
+  "section": "7.4",
+  "why": "混合雲編排要兼顧可攜性與開源。Apache Airflow 是開源工具，地端自架 Airflow、雲端用 MWAA 託管，兩邊沿用同一套 DAG；Glue、SWF、Data Exchange 都是 AWS 專有服務，搬不回地端。",
+  "flow": [
+   "地端 Apache Airflow",
+   "同一套 DAG",
+   "*Amazon MWAA",
+   "混合雲編排"
+  ]
+ },
+ {
+  "number": 104,
+  "q": "NoSQL 客戶資料遷AWS，需全託管、高OLTP、個位數毫秒、全球高可用，最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DynamoDB"
+  },
+  "section": "10.1",
+  "why": "需求是全託管 NoSQL、高 OLTP、個位數毫秒延遲與全球高可用。DynamoDB 是 serverless NoSQL，讀寫為個位數毫秒，搭配 Global Tables 多區域複寫即可全球高可用；Timestream 是時序資料庫。",
+  "flow": [
+   "遊戲客戶資料",
+   "*Amazon DynamoDB",
+   "Global Tables",
+   "全球低延遲 OLTP"
+  ]
+ },
+ {
+  "number": 105,
+  "q": "EventBridge 事件呼叫 Lambda 時出現 AccessDeniedException，如何解決？",
+  "answer": "B",
+  "answer_text": {
+   "B": "EventBridge 角色+Lambda 資源政策授權"
+  },
+  "section": "12.3",
+  "why": "AccessDeniedException 是權限問題。EventBridge 的 IAM 權限與 Lambda 的 resource-based policy 都要允許 invoke；執行角色的 trust policy 是給 Lambda 自己用，subnet、schema 也無關。",
+  "flow": [
+   "EventBridge rule",
+   "*IAM 權限+Lambda 資源政策",
+   "Lambda function"
+  ]
+ },
+ {
+  "number": 106,
+  "q": "S3資料湖依法規須對上傳檔案套用兩層伺服器端加密，用 Lambda 套用，怎麼做？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DSSE-KMS 雙層伺服器端加密"
+  },
+  "section": "12.5",
+  "why": "法規要求兩層伺服器端加密。DSSE-KMS 是 S3 內建的雙層伺服器端加密，Lambda 寫入時指定即可；SSE-KMS 與 SSE-C 都只有一層，S3 Encryption Client 屬於用戶端加密，不算伺服器端。",
+  "flow": [
+   "Lambda 上傳物件",
+   "*DSSE-KMS",
+   "兩層伺服器端加密",
+   "S3 data lake"
+  ]
+ },
+ {
+  "number": 107,
+  "q": "Athena 查詢執行前在佇列中等待，如何避免排隊？",
+  "answer": "B",
+  "answer_text": {
+   "B": "為 workgroup 設定佈建容量"
+  },
+  "section": "8.5",
+  "why": "排隊代表 on-demand 共享容量不足。替 workgroup 設定 provisioned capacity 可保留專屬 DPU，查詢不必等共享資源；調結果上限、federated query 或把使用者加入 workgroup 都不增加容量。",
+  "flow": [
+   "Athena 查詢排隊",
+   "*provisioned capacity",
+   "workgroup 專屬 DPU",
+   "查詢立即執行"
+  ]
+ },
+ {
+  "number": 108,
+  "q": "Glue job 讀S3寫Redshift，已啟用 bookmark、最大並行度1，但舊檔每次都被重新處理，可能原因？",
+  "answer": "D",
+  "answer_text": {
+   "D": "缺少 job.commit() 陳述式"
+  },
+  "section": "5.3",
+  "why": "bookmark 已啟用、並行度 1 也正確，舊檔卻一直重跑，代表 bookmark 狀態沒被保存。Glue script 結尾必須呼叫 job.commit()，進度才會寫回；少了 commit，下次執行仍會重讀舊檔。",
+  "flow": [
+   "Glue 讀 S3",
+   "寫入 Redshift",
+   "*job.commit()",
+   "bookmark 狀態保存",
+   "下次跳過舊檔"
+  ]
+ },
+ {
+  "number": 109,
+  "q": "地端用第三方工具編排資料擷取，要遷AWS：免管伺服器、可編排Python與Bash、不可重構，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "MWAA"
+  },
+  "section": "7.4",
+  "why": "要免管伺服器、能編排 Python 與 Bash 腳本且不重構。MWAA 是託管 Airflow，用 PythonOperator、BashOperator 就能直接呼叫既有腳本；Step Functions、Lambda、Glue 都要改寫工作內容。",
+  "flow": [
+   "既有 Python/Bash 腳本",
+   "*Amazon MWAA",
+   "Python/BashOperator",
+   "免管伺服器排程"
+  ]
+ },
+ {
+  "number": 110,
+  "q": "地端 MySQL 頻繁更新，需近即時匯入 Redshift 整合分析，已有 Direct Connect，最少開發工作？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DMS 全量載入+CDC 至 Redshift"
+  },
+  "section": "2.2",
+  "why": "要把頻繁更新的地端 MySQL 近即時同步到 Redshift。DMS full load 加 CDC 先搬全量、再持續擷取變更，只需設定不寫程式；Glue 排程不夠即時，AppFlow 要自建 connector，DataSync 只同步檔案。",
+  "flow": [
+   "地端 MySQL",
+   "Direct Connect",
+   "*DMS full load + CDC",
+   "Amazon Redshift"
+  ]
+ },
+ {
+  "number": 111,
+  "q": "S3點擊流每日用SQL JOIN跨bucket查詢，需無伺服器、可依分割查詢、維持ACID，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Athena"
+  },
+  "section": "8.7",
+  "why": "要 serverless、依分區查 S3、跨 bucket JOIN 且維持 ACID。Athena 直接用 SQL JOIN 查 S3 分區資料，搭配 Iceberg 表提供 ACID；Spectrum 要有 Redshift，EMR 要管叢集，S3 Select 不能 JOIN。",
+  "flow": [
+   "S3 clickstream（分區）",
+   "*Athena SQL JOIN",
+   "Iceberg ACID table",
+   "每日 KPI"
+  ]
+ },
+ {
+  "number": 112,
+  "q": "Account_A eu-east-1 的 RDS PostgreSQL 遷至 Account_B eu-west-1 的 Redshift，DMS 複寫執行個體該建在哪？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Account_B 的 eu-west-1"
+  },
+  "section": "2.2",
+  "why": "DMS 以 Redshift 為 target 時，replication instance 必須和 Redshift cluster 在同一個帳號與區域，也就是 Account_B 的 eu-west-1；來源端的 RDS 再透過跨帳號、跨區網路連線讀取。",
+  "flow": [
+   "Account_A RDS eu-east-1",
+   "*DMS（Account_B eu-west-1）",
+   "Redshift（Account_B）"
+  ]
+ },
+ {
+  "number": 113,
+  "q": "Redshift 多節點叢集，每個來源位置各下一個COPY載入同一表，太慢；要加速且不增加成本？",
+  "answer": "D",
+  "answer_text": {
+   "D": "用 manifest 檔列位置，單一 COPY"
+  },
+  "section": "9.2",
+  "why": "每個位置各下一次 COPY，無法善用多節點平行。把所有檔案位置寫進 manifest file，用單一 COPY 載入，Redshift 會把檔案分給各 slice 平行處理，既加速又不需 EMR、Glue 等額外費用。",
+  "flow": [
+   "多個 S3 檔案位置",
+   "*manifest file",
+   "單一 COPY 平行載入",
+   "Redshift table"
+  ]
+ },
+ {
+  "number": 114,
+  "q": "Firehose 將2MB .csv 存至S3，需轉成JSON並以Parquet格式儲存，最少開發工作？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Lambda 轉 JSON，Firehose 轉 Parquet"
+  },
+  "section": "3.4",
+  "why": "Firehose 的 record format conversion 能輸出 Parquet，但輸入須為 JSON。所以由 Firehose 呼叫 Lambda 把 CSV 轉 JSON，再由 Firehose 轉 Parquet 寫入 S3，自寫的只有轉 JSON 這段。",
+  "flow": [
+   "CSV 資料",
+   "Firehose",
+   "*Lambda 轉 JSON",
+   "Firehose 轉 Parquet",
+   "S3"
+  ]
+ },
+ {
+  "number": 115,
+  "q": "公司用 Transfer Family 從地端遷移資料至 AWS，政策要求傳輸中加密須用 TLS 1.2 以上。哪個方案符合？",
+  "answer": "C",
+  "answer_text": {
+   "C": "改 Transfer 安全政策最低 TLS 1.2"
+  },
+  "section": "13.4",
+  "why": "政策要求傳輸中加密至少 TLS 1.2，Transfer Family server 的 security policy 正是控制 TLS 版本與 cipher suite 的設定，指定最低 TLS 1.2 即可強制落實；網路規則管不到協定版本。",
+  "flow": [
+   "地端 client",
+   "Transfer Family server",
+   "*security policy：TLS 1.2",
+   "TLS 1.2+ 加密傳輸"
+  ]
+ },
+ {
+  "number": 116,
+  "q": "地端 Kafka 接收 Oracle 增量更新，要以 replatform（非 refactor）遷移至 AWS，管理負擔最低？",
+  "answer": "D",
+  "answer_text": {
+   "D": "MSK Serverless"
+  },
+  "section": "3.6",
+  "why": "要把既有 Kafka 以 replatform 搬上 AWS，須保留 Kafka 相容性；MSK Serverless 免管 broker、容量與擴縮，管理負擔最低。Provisioned MSK 仍要規劃容量，改用 Kinesis 則算 refactor。",
+  "flow": [
+   "Oracle 增量更新",
+   "*MSK Serverless",
+   "應用程式消費"
+  ]
+ },
+ {
+  "number": 117,
+  "q": "Glue ETL 匯入 S3 壓縮檔，管線須支援增量處理，該用哪個 Glue 功能？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Job bookmarks"
+  },
+  "section": "5.3",
+  "why": "增量處理的關鍵是記住上次處理到哪裡；Glue job bookmarks 會追蹤已處理過的 S3 檔案，下次 job run 只處理新進檔案，不必自己寫狀態管理邏輯。",
+  "flow": [
+   "S3 壓縮檔",
+   "Glue ETL job",
+   "*job bookmarks",
+   "只處理新進檔案"
+  ]
+ },
+ {
+  "number": 118,
+  "q": "銀行用 PutRecord 寫入 KDS，特定時段網路中斷，要整條管線 exactly-once 遞送，怎麼做？",
+  "answer": "A",
+  "answer_text": {
+   "A": "來源嵌入唯一 ID，處理時去重"
+  },
+  "section": "3.3",
+  "why": "網路中斷時 producer 重試 PutRecord 會重複送同一筆，Kinesis Data Streams 只保證 at-least-once。要整條 pipeline exactly-once，須在來源為每筆嵌入唯一 ID，由處理端依 ID 去重。",
+  "flow": [
+   "*來源嵌入 unique ID",
+   "PutRecord（可能重試）",
+   "Kinesis Data Streams",
+   "consumer 依 ID 去重"
+  ]
+ },
+ {
+  "number": 119,
+  "q": "S3 日誌檔被誤刪，要防止未來誤刪，營運負擔最低？",
+  "answer": "B",
+  "answer_text": {
+   "B": "啟用 S3 Versioning"
+  },
+  "section": "1.3",
+  "why": "開啟 S3 Versioning 後，刪除物件只會加上 delete marker，舊版本仍保留，誤刪時移除 marker 或取回舊版即可復原。只需在 bucket 開一個設定，是營運負擔最低的防誤刪方案。",
+  "flow": [
+   "S3 bucket",
+   "*啟用 Versioning",
+   "刪除只加 delete marker",
+   "取回舊版本"
+  ]
+ },
+ {
+  "number": 120,
+  "q": "每秒數千筆網路用量即時處理後存 Aurora，需偵測用量驟降以立即處置，延遲最低？",
+  "answer": "B",
+  "answer_text": {
+   "B": "改寫入 KDS，用 Flink 偵測驟降"
+  },
+  "section": "3.5",
+  "why": "每秒數千筆又要立即發現用量驟降，屬於串流即時分析：資料改送 Kinesis Data Streams，由 Managed Service for Apache Flink 持續偵測。定期查 Aurora 有 polling 延遲，不是最低延遲。",
+  "flow": [
+   "網路用量資料",
+   "Kinesis Data Streams",
+   "*Managed Flink 偵測驟降",
+   "立即處置"
+  ]
+ },
+ {
+  "number": 121,
+  "q": "S3 數 TB 原始資料要清理後載入 Redshift 供複雜查詢，免複雜 ETL 與管理基礎設施，營運負擔最低？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DataBrew清理/Glue載入/Redshift查"
+  },
+  "section": "5.1",
+  "why": "需求是不寫複雜 ETL、不管基礎設施：Glue DataBrew 以視覺化 recipe 清理準備資料，再用 Glue 載入 Redshift，分析師直接在 Redshift 跑複雜 SQL。全是託管服務，營運負擔最低。",
+  "flow": [
+   "S3 原始資料",
+   "*Glue DataBrew 清理",
+   "Glue 載入",
+   "Redshift 複雜查詢"
+  ]
+ },
+ {
+  "number": 122,
+  "q": "VPC 內的 Lambda 可連 SFTP，但上傳 S3 逾時，需安全解決且最具成本效益？",
+  "answer": "B",
+  "answer_text": {
+   "B": "建 S3 gateway endpoint 並導流"
+  },
+  "section": "13.1",
+  "why": "Lambda 連得到 SFTP、上傳 S3 卻逾時，代表 VPC 沒有通往 S3 的路徑。建立 S3 gateway endpoint 並由 route table 導流，流量走 AWS 私網，且 gateway endpoint 免費，比 NAT 省。",
+  "flow": [
+   "Lambda（VPC）",
+   "route table",
+   "*S3 gateway endpoint",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 123,
+  "q": "多個 RDS 客戶資料庫欄位名稱不一致，需跨庫連結客戶記錄，營運負擔最低？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue crawler+FindMatches 並調校"
+  },
+  "section": "5.4",
+  "why": "欄位名稱不一致（place_id 對 location_id），exact match 連不起客戶。先用 Glue crawler 編目各 RDS，再以 ML 的 FindMatches 找出同一客戶的記錄，並依評估結果調校準確度。",
+  "flow": [
+   "RDS 客戶資料庫",
+   "Glue crawler",
+   "*FindMatches transform",
+   "跨庫客戶記錄連結"
+  ]
+ },
+ {
+  "number": 124,
+  "q": "第三方資料存 S3，Glue crawler 卻建出多張表，要確保只建一張表？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "格式、壓縮、schema 全部一致",
+   "D": "S3 物件 prefix 結構一致"
+  },
+  "section": "4.3",
+  "why": "Glue crawler 依格式、壓縮、schema 與 S3 prefix 結構判斷是否同一資料集。物件格式、壓縮、schema 一致（A），且 prefix 結構一致（D），crawler 才會歸成同一張表而不拆成多張。",
+  "flow": [
+   "第三方資料 S3 物件",
+   "*同格式/schema + 同 prefix",
+   "Glue crawler",
+   "只建一張表"
+  ]
+ },
+ {
+  "number": 125,
+  "q": "SQS 消費端偶爾停機，訊息 1 天後過期被刪造成資料遺失，如何降到最低？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "延長訊息保留期間",
+   "C": "掛載 DLQ 死信佇列"
+  },
+  "section": "7.6",
+  "why": "消費端停機超過 1 天 retention，訊息就被刪；延長 message retention period（最長 14 天）讓訊息撐過停機（A），再掛 DLQ 接住多次處理失敗的訊息，可事後重處理而不遺失（C）。",
+  "flow": [
+   "Producer",
+   "*SQS（延長 retention）",
+   "Consumer 恢復後處理",
+   "失敗訊息進 DLQ"
+  ]
+ },
+ {
+  "number": 126,
+  "q": "MSK 資料經管線寫入 Keyspaces、OpenSearch 及 S3 Avro，要近即時時序儀表板，延遲最低？",
+  "answer": "A",
+  "answer_text": {
+   "A": "用 OpenSearch Dashboards"
+  },
+  "section": "11.3",
+  "why": "資料管線已寫入 OpenSearch Service，直接用 OpenSearch Dashboards 視覺化即可近即時看到時序資料。改從 S3 的 Avro 物件經 Athena 或 QuickSight 查詢，多一層處理，延遲較高。",
+  "flow": [
+   "MSK",
+   "自訂資料管線",
+   "OpenSearch Service",
+   "*OpenSearch Dashboards"
+  ]
+ },
+ {
+  "number": 127,
+  "q": "數 PB 資料在 S3 Standard，存取模式不可預測、部分數月未用但須毫秒取回，要降成本且營運負擔最低？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Intelligent-Tiering啟用Deep Archive"
+  },
+  "section": "1.2",
+  "why": "存取模式不可預測又橫跨數千個 bucket，用 S3 Intelligent-Tiering 依存取自動搬層最省事，免維護 lifecycle rule；再啟用 Deep Archive Access tier，讓數月未用的資料更省成本。",
+  "flow": [
+   "S3 Standard（PB 級）",
+   "*S3 Intelligent-Tiering",
+   "依存取自動分層",
+   "Deep Archive Access tier"
+  ]
+ },
+ {
+  "number": 128,
+  "q": "KDS 每日數百萬事件，需轉換後寫入 OpenSearch，營運負擔最低？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Firehose+Lambda 轉換後寫入"
+  },
+  "section": "3.4",
+  "why": "Firehose 是全託管投遞服務，能以 Kinesis Data Streams 為來源直接投遞到 OpenSearch Service，並內建 Lambda 轉換，不用維護 consumer 程式，比 KCL 或 Logstash 自建省力。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*Firehose",
+   "Lambda 轉換",
+   "OpenSearch Service"
+  ]
+ },
+ {
+  "number": 129,
+  "q": "Lake Formation 客戶表須禁止使用者存取加拿大客戶的資料列，營運最省力？",
+  "answer": "A",
+  "answer_text": {
+   "A": "列級篩選排除 country=Canada"
+  },
+  "section": "12.1",
+  "why": "需求是擋掉特定資料列（country 為 Canada），Lake Formation 原生支援 row-level filter，在表上設定排除條件即可，使用者查詢時自動看不到加拿大客戶，不必另建表或改 ETL。",
+  "flow": [
+   "使用者查詢",
+   "Lake Formation 客戶表",
+   "*row filter：排除 Canada",
+   "只回非加拿大列"
+  ]
+ },
+ {
+  "number": 130,
+  "q": "Redshift 查詢編輯器要用第三方 IdP 登入，資料工程師第一步該做什麼？",
+  "answer": "B",
+  "answer_text": {
+   "B": "在 Redshift 內註冊 IdP"
+  },
+  "section": "12.4",
+  "why": "要讓使用者用第三方 IdP 登入 Redshift query editor，身分聯邦的第一步是在 Amazon Redshift 內註冊該 IdP，指定要信任的外部身分來源；Secrets Manager、ACM 管的是密碼與憑證。",
+  "flow": [
+   "第三方 IdP",
+   "*在 Redshift 註冊 IdP",
+   "使用者驗證登入",
+   "Redshift query editor"
+  ]
+ },
+ {
+  "number": 131,
+  "q": "EMR 每日 Spark ETL 擴到 5 個 task 節點，CPU 滿載但記憶體 <30%，要最具成本效益地降成本？",
+  "answer": "C",
+  "answer_text": {
+   "C": "task 節點改運算最佳化"
+  },
+  "section": "6.3",
+  "why": "CPU 常滿載、記憶體不到 30%，是 CPU-bound 工作負載。task node 改用 compute optimized instance，同樣費用拿到更多 CPU，最具成本效益；加節點更貴，換 memory optimized 則方向錯。",
+  "flow": [
+   "EMR Spark ETL",
+   "CPU 滿、記憶體 <30%",
+   "CPU-bound",
+   "*改 compute optimized"
+  ]
+ },
+ {
+  "number": 132,
+  "q": "Glue job 將 S3 CSV 寫入 Redshift，重跑會產生重複記錄，需更新且不重複？",
+  "answer": "A",
+  "answer_text": {
+   "A": "先寫 staging 表，再 SQL 更新"
+  },
+  "section": "9.8",
+  "why": "直接寫目標表，Glue job 重跑就會再插一次同批資料。先載入 Redshift staging table，再用 SQL 依 key 更新既有列、插入新列（upsert），重跑也不重複；dropDuplicates() 只管當批。",
+  "flow": [
+   "S3 CSV",
+   "Glue job",
+   "*Redshift staging table",
+   "SQL 更新目標表"
+  ]
+ },
+ {
+  "number": 133,
+  "q": "數百個檔案載入 Redshift 事實表，要最大吞吐量並最佳利用叢集資源？",
+  "answer": "D",
+  "answer_text": {
+   "D": "用單一 COPY 指令載入"
+  },
+  "section": "9.2",
+  "why": "Redshift 載入大量檔案的最佳實務是單一 COPY 指令，它會把多個檔案平行分配到各 node 與 slice 同時載入，充分利用叢集資源。拆成多個 COPY 或用 INSERT 都會增加 overhead。",
+  "flow": [
+   "S3 數百個檔案",
+   "*單一 COPY 指令",
+   "平行分到各 slice",
+   "Redshift 事實表"
+  ]
+ },
+ {
+  "number": 134,
+  "q": "Glue ETL 寫入 S3 資料湖供 Athena 查詢，需在無共同唯一 ID 下找出相符記錄？",
+  "answer": "D",
+  "answer_text": {
+   "D": "訓練並用 FindMatches 轉換"
+  },
+  "section": "5.4",
+  "why": "記錄間沒有共同 unique identifier，無法用 key join 比對；FindMatches 以機器學習做模糊比對，訓練後放進 ETL job 就能找出代表同一實體的記錄。Macie 只偵測敏感資料，幫不上忙。",
+  "flow": [
+   "S3 資料湖",
+   "Glue ETL job",
+   "*FindMatches（ML 比對）",
+   "相符記錄供 Athena"
+  ]
+ },
+ {
+  "number": 135,
+  "q": "S3 混放 csv 與 json，crawler 已排除 json 但 Athena 仍掃到 json，不影響 csv 存取，查詢最快？",
+  "answer": "C",
+  "answer_text": {
+   "C": "把 json 移到 S3 其他路徑"
+  },
+  "section": "4.6",
+  "why": "crawler 的 exclude pattern 只影響 Data Catalog，Athena 仍會掃描 table LOCATION 下的所有檔案。把 .json 移到別的 S3 路徑，Athena 就只掃 .csv，查詢最快，也不影響 .csv 存取。",
+  "flow": [
+   "S3 同路徑 csv + json",
+   "*json 移到其他路徑",
+   "table LOCATION 只剩 csv",
+   "Athena 只掃 csv"
+  ]
+ },
+ {
+  "number": 136,
+  "q": "Lambda 執行角色已可存取 S3，讀取 KMS 加密物件仍失敗，可能原因？",
+  "answer": "D",
+  "answer_text": {
+   "D": "執行角色缺 KMS 金鑰解密權限"
+  },
+  "section": "12.5",
+  "why": "S3 權限已具備仍讀不到，差在物件用 KMS 加密：讀取 SSE-KMS 物件時，Lambda execution role 還需要對該 KMS key 的 kms:Decrypt 權限，且 key policy 也要允許，缺了就會失敗。",
+  "flow": [
+   "Lambda execution role",
+   "s3:GetObject",
+   "*kms:Decrypt（KMS key）",
+   "讀取加密物件"
+  ]
+ },
+ {
+  "number": 137,
+  "q": "1,000 張 Data Catalog 表的資料品質規則需修改，營運負擔最低？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Lambda 呼叫 Glue Data Quality API"
+  },
+  "section": "5.5",
+  "why": "要改 1,000 張表的資料品質規則，逐一用 Console 改太耗人力；用 Lambda 呼叫 Glue Data Quality API 批次更新最輕量。只是改規則設定，不必動用 EMR 或另建 Glue ETL pipeline。",
+  "flow": [
+   "新業務需求",
+   "*Lambda 批次腳本",
+   "Glue Data Quality API",
+   "更新 1,000 張表規則"
+  ]
+ },
+ {
+  "number": 138,
+  "q": "Branch A 已部署上線，Branch B 下週要合併到 master，發 PR 前 Branch B 應執行？",
+  "answer": "C",
+  "answer_text": {
+   "C": "git rebase master"
+  },
+  "section": "14.6",
+  "why": "Branch A 已上線，master 已有新 commit；Branch B 發 PR 前先執行 git rebase master，把自己的 commit 重放到最新 master 之後，提前解決衝突，合併時 history 也保持線性。",
+  "flow": [
+   "Branch A 已併入 master",
+   "*git rebase master",
+   "Branch B 發 PR",
+   "合併到 master"
+  ]
+ },
+ {
+  "number": 139,
+  "q": "Redshift 表以 Region ID、Department ID、Role ID 為複合排序鍵，哪些查詢最能加速？（選2）（NA=North America）",
+  "answer": "AB",
+  "answer_text": {
+   "A": "WHERE Region ID='NA'",
+   "B": "WHERE Region ID='NA' AND Dept ID=20"
+  },
+  "section": "9.6",
+  "why": "compound sort key 依欄位順序排序，篩選含最左前綴欄位才能有效跳過資料區塊。A 只篩第一欄 Region ID，B 篩 Region ID 加第二欄 Department ID，都符合前綴；略過首欄則幫助有限。",
+  "flow": [
+   "compound sort key",
+   "依欄位順序排序",
+   "*WHERE 含最左前綴",
+   "跳過資料區塊"
+  ]
+ },
+ {
+  "number": 140,
+  "q": "數百萬個 1KB JSON 檔經 Glue 轉 Parquet 載入 Redshift，處理時間增加，最能縮短時間？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue dynamic frame 檔案分組讀取"
+  },
+  "section": "6.4",
+  "why": "數百萬個 1 KB 小檔，瓶頸在逐檔讀取與 task overhead。Glue DynamicFrame 的 file grouping 把小檔併成較大群組、交給較少 task 處理，大幅縮短時間，其餘流程不變。",
+  "flow": [
+   "S3 數百萬個小 JSON",
+   "*Glue file grouping",
+   "轉 Parquet",
+   "Redshift"
+  ]
+ },
+ {
+  "number": 141,
+  "q": "MWAA 工作流程執行失敗，要用 Airflow 日誌診斷原因，該看哪種日誌？",
+  "answer": "D",
+  "answer_text": {
+   "D": "YourEnvironmentName-Task"
+  },
+  "section": "14.5",
+  "why": "workflow 失敗要看 task 實際的錯誤訊息與 stack trace，MWAA 把它們寫進 CloudWatch Logs 的 YourEnvironmentName-Task log group；WebServer、Scheduler 等記錄的是元件運作。",
+  "flow": [
+   "MWAA workflow 失敗",
+   "CloudWatch Logs",
+   "*YourEnvironmentName-Task",
+   "task 錯誤訊息"
+  ]
+ },
+ {
+  "number": 142,
+  "q": "Redshift Spectrum 存取共用 S3 的第三方資料，法規要求資料不可從公司 AWS 環境外存取？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "Redshift 移私有子網+介面端點+NAT",
+   "C": "啟用增強 VPC 路由+Direct Connect"
+  },
+  "section": "13.5",
+  "why": "A 把 Redshift 移到 private subnet、以 interface VPC endpoint 連線，叢集不對外公開；C 開 enhanced VPC routing 讓 S3 流量走 VPC，供應商以 Direct Connect 私有連入，不經公網。",
+  "flow": [
+   "供應商 Direct Connect",
+   "公司 VPC",
+   "private Redshift",
+   "*enhanced VPC routing",
+   "S3（Spectrum）"
+  ]
+ },
+ {
+  "number": 143,
+  "q": "多來源檔案定期進 S3，需在新檔到達時近即時匯入 Redshift？",
+  "answer": "D",
+  "answer_text": {
+   "D": "S3 事件通知觸發 Lambda 載入"
+  },
+  "section": "7.5",
+  "why": "要在新檔一到就近即時載入，事件驅動比排程更快：S3 Event Notifications 在物件建立時觸發 Lambda，由 Lambda 對新檔執行 Redshift COPY，不必定時輪詢，也不用維護排程服務。",
+  "flow": [
+   "新檔進 S3",
+   "*S3 Event Notifications",
+   "Lambda",
+   "Redshift COPY"
+  ]
+ },
+ {
+  "number": 144,
+  "q": "KDS 即時收集日誌，要在 Redshift 即時查詢並加值，匯入的營運負擔最低？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Redshift 串流擷取 KDS 成具體化檢視"
+  },
+  "section": "9.3",
+  "why": "Redshift streaming ingestion 直接從 Kinesis Data Streams 讀取並以 materialized view 呈現，資料一進來就能用 SQL 查詢與加值，省去 Firehose、S3 暫存與排程 COPY 等中介元件。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*Redshift 串流擷取",
+   "materialized view",
+   "SQL 即時查詢加值"
+  ]
+ },
+ {
+  "number": 145,
+  "q": "地端 Oracle 資料倉儲表（<50GB、有單調遞增欄位）需每日增量同步到 S3 資料湖，最具作業效率？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue JDBC+遞增欄位 job bookmark"
+  },
+  "section": "5.3",
+  "why": "每張表都有單調遞增欄位，正好當 Glue job bookmark 的追蹤欄位：以 Glue JDBC connection 連 Oracle，每天只抓新增資料 append 到 S3 全量副本，不必每天全量重載覆寫。",
+  "flow": [
+   "Oracle 資料倉儲",
+   "Glue JDBC connection",
+   "*bookmark：遞增欄位",
+   "append 至 S3 全量副本"
+  ]
+ },
+ {
+  "number": 146,
+  "q": "地端 Oracle 70 張表（皆有主鍵、偶有異動），每天匯入 S3 Parquet 資料湖，最省工？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DMS 持續複寫至 S3（Parquet）"
+  },
+  "section": "2.2",
+  "why": "70 張表都有主鍵、資料還會偶爾更新；DMS ongoing replication 以 CDC 捕捉 Oracle 變更，直接寫到 S3 並輸出 Parquet，省去自寫增量與合併邏輯，比 Glue bookmark 或 Sqoop 省工。",
+  "flow": [
+   "地端 Oracle（70 表）",
+   "*DMS ongoing replication",
+   "S3（Parquet）",
+   "資料湖查詢"
+  ]
+ },
+ {
+  "number": 147,
+  "q": "每秒 1 萬筆 10 bytes 定位記錄寫入 KDS，可容忍數分鐘延遲，需可靠且最大化 shard 吞吐效率？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Kinesis Producer Library (KPL)"
+  },
+  "section": "3.2",
+  "why": "每筆僅約 10 bytes，逐筆寫入浪費 shard 的 record 配額；KPL 以 aggregation 與 batching 把多筆小記錄打包成一筆 Kinesis record 並自動重試。容許數分鐘延遲，正好接受打包緩衝。",
+  "flow": [
+   "10 bytes 定位記錄",
+   "*KPL aggregation",
+   "打包成較少 record",
+   "Kinesis Data Streams"
+  ]
+ },
+ {
+  "number": 148,
+  "q": "持續成長的半結構化資料需去重，含有拼寫錯誤的重複記錄，營運負擔最低？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue FindMatches 移除重複"
+  },
+  "section": "5.4",
+  "why": "拼寫錯誤造成的重複記錄不完全相同，exact match 抓不到。Glue FindMatches 以機器學習辨識代表同一實體的記錄並移除重複，免自寫演算法，比 Athena UDF 或 EMR 自建 ML 省力。",
+  "flow": [
+   "半結構化資料",
+   "*Glue FindMatches",
+   "模糊比對拼寫錯誤",
+   "移除重複記錄"
+  ]
+ },
+ {
+  "number": 149,
+  "q": "KPL 寫入、KCL 消費 KDS（自動擴縮），補貨系統收到重複資料，可能原因？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "Producer 遇網路逾時",
+   "C": "shard 或 record processor 數變動"
+  },
+  "section": "3.3",
+  "why": "Kinesis 只保證 at-least-once：producer 網路逾時無法確認寫入就重試，同一筆寫兩次（A）；shard 或 record processor 數量變動時，KCL 重派與 checkpoint 交接會重複處理記錄（C）。",
+  "flow": [
+   "KPL 寫入（逾時重試）",
+   "Kinesis Data Streams",
+   "KCL（shard 變動重派）",
+   "*重複記錄（at-least-once）"
+  ]
+ },
+ {
+  "number": 150,
+  "q": "多個 AWS 營運系統各有 JDBC 關聯式資料庫，需每小時追蹤全流程訂單，開發負擔最低？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue 匯入 Redshift，QS 儀表板"
+  },
+  "section": "11.1",
+  "why": "各系統都是 JDBC 相容關聯式資料庫，Glue 可直接透過 JDBC 建 ingestion pipeline 匯入 Redshift，集中後以 QuickSight 儀表板每小時追蹤全流程訂單，全用託管服務串接，開發負擔最低。",
+  "flow": [
+   "各系統 JDBC 資料庫",
+   "*Glue ingestion",
+   "Amazon Redshift",
+   "QuickSight 儀表板"
+  ]
+ },
+ {
+  "number": 151,
+  "q": "用 Amazon Neptune 開發圖形應用程式，應使用哪些語言？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "Gremlin",
+   "D": "SPARQL"
+  },
+  "section": "10.1",
+  "why": "Amazon Neptune 支援兩種圖形模型與查詢語言：property graph 用 Apache TinkerPop Gremlin（A），RDF 用 W3C 的 SPARQL（D），開發 Neptune 圖形應用程式就用這兩種語言。",
+  "flow": [
+   "圖形應用程式",
+   "*Gremlin / SPARQL",
+   "Amazon Neptune"
+  ]
+ },
+ {
+  "number": 152,
+  "q": "遊戲 App 送 20KB 記錄，需裝置端最佳吞吐，3 個內部消費者各需專用吞吐量？",
+  "answer": "A",
+  "answer_text": {
+   "A": "PutRecords 送 KDS+增強型扇出"
+  },
+  "section": "3.2",
+  "why": "裝置端要最佳吞吐，就用 PutRecords 批次送多筆到 Kinesis Data Streams；三個內部 consumer 各需專用吞吐，enhanced fan-out 讓每個 consumer 在每個 shard 獨享 2 MB/s 讀取。",
+  "flow": [
+   "遊戲 App（20 KB）",
+   "PutRecords",
+   "Kinesis Data Streams",
+   "*enhanced fan-out",
+   "3 個 consumer"
+  ]
+ },
+ {
+  "number": 153,
+  "q": "Redshift 實體化檢視要刪除所有列以回收儲存空間，哪個指令能回收最多空間？",
+  "answer": "B",
+  "answer_text": {
+   "B": "TRUNCATE mv"
+  },
+  "section": "9.7",
+  "why": "要清空整個 materialized view 並回收最多空間，TRUNCATE 會直接移除所有列並立即釋放儲存空間。DELETE 只把列標記為刪除，要再跑 VACUUM 才回收；VACUUM 本身也不會刪資料。",
+  "flow": [
+   "Redshift materialized view",
+   "*TRUNCATE mv",
+   "儲存空間立即釋放"
+  ]
+ },
+ {
+  "number": 154,
+  "q": "Redshift Spectrum 查詢 S3 單一路徑 CSV（100+欄、每日30+檔）效能變差，最少開發工作量改善？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "第三方程式改輸出欄式格式",
+   "C": "S3 資料依訂單日期分區"
+  },
+  "section": "9.4",
+  "why": "查詢只選部分欄位，但 100+ 欄的 CSV 全放同一路徑，Spectrum 每次都掃全部資料。改用 Parquet 等欄式格式只讀需要的欄，再依 order date 分區做 partition pruning，掃描量大減。",
+  "flow": [
+   "第三方 app 每日輸出",
+   "*Parquet + 依日期分區",
+   "S3 data lake",
+   "Redshift Spectrum 少掃描"
+  ]
+ },
+ {
+  "number": 155,
+  "q": "S3 客戶記錄建立後7年內不可刪改，連 root 也不行，用 S3 Object Lock 怎麼設？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Compliance 模式，預設保留7年"
+  },
+  "section": "1.4",
+  "why": "7 年內連 root 都不能刪改，就要 Compliance mode：保留期內物件版本不能覆寫或刪除，誰都無法 bypass。Governance 可被特殊權限繞過；default retention 讓新物件自動套 7 年。",
+  "flow": [
+   "S3 bucket（Object Lock）",
+   "*Compliance mode",
+   "default retention 7 年",
+   "含 root 都無法刪改"
+  ]
+ },
+ {
+  "number": 156,
+  "q": "在 Athena 建立與 old_table 相同結構的空資料表，該用哪個 SQL？",
+  "answer": "D",
+  "answer_text": {
+   "D": "CTAS SELECT * FROM old WITH NO DATA"
+  },
+  "section": "8.6",
+  "why": "要建立與 old_table 同 schema 的空表：CTAS 依 SELECT 結果建新表，加上 WITH NO DATA 就只建結構、不寫入資料。沒加 WITH NO DATA 會連資料一起複製，INSERT INTO 則要目標表已存在。",
+  "flow": [
+   "old_table schema",
+   "*CTAS + WITH NO DATA",
+   "空的 new_table"
+  ]
+ },
+ {
+  "number": 157,
+  "q": "從 Athena 表 cities_world 取出美國城市放入新表 cities_us，該用哪個 SQL？",
+  "answer": "A",
+  "answer_text": {
+   "A": "INSERT INTO usa(city,state) SELECT…"
+  },
+  "section": "8.6",
+  "why": "把 cities_world 中 country='usa' 的子集合寫進目標表，用 INSERT INTO … SELECT … WHERE，並列出 city、state 欄位對應查詢結果。MOVE 不是 SQL 語法，UPDATE 是改既有列而非插入。",
+  "flow": [
+   "cities_world",
+   "WHERE country='usa'",
+   "*INSERT INTO (city,state)",
+   "cities_us"
+  ]
+ },
+ {
+  "number": 158,
+  "q": "資料網格由治理帳號 Lake Formation 集中授權；Redshift Serverless 表要分給行銷與合規團隊各看不同欄位？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "建立 Redshift data share 含這些表",
+   "D": "data share 分享至治理帳號 LF 目錄"
+  },
+  "section": "12.2",
+  "why": "先建 Redshift data share 打包這些 Serverless 表，再分享到治理帳號的 Lake Formation catalog 納入集中治理，就能用 LF 欄位層級權限，讓行銷與合規團隊各看不同欄位。",
+  "flow": [
+   "Redshift Serverless tables",
+   "Redshift data share",
+   "*治理帳號 LF catalog",
+   "各團隊欄位層級授權"
+  ]
+ },
+ {
+  "number": 159,
+  "q": "Glue Studio ETL 管線每次執行都要依預設閾值檢查資料品質，最少實作工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "加 Evaluate Data Quality + DQDL"
+  },
+  "section": "5.5",
+  "why": "要每次 ETL 都依閾值檢查資料品質，Glue Studio 內建 Evaluate Data Quality transform，用 DQDL 宣告規則與門檻即可。SQL transform、PyDeequ、Great Expectations 都得自寫規則邏輯。",
+  "flow": [
+   "Glue Studio ETL job",
+   "*Evaluate Data Quality",
+   "DQDL ruleset（閾值）",
+   "pass / fail 結果"
+  ]
+ },
+ {
+  "number": 160,
+  "q": "EKS 微服務需收集叢集日誌與應用追蹤，並關聯找出故障點，最少開發工作量？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "FluentBit收日誌+OpenTelemetry收追蹤",
+   "D": "OpenSearch 關聯日誌與追蹤"
+  },
+  "section": "14.5",
+  "why": "Fluent Bit 是 EKS 常用的輕量 log 收集器，OpenTelemetry 是收集 traces 的開放標準；再由 OpenSearch 關聯 logs 與 traces 找出故障點。Kinesis、MSK 不是 trace 收集工具。",
+  "flow": [
+   "EKS 微服務",
+   "Fluent Bit + OpenTelemetry",
+   "*OpenSearch 關聯分析",
+   "定位故障點"
+  ]
+ },
+ {
+  "number": 161,
+  "q": "DynamoDB 遊戲資料需近即時同步到 OpenSearch，哪個方案？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DynamoDB Streams + Lambda 更新"
+  },
+  "section": "10.4",
+  "why": "要近即時同步 DynamoDB 變更到 OpenSearch：DynamoDB Streams 捕捉 item 層級的增刪改，Lambda 消費 stream records 後更新 OpenSearch 索引。Step Functions 定期匯出是批次，不夠即時。",
+  "flow": [
+   "DynamoDB table",
+   "*DynamoDB Streams",
+   "Lambda 處理/更新",
+   "OpenSearch index"
+  ]
+ },
+ {
+  "number": 162,
+  "q": "Redshift 去正規化大表持續成長、沒有適合的分佈鍵，最低維護負擔用哪種分佈？",
+  "answer": "C",
+  "answer_text": {
+   "C": "AUTO 分佈"
+  },
+  "section": "9.5",
+  "why": "表持續成長又找不到合適的 distribution key，手動 KEY 容易資料傾斜、ALL 不適合大表，都要人工調整。AUTO distribution 讓 Redshift 依表大小自動選擇並切換分佈方式，維護負擔最低。",
+  "flow": [
+   "持續成長的去正規化表",
+   "無合適 dist key",
+   "*AUTO distribution",
+   "Redshift 自動調整"
+  ]
+ },
+ {
+  "number": 163,
+  "q": "QuickSight 匯率需算到小數4位，且須預先計算並實體化到 SPICE，計算欄位建在哪？",
+  "answer": "A",
+  "answer_text": {
+   "A": "在 dataset 建計算欄位"
+  },
+  "section": "11.2",
+  "why": "要預先計算並物化到 SPICE，calculated field 須建在 dataset 層，匯入 SPICE 時就一併算好，四位小數邏輯也能統一。analysis、visual、dashboard 層的欄位在顯示時才計算，不會物化。",
+  "flow": [
+   "Dataset（data prep）",
+   "*dataset calculated field",
+   "SPICE 預先物化",
+   "analysis / dashboard"
+  ]
+ },
+ {
+  "number": 164,
+  "q": "整合 Redshift、Teradata、BigQuery，用各來源引擎轉換後 join 寫入 S3 Iceberg，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Athena 聯合查詢，SQL join+MERGE"
+  },
+  "section": "8.1",
+  "why": "要用各來源引擎轉換再 join 寫入 Iceberg，Athena federated query connectors 可直接查三個來源，一段 SQL 完成 join 與 MERGE，全 serverless；Glue、EMR 要維護 Spark 管線。",
+  "flow": [
+   "Redshift/Teradata/BigQuery",
+   "*Athena federated query",
+   "SQL join + MERGE",
+   "S3 Iceberg table"
+  ]
+ },
+ {
+  "number": 165,
+  "q": "EKS 容器需安全存取 DynamoDB，且不可在容器內嵌入 AWS 憑證？",
+  "answer": "B",
+  "answer_text": {
+   "B": "IAM 角色搭配 IRSA 服務帳戶"
+  },
+  "section": "12.3",
+  "why": "不嵌入憑證又要存取 DynamoDB，就用 IRSA：把 IAM role 關聯到 Kubernetes service account，Pod 自動取得臨時憑證。access key 放 S3、環境變數或 K8s Secrets 都還是長期憑證。",
+  "flow": [
+   "EKS Pod",
+   "Kubernetes service account",
+   "*IRSA IAM role",
+   "DynamoDB table"
+  ]
+ },
+ {
+  "number": 166,
+  "q": "地端資料生產者遷移到 AWS，不可走公網，且各管線服務帳號憑證需安全保管？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Direct Connect+Secrets Manager"
+  },
+  "section": "13.4",
+  "why": "不走公網就用 Direct Connect 專線連地端；各管線的 service account 憑證放 Secrets Manager 集中保管與輪替。再加 presigned URL 與需求無關，public subnet 方案則仍走網際網路。",
+  "flow": [
+   "地端資料中心",
+   "*AWS Direct Connect",
+   "AWS 資料管線",
+   "Secrets Manager 取憑證"
+  ]
+ },
+ {
+  "number": 167,
+  "q": "S3 事件已送到 SQS，Glue Data Catalog 需增量更新，最少營運負擔？（選2）",
+  "answer": "AB",
+  "answer_text": {
+   "A": "S3 事件型 Glue crawler 讀 SQS",
+   "B": "定時排程執行 crawler 增量更新"
+  },
+  "section": "4.5",
+  "why": "S3 事件已進 SQS，event-based Glue crawler 直接消費這些事件、只爬有變動的路徑；再設 time-based 排程定期執行，增量更新 Data Catalog。Lambda、Step Functions 都要自寫程式。",
+  "flow": [
+   "S3 事件進 SQS",
+   "*event-based Glue crawler",
+   "time-based 排程執行",
+   "Data Catalog 增量更新"
+  ]
+ },
+ {
+  "number": 168,
+  "q": "每日報表有時在 S3 資料未齊時就執行，需把不完整資料通知既有 SNS，最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue DQ 檢查→EventBridge→SNS"
+  },
+  "section": "5.6",
+  "why": "Glue Data Quality 檢查每日資料集的 completeness 與 consistency，不完整時由 data quality action 發事件到 EventBridge 再轉既有 SNS。Airflow、EMR、Lambda 都要另建並維護。",
+  "flow": [
+   "每日 S3 資料集",
+   "*Glue Data Quality 檢查",
+   "EventBridge 事件",
+   "SNS 通知"
+  ]
+ },
+ {
+  "number": 169,
+  "q": "Redshift 含 PII，行銷、理賠、分析三團隊需看到不同遮罩程度的資料，最少管理負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "每團隊建 DB 角色+套用遮罩政策"
+  },
+  "section": "12.8",
+  "why": "三個團隊對同份 PII 要不同遮罩程度，Redshift 可為各團隊建 database role 並附加各自的 masking policy，查詢時依角色回傳原值或遮罩值。分 cluster 或建大量 view 都要重複維護。",
+  "flow": [
+   "Redshift 客戶資料（PII）",
+   "各團隊 database role",
+   "*masking policy 依角色",
+   "完整或遮罩資料"
+  ]
+ },
+ {
+  "number": 170,
+  "q": "MSK 新增 topic 數天後，CW 對 RootDiskUsed 指標發出告警，該如何處理？",
+  "answer": "A",
+  "answer_text": {
+   "A": "擴充 broker 儲存並設自動擴展"
+  },
+  "section": "3.6",
+  "why": "新增 topic 後資料持續累積，RootDiskUsed 告警代表 broker 磁碟快滿。擴充 MSK broker storage 並開自動擴展即可解決並防止再發；ZooKeeper 不存 topic 資料，換大 instance 也不加磁碟。",
+  "flow": [
+   "新增 MSK topic",
+   "broker 磁碟用量上升",
+   "RootDiskUsed 告警",
+   "*擴充 storage + 自動擴展"
+  ]
+ },
+ {
+  "number": 171,
+  "q": "以 S3 與 RDS 建企業資料目錄，需含資料儲存格式中繼資料，最少工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue crawler+classifier 辨識格式"
+  },
+  "section": "4.2",
+  "why": "Glue crawler 能掃描 S3 與 RDS 建立 Data Catalog，classifier 自動辨識 CSV、JSON、Parquet 等格式寫入 metadata，工作量最少。人工 data steward 或自寫腳本費工，Macie 是找敏感資料。",
+  "flow": [
+   "S3 + RDS",
+   "*Glue crawler + classifiers",
+   "Data Catalog（含格式）"
+  ]
+ },
+ {
+  "number": 172,
+  "q": "DataBrew 掃描 PII，但公司自訂的 PII 類別不在標準規則中，需跨多個資料集掃描，最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DataBrew 自訂 DQ 規則套用至各資料集"
+  },
+  "section": "12.7",
+  "why": "已用 DataBrew 偵測 PII，只差自訂類別不在標準規則內，建 DataBrew custom data quality rules 套用到多個 datasets 即可沿用原流程。人工檢查、自寫 Python 或 regex 都要額外維護。",
+  "flow": [
+   "自訂 PII 類別",
+   "*DataBrew custom DQ rules",
+   "套用至多個 datasets",
+   "PII 偵測結果"
+  ]
+ },
+ {
+  "number": 173,
+  "q": "Glue ETL 每日輸出 Daily.csv，新檔為空或必填欄缺值時須保留前一天檔案，最少工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue DQ 以 DQDL 檢查空檔與缺值"
+  },
+  "section": "5.6",
+  "why": "新檔完整有效才能覆蓋前一天的 Daily.csv：在 Glue ETL 加 Glue Data Quality，用 DQDL 檢查必填欄缺值與空檔，不過就不覆寫。Lambda 或 Glue Studio 補值會改動資料，不符需求。",
+  "flow": [
+   "每日 partner 檔",
+   "Glue ETL",
+   "*Glue DQ（DQDL 檢查）",
+   "通過才覆寫 Daily.csv"
+  ]
+ },
+ {
+  "number": 174,
+  "q": "要收集 S3 中未完成 multipart upload 與舊版本物件資訊以優化成本，最低營運工作量？",
+  "answer": "C",
+  "answer_text": {
+   "C": "S3 Storage Lens 儀表板"
+  },
+  "section": "1.5",
+  "why": "要看未完成 multipart upload 與舊版本物件以優化成本，S3 Storage Lens dashboard 直接跨 bucket 提供這些指標，開箱即用。CLI 要自寫指令逐桶查，S3 Inventory 要設報表再另外分析。",
+  "flow": [
+   "多個 S3 buckets",
+   "*S3 Storage Lens dashboard",
+   "未完成 MPU、舊版本指標"
+  ]
+ },
+ {
+  "number": 175,
+  "q": "KDS→Firehose 以 JSON 存 S3 供 Athena 查詢，要降低 Athena 成本且不重建管線，最少管理工作？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Firehose改Parquet+分區，舊檔Glue轉"
+  },
+  "section": "3.4",
+  "why": "Athena 依掃描量計費：Firehose 輸出改 Parquet、加 YYYYMMDD prefix 分區、加大 buffer 減少小檔，不必重建管線；既有 JSON 用 Glue 合併轉 Parquet 再 ADD PARTITION。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*Firehose 轉 Parquet + 分區",
+   "S3（YYYYMMDD prefix）",
+   "Athena partition pruning"
+  ]
+ },
+ {
+  "number": 176,
+  "q": "DynamoDB 表需自動刪除1個月前的資料以控管成本，且不影響讀寫，最低持續維護？",
+  "answer": "A",
+  "answer_text": {
+   "A": "啟用 DynamoDB TTL 依時間戳過期"
+  },
+  "section": "10.4",
+  "why": "要一個月後自動刪資料又不影響讀寫，DynamoDB TTL 依 item 的 timestamp 屬性讓資料到期，背景自動刪除且不耗寫入容量。EventBridge 或 Streams 觸發 Lambda 掃描刪除都要寫程式又耗容量。",
+  "flow": [
+   "item 的到期 timestamp",
+   "*DynamoDB TTL",
+   "到期背景自動刪除"
+  ]
+ },
+ {
+  "number": 177,
+  "q": "Hub 帳號的 S3 以 KMS 加密，BI 帳號的 QS 需跨帳號存取；桶政策已授權 QS 角色，還要做？（選2）",
+  "answer": "BE",
+  "answer_text": {
+   "B": "將 S3 桶加入 QS 角色可存取資源",
+   "E": "將 KMS 金鑰加入 QS 角色可存取資源"
+  },
+  "section": "12.8",
+  "why": "bucket policy 放行後，BI 帳號的 QuickSight 端也要授權：把 S3 bucket 加入 QuickSight service role 可存取的資源；資料以 KMS 加密，KMS key 也要一併加入，QuickSight 才能解密讀取。",
+  "flow": [
+   "Hub 帳號 S3（KMS 加密）",
+   "bucket policy 放行 QS role",
+   "*QS 資源加 bucket + KMS key",
+   "BI 帳號 QuickSight"
+  ]
+ },
+ {
+  "number": 178,
+  "q": "每日上傳≤5KB壓縮檔到 S3，需上傳即處理、自動編排、儀表板及可擴展臨時查詢，最具成本效益？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Glue+S3事件+Lambda+Athena+QS"
+  },
+  "section": "7.5",
+  "why": "要上傳即處理又最省錢：S3 事件搭 Lambda 觸發編排，Glue 處理，Athena 做可擴展的臨時查詢與報表，QuickSight 做儀表板，全 serverless 按用量計費；EMR、OpenSearch 有常駐成本。",
+  "flow": [
+   "S3 上傳",
+   "*S3 Event + Lambda 編排",
+   "Glue 處理",
+   "Athena 查詢",
+   "QuickSight 儀表板"
+  ]
+ },
+ {
+  "number": 179,
+  "q": "多區域各有 EFS，資料須留在資料科學團隊區域，用 Step Functions+Lambda 處理成單一資料集，最少工作量？",
+  "answer": "D",
+  "answer_text": {
+   "D": "DataSync 傳至團隊區 EFS 再掛載"
+  },
+  "section": "2.1",
+  "why": "資料要留在團隊 Region，Lambda 又只能掛載同 Region 的單一 EFS，所以用 DataSync 把各 Region 檔案集中到團隊 Region 的 EFS，再由當地 Lambda 掛載處理。跨 Region 直接掛載不可行。",
+  "flow": [
+   "各 Region EFS",
+   "*AWS DataSync",
+   "團隊 Region EFS",
+   "Lambda 掛載處理",
+   "單一資料集"
+  ]
+ },
+ {
+  "number": 180,
+  "q": "EC2 應用需 SSL/TLS 加密傳輸，憑證要自動產生、輪替與續約部署，最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "AWS Certificate Manager (ACM)"
+  },
+  "section": "12.6",
+  "why": "要自動產生、輪替並續約部署 SSL/TLS 憑證，ACM 是 AWS 原生憑證管理服務，可自動續期並部署到整合的 AWS 服務，營運負擔最低。EC2 上自管憑證或在 Secrets Manager 寫腳本都得自己輪替。",
+  "flow": [
+   "*AWS Certificate Manager",
+   "簽發 / 自動續期",
+   "部署到整合服務",
+   "TLS 加密傳輸"
+  ]
+ },
+ {
+  "number": 181,
+  "q": "S3 以 SSE-KMS 加密且含 PII，分析前須遮罩，預處理階段部分使用者可安全存取，要低維護？（選2）",
+  "answer": "AD",
+  "answer_text": {
+   "A": "Glue DataBrew ETL 遮罩 PII",
+   "D": "以 IAM 管理權限控管 PII 存取"
+  },
+  "section": "12.7",
+  "why": "DataBrew 以低程式碼 ETL 在分析前遮罩 PII；IAM 控管誰能在預處理階段存取原始 PII，做到最小權限。SSE-KMS 只是靜態加密不等於遮罩，Macie、GuardDuty 只偵測不遮罩。",
+  "flow": [
+   "S3 PII 資料（SSE-KMS）",
+   "IAM 控管原始 PII 存取",
+   "*DataBrew 遮罩 PII",
+   "分析用資料集"
+  ]
+ },
+ {
+  "number": 182,
+  "q": "EMR 叢集需靜態與傳輸中加密；S3 資料以 KMS 加密，另有 S3 上的 PEM 憑證檔，怎麼做？",
+  "answer": "C",
+  "answer_text": {
+   "C": "單一組態 KMS 靜態+PEM，建立時指定"
+  },
+  "section": "12.5",
+  "why": "用一個 EMR security configuration 同時設 KMS key（S3 at-rest）與 PEM 路徑（in-transit），建立 cluster 時指定。一個 cluster 只能用一個 security configuration，也無法事後附加。",
+  "flow": [
+   "*EMR security configuration",
+   "KMS key（S3 at-rest）",
+   "PEM 路徑（in-transit）",
+   "建立 cluster 時套用"
+  ]
+ },
+ {
+  "number": 183,
+  "q": "Redshift 支援即時庫存，SageMaker 即時端點已部署模型，需即時庫存建議並預測未來需求？（選2）",
+  "answer": "AB",
+  "answer_text": {
+   "A": "Redshift ML 產生庫存建議",
+   "B": "用 SQL 呼叫遠端 SageMaker 端點預測"
+  },
+  "section": "11.4",
+  "why": "資料已在 Redshift，Redshift ML 可用 SQL 建模產生庫存建議；既有 SageMaker 即時 endpoint 也能從 Redshift 以 SQL 遠端呼叫，預測未來需求。排程匯出離線訓練則不夠即時。",
+  "flow": [
+   "Redshift 庫存資料",
+   "*Redshift ML（SQL）",
+   "SageMaker 即時 endpoint",
+   "庫存建議與需求預測"
+  ]
+ },
+ {
+  "number": 184,
+  "q": "S3 CSV 需改欄名、刪欄、略過第2列、依首列建新欄、依數值篩選，最少開發工作量？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Glue DataBrew recipe 轉換"
+  },
+  "section": "5.1",
+  "why": "改欄名、刪欄、略過列、依首列建新欄、依數值篩選，都是 DataBrew recipe 內建的轉換步驟，點選即可、幾乎不寫程式。Glue Python job 要自己寫碼，crawler 只建 Catalog 不做轉換。",
+  "flow": [
+   "S3 CSV 檔",
+   "*DataBrew recipe",
+   "改名/刪欄/篩選",
+   "新 S3 bucket"
+  ]
+ },
+ {
+  "number": 185,
+  "q": "Redshift 部分表的壓縮編碼不適合資料，需改善編碼，怎麼做？",
+  "answer": "B",
+  "answer_text": {
+   "B": "ANALYZE COMPRESSION 後手動改編碼"
+  },
+  "section": "9.7",
+  "why": "ANALYZE COMPRESSION 會抽樣資料，建議各欄最佳 encoding 與預估節省比例，再依結果手動改編碼。ANALYZE 只更新統計資料，VACUUM REINDEX/RECLUSTER 是重整排序，都不會建議 encoding。",
+  "flow": [
+   "encoding 不佳的表",
+   "*ANALYZE COMPRESSION",
+   "建議 encoding",
+   "手動更新欄位編碼"
+  ]
+ },
+ {
+  "number": 186,
+  "q": "S3 大量記錄前30天須能立即存取，30天後少用，最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "生命週期30天後轉 Standard-IA"
+  },
+  "section": "1.2",
+  "why": "前 30 天要立即存取，留在 S3 Standard；之後少用但仍需毫秒級讀取，lifecycle policy 30 天後轉 Standard-IA 最划算。Deep Archive 取回要數小時；全放 IA 則前 30 天常讀會多付取回費。",
+  "flow": [
+   "新記錄存 S3 Standard",
+   "*lifecycle：30 天後轉換",
+   "S3 Standard-IA"
+  ]
+ },
+ {
+  "number": 187,
+  "q": "QuickSight 要顯示區域總營收，且不受視覺下鑽層級影響，用什麼？",
+  "answer": "C",
+  "answer_text": {
+   "C": "LAC-A 層級感知聚合函數"
+  },
+  "section": "11.2",
+  "why": "要讓 Region 總營收不受下鑽影響，LAC-A 可固定在 Region 維度聚合，結果不隨 visual 分組改變。table calculation 與一般 calculated field 都依 visual 當下分組計算，下鑽就會變。",
+  "flow": [
+   "Revenue",
+   "*LAC-A：固定 Region 層級",
+   "任何下鑽層級",
+   "同一個 Region 總額"
+  ]
+ },
+ {
+  "number": 188,
+  "q": "S3 部分客戶資料含 PII，提供給合作夥伴前需判斷是否含 PII，最少人工介入？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Macie 自動敏感資料探索"
+  },
+  "section": "12.7",
+  "why": "要少人工判斷 S3 資料是否含 PII，Macie 的 automated sensitive data discovery 會自動抽樣掃描並分類敏感資料。CloudTrail 只記錄 API 看不到內容，Lambda、Athena 都要自寫偵測邏輯。",
+  "flow": [
+   "S3 客戶資料",
+   "*Macie 自動敏感資料探索",
+   "PII 發現結果",
+   "決定是否分享"
+  ]
+ },
+ {
+  "number": 189,
+  "q": "Athena 現有表有1,000列，要建立它的空白副本，用哪個查詢？",
+  "answer": "B",
+  "answer_text": {
+   "B": "CTAS SELECT * FROM old WITH NO DATA"
+  },
+  "section": "8.6",
+  "why": "要建立現有表的空副本，CTAS 依 SELECT * 建出相同 schema 的新表，加上 WITH NO DATA 就只建結構、不複製那 1,000 列。沒有 WITH NO DATA 或用 WHERE 1=1 都會把資料一起複製進去。",
+  "flow": [
+   "old_table（1,000 列）",
+   "*CTAS + WITH NO DATA",
+   "空的 new_table"
+  ]
+ },
+ {
+  "number": 190,
+  "q": "S3 中依年分區、Glue 編目的 CloudTrail 日誌，Athena 查詢沒有資料，該做哪些排查？（選2）",
+  "answer": "AC",
+  "answer_text": {
+   "A": "確認 Athena 指向正確 S3 位置",
+   "C": "執行 MSCK REPAIR TABLE"
+  },
+  "section": "4.4",
+  "why": "Athena 查分區表沒資料，原因多是 table LOCATION 沒指到正確 S3 路徑，或新的 year partition 未註冊進 Catalog。確認 S3 位置並跑 MSCK REPAIR TABLE 載入分區；timeout、重啟無關。",
+  "flow": [
+   "Athena 查無資料",
+   "確認 S3 LOCATION",
+   "*MSCK REPAIR TABLE",
+   "分區註冊，查到資料"
+  ]
+ },
+ {
+  "number": 191,
+  "q": "要協調 ETL：EMR 跑 Spark、呼叫 Salesforce API、載入 Redshift，需自動處理失敗與重試，且必須用 Python 撰寫編排。用哪個服務？",
+  "answer": "A",
+  "answer_text": {
+   "A": "MWAA（Managed Airflow）"
+  },
+  "section": "7.4",
+  "why": "需求是用 Python 編排 ETL（EMR Spark、Salesforce API、Redshift）並自動處理失敗重試。MWAA 是託管的 Airflow，以 Python DAG 定義任務相依，內建 retry 與失敗處理，免自管 Airflow 環境。",
+  "flow": [
+   "Python DAG",
+   "*Amazon MWAA",
+   "EMR／Salesforce／Redshift",
+   "自動 retry 與失敗處理"
+  ]
+ },
+ {
+  "number": 192,
+  "q": "多個 Lambda 共用自訂 Python 腳本，每次修改都要手動更新所有函式。要減少手動更新，怎麼做？",
+  "answer": "B",
+  "answer_text": {
+   "B": "腳本打包成 Lambda Layer 套用"
+  },
+  "section": "7.7",
+  "why": "痛點是共用腳本複製在每支 Lambda 裡，改一次就要逐支更新。把腳本打包成 Lambda Layer 讓多支函式共同引用，改版時只需發布新版 layer 並更新引用，不必逐支修改函式程式碼。",
+  "flow": [
+   "共用 Python 腳本",
+   "*Lambda Layer",
+   "多支 Lambda 函式"
+  ]
+ },
+ {
+  "number": 193,
+  "q": "S3 客戶資料供多團隊分析，須確保團隊看不到 PII。最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "S3 Object Lambda＋Comprehend 去 PII"
+  },
+  "section": "12.7",
+  "why": "要讓多團隊讀同一份 S3 資料又看不到 PII，且維運最少。S3 Object Lambda 在 GET 時動態改寫回應，搭配 Comprehend 偵測並移除 PII，不必另外複製、維護一份去識別化資料。",
+  "flow": [
+   "團隊 GET S3 物件",
+   "*S3 Object Lambda",
+   "Comprehend 移除 PII",
+   "去識別化回應"
+  ]
+ },
+ {
+  "number": 194,
+  "q": "S3 以 IAM 角色控管存取，使用者違反存取政策時要通知，且通知須含違規者使用者名稱。怎麼做？",
+  "answer": "C",
+  "answer_text": {
+   "C": "CloudTrail 物件事件→CW 告警"
+  },
+  "section": "14.4",
+  "why": "通知要含違規者 username。CloudTrail S3 data events 記錄物件層級 API 呼叫與 userIdentity，轉送 CloudWatch 後以 metric filter／alarm 發通知；CloudWatch metrics 只有次數沒有身分。",
+  "flow": [
+   "S3 物件存取",
+   "*CloudTrail data events",
+   "CloudWatch Logs 告警",
+   "通知（含 username）"
+  ]
+ },
+ {
+  "number": 195,
+  "q": "第三方客戶資料要載入 Redshift，其中一欄是 JSON 格式。最省力的載入方式？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Redshift 表用 SUPER 型別存"
+  },
+  "section": "9.8",
+  "why": "來源有一欄是 JSON，要用最少工夫載入 Redshift。SUPER 型別可直接存放半結構化 JSON，載入後即可與訂單、產品資料一起查詢，不必先用 Glue 或 Lambda 攤平（flatten）再載入。",
+  "flow": [
+   "來源 JSON 欄位",
+   "*Redshift SUPER 欄位",
+   "與倉儲資料聯合查詢"
+  ]
+ },
+ {
+  "number": 196,
+  "q": "MySQL 每日 2GB 銷售紀錄要與 Salesforce 100GB 銷售機會關聯，每晚跑一次。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "AppFlow＋Glue 關聯，SFN 編排"
+  },
+  "section": "2.4",
+  "why": "兩個來源各用最省事的託管工具：AppFlow 免寫程式從 Salesforce 拉 opportunities，Glue 從 MySQL 擷取銷售紀錄並做 join 關聯，再由 Step Functions 串成每晚執行的流程。",
+  "flow": [
+   "Step Functions 夜間編排",
+   "*AppFlow：Salesforce",
+   "Glue：MySQL＋join",
+   "關聯結果"
+  ]
+ },
+ {
+  "number": 197,
+  "q": "S3 伺服器日誌保留 1 年，之後自動刪除。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "S3 生命週期規則 1 年後刪除"
+  },
+  "section": "1.3",
+  "why": "需求只是保留 1 年後自動刪除。S3 Lifecycle 的 expiration 規則依物件年齡自動刪除，是 S3 原生功能、設定一次即可；用 Lambda 或排程腳本自己掃描刪除，都多了要維運的程式。",
+  "flow": [
+   "S3 伺服器日誌",
+   "*Lifecycle 1 年 expiration",
+   "自動刪除"
+  ]
+ },
+ {
+  "number": 198,
+  "q": "Step Functions 流程需依傳入資料內容執行不同步驟，應用哪種狀態類型？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Choice"
+  },
+  "section": "7.3",
+  "why": "「依傳入資料內容執行不同步驟」就是條件分支。Choice state 依 input JSON 的欄位值比對規則，導向對應分支；Parallel 是同時跑多條分支、Map 是逐筆迭代、Task 只執行單一工作。",
+  "flow": [
+   "傳入資料",
+   "*Choice state 規則比對",
+   "對應分支的 Lambda",
+   "DynamoDB"
+  ]
+ },
+ {
+  "number": 199,
+  "q": "Athena 查 cloudtrail_logs，要列出 2024 年起有錯誤碼的錯誤，回傳前 10 筆。哪個查詢正確？",
+  "answer": "A",
+  "answer_text": {
+   "A": "errorcode非null＋依次數DESC＋limit10"
+  },
+  "section": "8.6",
+  "why": "要找出錯的事件，所以要 errorcode IS NOT NULL，加上 2024 年起的 eventtime 條件，依 TotalEvents 排序後 limit 10。沒過濾 errorcode 會混入正常事件，沒有 ORDER BY 則 10 筆無排序依據。",
+  "flow": [
+   "cloudtrail_logs",
+   "*errorcode IS NOT NULL",
+   "eventtime ≥ 2024-01-01",
+   "排序後 limit 10"
+  ]
+ },
+ {
+  "number": 200,
+  "q": "S3 中訂單摘要部分含 PII，需偵測 PII 以便塗銷。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Macie"
+  },
+  "section": "12.7",
+  "why": "目標是在 S3 物件中偵測 PII 以便後續塗銷。Macie 是託管的敏感資料探索服務，自動掃描 S3 並產出 PII findings；Textract 偏 OCR 抽字、Storage Lens 看用量指標，都不是做 PII 偵測。",
+  "flow": [
+   "S3 訂單摘要",
+   "*Amazon Macie 掃描",
+   "PII findings",
+   "後續塗銷"
+  ]
+ },
+ {
+  "number": 201,
+  "q": "Redshift 每天 100+ 使用者以多種 IAM 角色存取，要依職務、權限、資料敏感度控管物件存取。怎麼做？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Redshift RBAC 角色存取控制"
+  },
+  "section": "12.4",
+  "why": "100 多位使用者要依職務、權限與資料敏感度控管物件存取。Redshift RBAC 把權限授予 database role，再把 role 指派給使用者或其他 role，集中管理大量使用者權限，不必逐一 GRANT。",
+  "flow": [
+   "使用者／IAM 角色",
+   "*Redshift RBAC role",
+   "物件權限（schema／table）"
+  ]
+ },
+ {
+  "number": 202,
+  "q": "S3 資料湖用 Glue Data Catalog，要把 Glue Data Quality 分數發布到 DataZone 入口。怎麼做？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DQDL 規則集排程＋DZ 用 Glue 來源"
+  },
+  "section": "12.2",
+  "why": "先對 Glue table 建立 DQDL ruleset 並每日排程，產生資料品質分數；再於 DataZone 專案設定 Glue data source 並啟用 data quality configuration，分數才會發布到 DataZone portal。",
+  "flow": [
+   "Glue table",
+   "DQDL ruleset 每日排程",
+   "DataZone Glue data source",
+   "*啟用 data quality 設定",
+   "DataZone portal"
+  ]
+ },
+ {
+  "number": 203,
+  "q": "Redshift 為合規需記錄並儲存所有使用者活動與連線活動。怎麼做？",
+  "answer": "A",
+  "answer_text": {
+   "A": "啟用 Redshift 稽核日誌存到 S3"
+  },
+  "section": "14.4",
+  "why": "法規要求記錄並保存所有使用者活動與連線活動。Redshift audit logging 會產生 connection log、user log 與 user activity log，在 logging 設定指定 S3 bucket 即可集中長期保存。",
+  "flow": [
+   "Redshift cluster",
+   "*啟用 audit logging",
+   "S3 bucket 保存日誌"
+  ]
+ },
+ {
+  "number": 204,
+  "q": "資料倉儲從 Teradata 遷移到 Redshift，最少營運工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "SCT 轉 schema＋DMS 搬資料"
+  },
+  "section": "2.3",
+  "why": "Teradata 到 Redshift 是異質遷移，schema 與資料要分開處理：AWS SCT 把 Teradata schema 轉成 Redshift 格式，AWS DMS 負責搬移資料；手動匯出、套用 schema 則太費工。",
+  "flow": [
+   "Teradata",
+   "*AWS SCT 轉 schema",
+   "AWS DMS 搬資料",
+   "Amazon Redshift"
+  ]
+ },
+ {
+  "number": 205,
+  "q": "多來源資料集中到資料倉儲，QS 直接查詢需快速回應；每天僅數小時查詢且尖峰不可預測。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Redshift Serverless 載入 RMS"
+  },
+  "section": "9.1",
+  "why": "查詢集中在每天幾小時且尖峰難預測，又要快速回應與低維運。Redshift Serverless 依負載自動擴縮、免管理容量，資料載入 RMS 成為中央倉儲，供 QuickSight direct query 查詢。",
+  "flow": [
+   "AWS／第三方資料來源",
+   "*Redshift Serverless（RMS）",
+   "QuickSight direct query"
+  ]
+ },
+ {
+  "number": 206,
+  "q": "KDS 因熱分片收到過多資料而被節流（throttling），如何解決？",
+  "answer": "A",
+  "answer_text": {
+   "A": "改用隨機 partition key 分散"
+  },
+  "section": "3.3",
+  "why": "Kinesis 依 partition key 的 hash 決定 record 落在哪個 shard，key 分布不均就會產生 hot shard 而被節流。改用隨機（高基數）partition key 讓資料平均分散到各 shard，直接消除熱點。",
+  "flow": [
+   "偏斜 partition key",
+   "hot shard 節流",
+   "*隨機 partition key",
+   "各 shard 負載平均"
+  ]
+ },
+ {
+  "number": 207,
+  "q": "數十步驟管線（S3、Lambda、Step Functions），任一步失敗或成功都要即時告警，監控整條管線。怎麼做？",
+  "answer": "D",
+  "answer_text": {
+   "D": "EventBridge 監狀態變更→SNS"
+  },
+  "section": "14.2",
+  "why": "要即時知道每次執行成功或失敗並監控整條管線。Step Functions 執行狀態變更會發出 EventBridge 事件，用 rule 比對 SUCCEEDED、FAILED 等狀態轉送 SNS，比在每個 Lambda 自寫通知省維運。",
+  "flow": [
+   "Step Functions 狀態變更",
+   "*EventBridge rule",
+   "SNS topic",
+   "即時通知"
+  ]
+ },
+ {
+  "number": 208,
+  "q": "API 用的 Lambda 在其他 Lambda 呼叫量增加時常被節流，要不受其他函式影響。最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Lambda 設定保留並行"
+  },
+  "section": "7.7",
+  "why": "同帳號 Lambda 共用區域 concurrency，其他函式暴增會吃光額度讓 API 函式被節流。Reserved concurrency 為它保留固定額度且不另收費；provisioned concurrency 針對 cold start 且要付費。",
+  "flow": [
+   "其他 Lambda 暴增",
+   "共用 concurrency 耗盡",
+   "*Reserved concurrency",
+   "API Lambda 不被節流"
+  ]
+ },
+ {
+  "number": 209,
+  "q": "JSON 檔含 PII 與非 PII；非 PII 全公司可查，PII 僅限特定群組。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Lake Formation 編目＋LF 權限控管"
+  },
+  "section": "12.1",
+  "why": "同一份 JSON 要讓所有人查非 PII、只有少數人能看 PII，且維運最少。檔案放 S3、在 Lake Formation 編目後，用 LF 的欄位層級權限依使用者類型授權，不必拆檔或複製資料。",
+  "flow": [
+   "S3 JSON 檔",
+   "Lake Formation 編目",
+   "*LF 欄位層級權限",
+   "全員非 PII／限定者 PII"
+  ]
+ },
+ {
+  "number": 210,
+  "q": "以 KMS 加密的 Redshift 叢集，要用 CLI 設定跨區域快照做 DR。哪些步驟？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "來源區啟用複製，指定目的區 grant",
+   "D": "目的區建 KMS key＋copy grant"
+  },
+  "section": "12.5",
+  "why": "KMS 加密叢集的快照複製到他區時要用目的區的 key 加密：D 在目的區建立 KMS key 並設定 snapshot copy grant，B 再於來源區啟用 snapshot copy 並指定該 grant 名稱。",
+  "flow": [
+   "*目的區 KMS key＋copy grant",
+   "來源區啟用 snapshot copy",
+   "指定 grant 名稱",
+   "加密快照複製到目的區"
+  ]
+ },
+ {
+  "number": 211,
+  "q": "多個 RDS 與地端 SQL Server 要把既有資料與後續變更複製到 S3 資料湖（Parquet）。最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DMS 搬既有資料＋持續變更"
+  },
+  "section": "2.2",
+  "why": "要同時搬既有資料與後續變更，來源含多個 RDS 及地端 SQL Server。DMS 以 full load＋CDC 一次處理兩者、支援異質來源，S3 target 可直接輸出 Parquet，比自建多個 Glue job 更省。",
+  "flow": [
+   "RDS＋地端 SQL Server",
+   "*DMS full load＋CDC",
+   "S3 data lake（Parquet）"
+  ]
+ },
+ {
+  "number": 212,
+  "q": "訂單每日進 S3，每週依訂單日期多個區間查詢指標，資料量增加時效能不可下降。最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "依訂單日期分區＋Athena"
+  },
+  "section": "8.3",
+  "why": "查詢固定依訂單日期範圍篩選，且資料量持續成長。依 order date 分區後，Athena 透過 partition pruning 只掃描命中的日期分區，掃描量不隨總量膨脹，按掃描量計費也最省。",
+  "flow": [
+   "每日訂單進 S3",
+   "*依 order date 分區",
+   "Athena 查詢",
+   "partition pruning"
+  ]
+ },
+ {
+  "number": 213,
+  "q": "Glue DQ 要判斷 primary 的 city、state 值組是否完全存在於 reference 資料集。哪條 DQDL 規則？",
+  "answer": "B",
+  "answer_text": {
+   "B": "ReferentialIntegrity ... = 1.0"
+  },
+  "section": "5.5",
+  "why": "要確認 primary 的 city、state 值組合都能在 reference 找到完全相符的值。DQDL 的 ReferentialIntegrity 正是檢查欄位值是否存在於參照資料集，設 = 1.0 代表 100% 的列都要相符。",
+  "flow": [
+   "primary city／state",
+   "*ReferentialIntegrity",
+   "reference 資料集",
+   "符合率 = 1.0"
+  ]
+ },
+ {
+  "number": 214,
+  "q": "地端 PostgreSQL 持續更新，已有 VPN，要遷到 Redshift 且資料要盡快同步。怎麼做？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DMS 全量＋CDC，目標 Redshift"
+  },
+  "section": "2.2",
+  "why": "來源 PostgreSQL 持續更新，Redshift 要盡快同步。DMS full-load task 先搬既有資料，再啟用 CDC 持續擷取變更並套用到 Redshift target，透過既有 VPN 連線，比每日 dump 批次更即時。",
+  "flow": [
+   "地端 PostgreSQL",
+   "VPN",
+   "*DMS full load＋CDC",
+   "Amazon Redshift"
+  ]
+ },
+ {
+  "number": 215,
+  "q": "新的 CSV、JSON 資料集要讓分析師用 SQL 查詢。最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "S3＋Glue 爬蟲＋Athena 工作群組限額"
+  },
+  "section": "8.1",
+  "why": "CSV、JSON 檔要給分析師用 SQL 查且成本最低。放 S3 後用 Glue crawler 自動推斷 schema 建表，Athena 依掃描量計費，再以 workgroup 的 data usage threshold 控管查詢用量與成本。",
+  "flow": [
+   "CSV／JSON 存 S3",
+   "Glue crawler 建表",
+   "*Athena workgroup 限額",
+   "分析師 SQL 查詢"
+  ]
+ },
+ {
+  "number": 216,
+  "q": "Aurora Orders 表數十億列、每秒 10 萬交易，要低延遲與 Redshift Campaigns 聯結，不得影響 Aurora。最少工作量？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Aurora zero-ETL＋具體化檢視"
+  },
+  "section": "2.5",
+  "why": "要低延遲報表並與 Redshift 的 Campaigns 聯結，且不能影響 Aurora。zero-ETL integration 近即時把 Orders 複製到 Redshift，join 都在 Redshift 跑；federated query 會直接壓到 Aurora。",
+  "flow": [
+   "Aurora Orders",
+   "*zero-ETL integration",
+   "Redshift",
+   "materialized view 聯結"
+  ]
+ },
+ {
+  "number": 217,
+  "q": "CSV（≤5MB）上傳 S3，已有 Lambda 負責 COPY 進 Redshift。還需哪個步驟串起管線？",
+  "answer": "B",
+  "answer_text": {
+   "B": "S3 事件通知→SQS→Lambda 處理"
+  },
+  "section": "7.6",
+  "why": "缺的是「新檔進 S3 時自動觸發 Lambda」這一段。S3 event notification 送進 SQS 佇列做緩衝，Lambda 輪詢佇列執行 COPY，失敗訊息可重試、不會遺失事件；檔案小於 5 MB，Lambda 足以處理。",
+  "flow": [
+   "CSV 上傳 S3",
+   "*S3 event notification",
+   "SQS queue",
+   "Lambda COPY 進 Redshift"
+  ]
+ },
+ {
+  "number": 218,
+  "q": "Redshift 敏感欄位：客服只看末 4 碼、稽核看全部、其他人不可看，且不可複製資料。怎麼做？",
+  "answer": "A",
+  "answer_text": {
+   "A": "動態資料遮罩政策套到該欄"
+  },
+  "section": "12.8",
+  "why": "同一欄位要依角色顯示不同內容且不能複製資料：客服看末 4 碼、稽核看全文、其他人看不到。Redshift dynamic data masking policy 掛在敏感欄位，查詢時依角色動態回傳完整值、遮罩值或 null。",
+  "flow": [
+   "Redshift 敏感欄位",
+   "*dynamic masking policy",
+   "依使用者 role 判斷",
+   "稽核全文／客服末 4 碼"
+  ]
+ },
+ {
+  "number": 219,
+  "q": "用 Lake Formation 控管 S3，Glue 爬蟲報錯「S3 location is not registered」。如何解決？",
+  "answer": "B",
+  "answer_text": {
+   "B": "在 Lake Formation 註冊該 S3 位置"
+  },
+  "section": "12.1",
+  "why": "錯誤訊息直接指出該 S3 位置未在 Lake Formation 註冊，問題不在 IAM。LF 必須先 register 該 S3 location 才能控管其存取，註冊並授權 crawler 的 role 後，crawler 就能掃描資料。",
+  "flow": [
+   "S3 路徑",
+   "*在 Lake Formation 註冊",
+   "授權 crawler role",
+   "Glue crawler 掃描"
+  ]
+ },
+ {
+  "number": 220,
+  "q": "已有資料湖與倉儲，要建資料目錄，每項資產能加業務中繼資料與詞彙表。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DataZone 詞彙表＋中繼資料表單"
+  },
+  "section": "12.2",
+  "why": "要為每項資產加上業務中繼資料與詞彙表，且維運最少。DataZone 原生提供 business glossary 與 metadata forms，用 data portal 瀏覽；其他選項都得自建表格或索引來模擬。",
+  "flow": [
+   "資料湖＋資料倉儲資產",
+   "*Amazon DataZone",
+   "business glossary＋表單",
+   "DataZone portal"
+  ]
+ },
+ {
+  "number": 221,
+  "q": "MERGE INTO accounts t USING monthly_accounts_update s ON 同客戶 WHEN MATCHED THEN DELETE，結果？",
+  "answer": "A",
+  "answer_text": {
+   "A": "兩表都有的客戶從 accounts 刪除"
+  },
+  "section": "9.8",
+  "why": "MERGE INTO 的 target 是 accounts，以 customer 比對 source monthly_accounts_update；WHEN MATCHED THEN DELETE 會刪掉 accounts 中比對得到的列，即兩表都有的客戶，source 表不受影響。",
+  "flow": [
+   "monthly_accounts_update s",
+   "ON customer 相符",
+   "*WHEN MATCHED THEN DELETE",
+   "刪除 accounts 相符列"
+  ]
+ },
+ {
+  "number": 222,
+  "q": "CSV（100–300KB）每 40–60 分鐘進 S3，每檔內容要載入 Redshift。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "S3 上傳觸發 EB→Lambda 跑 COPY"
+  },
+  "section": "7.5",
+  "why": "檔案小（100–300 KB）且約每小時才一個，不值得用常駐服務。S3 上傳事件經 EventBridge 觸發 Lambda 執行 Redshift COPY，COPY 是從 S3 載入 Redshift 的標準方式，全程 serverless。",
+  "flow": [
+   "CSV 上傳 S3",
+   "EventBridge 事件",
+   "*Lambda 執行 COPY",
+   "Amazon Redshift"
+  ]
+ },
+ {
+  "number": 223,
+  "q": "S3 維度表有 1000 萬筆、1TB，每天最多更新 1 萬筆變更。執行時間最短？",
+  "answer": "D",
+  "answer_text": {
+   "D": "EMR＋Apache Hudi 只讀變更 upsert"
+  },
+  "section": "1.6",
+  "why": "1 TB 歷史資料每天只改最多 1 萬筆，關鍵是增量更新而非整份重寫。Apache Hudi 在 S3 上支援 record-level upsert，EMR Spark 只讀當日變更再更新 base table，執行時間最短。",
+  "flow": [
+   "每日變更資料",
+   "EMR Spark DataFrame",
+   "*Apache Hudi upsert",
+   "S3 維度表"
+  ]
+ },
+ {
+  "number": 224,
+  "q": "Glue Spark 作業出現「No space left on device」，要找出原因並解決。最具成本效益？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "Spark UI＋Glue 指標看資料偏斜",
+   "D": "shuffle 寫 S3 參數＋salting"
+  },
+  "section": "6.5",
+  "why": "B 找原因：用 Spark UI 與 Glue metrics 看各 executor 的 shuffle 量，確認是資料偏斜塞爆本機磁碟。D 給解法：--write-shuffle-files-to-s3 把 shuffle 檔寫到 S3，salting 打散熱 key。",
+  "flow": [
+   "No space left on device",
+   "*Spark UI＋Glue metrics",
+   "找出 data skew",
+   "shuffle 寫 S3＋salting"
+  ]
+ },
+ {
+  "number": 225,
+  "q": "RDS 與 Glue 在同私有子網、同安全群組；SG 被改成只剩特定 IP 的 SSH 入站，Glue 連不上 RDS。如何修？",
+  "answer": "A",
+  "answer_text": {
+   "A": "入站全 TCP 埠，來源為本 SG"
+  },
+  "section": "13.2",
+  "why": "Glue 與 RDS 用同一個 security group，SG 只剩單一 IP 的 SSH，成員間無法互連。加一條來源為 SG 自己、開放所有 TCP 埠的 inbound 規則（self-referencing），正是 Glue 連線所需設定。",
+  "flow": [
+   "Glue ENI（同一 SG）",
+   "*inbound all TCP：來源本 SG",
+   "RDS（同一 SG）"
+  ]
+ },
+ {
+  "number": 226,
+  "q": "BI 報表缺資料，要在存入前檢查欄位空值與參照完整性。最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue DQ 轉換＋IsComplete＋RefInteg"
+  },
+  "section": "5.5",
+  "why": "要在寫入 storage 前檢查空值與參照完整性。Glue ETL 內建 Data Quality evaluation transform：IsComplete 檢查欄位無 null，ReferentialIntegrity 檢查每個 join 的參照值都存在，維運最少。",
+  "flow": [
+   "進來的資料",
+   "*Glue DQ transform",
+   "IsComplete／參照完整性",
+   "合格資料寫入 storage"
+  ]
+ },
+ {
+  "number": 227,
+  "q": "管線從 S3 擷取、做品質檢查與轉換，結果存關聯式資料庫供日後查詢。最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue ETL＋Glue DQ，全載入 RDS"
+  },
+  "section": "5.5",
+  "why": "擷取、品質檢查、轉換到載入全在 Glue 一條 pipeline 完成：Glue ETL 讀 S3 並轉換，Glue Data Quality 套用 suggested rules，再把資料與檢查結果載入 RDS for MySQL，不必多疊 DataBrew。",
+  "flow": [
+   "S3 buckets",
+   "Glue ETL 轉換",
+   "*Glue Data Quality",
+   "RDS for MySQL"
+  ]
+ },
+ {
+  "number": 228,
+  "q": "Redshift 中某供應商資料，需每週轉存到供應商的 S3 桶。怎麼做？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Glue 排程用 UNLOAD 寫到 S3"
+  },
+  "section": "9.2",
+  "why": "要把 Redshift 的供應商資料每週匯出到對方 S3 bucket。UNLOAD 是把查詢結果匯出到 S3 的標準指令，交給排程 Glue job 執行；COPY 是載入方向，data sharing、Spectrum 也不會寫出檔案。",
+  "flow": [
+   "Glue job 每週排程",
+   "連線 Redshift",
+   "*UNLOAD 查詢結果",
+   "供應商 S3 bucket"
+  ]
+ },
+ {
+  "number": 229,
+  "q": "Redshift 由兩部門共用，各部門僅能存取自己的表與檢視，且常在單一查詢中跨部門使用物件。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "各部門獨立 schema，schema 層級授權"
+  },
+  "section": "12.4",
+  "why": "部門權限要隔離又常跨部門查詢：各部門 tables/views 放進專屬 schema，用 schema 層級 GRANT 一次管好，同 cluster 仍能跨 schema join。拆多個 database 或逐表授權都更麻煩。",
+  "flow": [
+   "各部門 tables / views",
+   "*各部門專屬 schema 授權",
+   "同 cluster 跨 schema 查詢"
+  ]
+ },
+ {
+  "number": 230,
+  "q": "將 MSK 串流資料匯入 Redshift，需低資料存取延遲並最佳化儲存成本。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "外部 schema 對應 MSK+物化檢視"
+  },
+  "section": "9.3",
+  "why": "Redshift streaming ingestion 直接讀 MSK：external schema 對應 MSK，materialized view 消費 topic，資料直進 Redshift、延遲低，免經 Firehose 或 S3 中繼的維運與儲存成本。",
+  "flow": [
+   "MSK topic",
+   "*external schema 對應 MSK",
+   "materialized view",
+   "Redshift 低延遲查詢"
+  ]
+ },
+ {
+  "number": 231,
+  "q": "Glue 處理 44,000 個 200–300KB 小檔（最小 worker）效能很差。最具成本效益的改善？",
+  "answer": "C",
+  "answer_text": {
+   "C": "使用 DynamicFrame grouping"
+  },
+  "section": "6.4",
+  "why": "44,000 個 200–300 KB 小檔是典型 small files 問題，慢在大量 task 與開檔 overhead，不是運算力。DynamicFrame grouping 把小檔合成一組讀、減少 task 數，不必加大 worker，最省錢。",
+  "flow": [
+   "44,000 個 S3 小檔",
+   "*DynamicFrame grouping",
+   "task 數變少",
+   "Glue ETL 變快"
+  ]
+ },
+ {
+  "number": 232,
+  "q": "整合多個 SaaS 應用程式資料供 QS 分析與建儀表板，最具營運效率？",
+  "answer": "C",
+  "answer_text": {
+   "C": "AppFlow 排程抽到 S3+Glue+QS"
+  },
+  "section": "2.4",
+  "why": "AppFlow 是免寫程式的 SaaS 整合服務：每個 app 建排程 flow 寫入 S3，Glue 建 catalog，QuickSight 建 data source 與 dataset 就能分析。比自寫 Lambda 呼叫 SaaS API 省維運。",
+  "flow": [
+   "SaaS apps",
+   "*AppFlow 排程 flow",
+   "S3",
+   "Glue Data Catalog",
+   "QuickSight dataset"
+  ]
+ },
+ {
+  "number": 233,
+  "q": "多個應用程式輸出日誌，需近即時查詢並視覺化日誌？",
+  "answer": "B",
+  "answer_text": {
+   "B": "CW Logs 訂閱篩選串流至 OpenSearch"
+  },
+  "section": "14.3",
+  "why": "各 app 把 log 寫進 CloudWatch Logs，以 subscription filter 近即時串流到 OpenSearch Service，再於 OpenSearch 建查詢與 dashboard 視覺化。先匯出 S3 再用 Athena 查不夠即時。",
+  "flow": [
+   "應用程式 logs",
+   "CloudWatch Logs",
+   "*subscription filter",
+   "OpenSearch Service",
+   "Dashboards 查詢視覺化"
+  ]
+ },
+ {
+  "number": 234,
+  "q": "Glue 每日將百萬筆訂單以 CSV 存 S3 Standard 並每日分析，要最佳化儲存與檢索成本？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue ETL 轉為 Parquet 格式"
+  },
+  "section": "8.2",
+  "why": "每日都要分析，不能移到 Glacier 這類取回慢又貴的層級，可省的是格式：Glue ETL 把 CSV 轉成欄式 Parquet，壓縮後儲存量變小，查詢只讀需要的欄位，掃描成本一起降。",
+  "flow": [
+   "多來源資料",
+   "*Glue ETL 轉 Parquet",
+   "S3 Standard",
+   "每日分析少掃描"
+  ]
+ },
+ {
+  "number": 235,
+  "q": "Athena Spark 筆記本查詢 S3 已分區大資料集（crawler 更新分區），要最小化掃描資料量？",
+  "answer": "A",
+  "answer_text": {
+   "A": "查詢中加入分區篩選條件"
+  },
+  "section": "8.3",
+  "why": "資料已分區、crawler 也會更新，缺的是查詢條件：WHERE 加上 partition 欄位篩選，Athena 才會 partition pruning 跳過無關分區、少掃資料。提高 crawler 頻率或改 Spark 快取都沒用。",
+  "flow": [
+   "已分區 S3 資料",
+   "*WHERE 加 partition filter",
+   "partition pruning",
+   "掃描量變少"
+  ]
+ },
+ {
+  "number": 236,
+  "q": "Redshift 在帳號1公有子網，SG 只允許自身流量；QS Enterprise 在帳號2公有子網，SG 可出站至 Redshift。如何讓 QS 查詢 Redshift？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Redshift SG 允許 QS SG 入站該埠"
+  },
+  "section": "13.2",
+  "why": "QuickSight 端 SG 已允許出站，卡在 Redshift SG 只放行自己：在 Redshift SG 加 inbound rule，來源設 QuickSight SG、埠號用 Redshift port。Elastic IP、改 CIDR 都不對題。",
+  "flow": [
+   "QuickSight SG（帳號 2）",
+   "*Redshift SG：inbound port",
+   "Redshift cluster（帳號 1）"
+  ]
+ },
+ {
+  "number": 237,
+  "q": "大型檔案每天不定時上傳 S3 一次，Glue workflow 處理後載入 Redshift，要盡快開始處理？",
+  "answer": "B",
+  "answer_text": {
+   "B": "CloudTrail+EventBridge 事件觸發"
+  },
+  "section": "7.5",
+  "why": "檔案到達時間不定又要盡快處理，排程輪詢一定空等。S3 data events 記到 CloudTrail，EventBridge rule 攔 PutObject 觸發 Glue event-based trigger，一上傳就啟動 workflow。",
+  "flow": [
+   "S3 PutObject",
+   "CloudTrail data event",
+   "EventBridge rule",
+   "*Glue event-based trigger",
+   "Glue workflow"
+  ]
+ },
+ {
+  "number": 238,
+  "q": "使用者每小時上傳一檔到 S3 即需轉換（<1分鐘），結果以 email 寄給工程師。最具營運效率？",
+  "answer": "C",
+  "answer_text": {
+   "C": "S3 事件觸發 Lambda，SNS 寄 email"
+  },
+  "section": "7.5",
+  "why": "每小時一檔、轉換不到 1 分鐘，最適合 Lambda：S3 Event Notifications 在物件建立時觸發 Lambda 轉換，結果發布到 SNS topic，工程師以 email 訂閱收信。全 serverless 免管主機。",
+  "flow": [
+   "S3 ObjectCreated",
+   "*Lambda 轉換",
+   "SNS topic",
+   "工程師 email"
+  ]
+ },
+ {
+  "number": 239,
+  "q": "Glue PySpark 以 DynamicFrame 處理資料湖，郵遞區號含多餘數字或無效字元導致錯誤，如何修正？",
+  "answer": "A",
+  "answer_text": {
+   "A": "定義 schema 傳給 DynamicFrame"
+  },
+  "section": "5.2",
+  "why": "postal code 混入多餘數字與無效字元才出錯。依流程要求的格式定義 PySpark schema，處理時傳給 DynamicFrame，欄位就照正確格式解析。push-down predicate 等設定都與欄位格式無關。",
+  "flow": [
+   "postal code 格式不一",
+   "*定義 PySpark schema",
+   "傳入 DynamicFrame",
+   "依正確格式處理"
+  ]
+ },
+ {
+  "number": 240,
+  "q": "Glue workflow 偶因資料品質問題失敗，業務團隊需在每次失敗時收到 email 通知？",
+  "answer": "B",
+  "answer_text": {
+   "B": "SNS 標準主題+EventBridge 規則"
+  },
+  "section": "14.2",
+  "why": "Glue job 狀態變更會送到 EventBridge：rule 篩 FAILED，target 設 SNS standard topic，團隊信箱訂閱，每次失敗都收到 email。SNS FIFO topic 不支援 email，SQS 也不會寄信。",
+  "flow": [
+   "Glue job FAILED",
+   "*EventBridge rule",
+   "SNS standard topic",
+   "團隊 email"
+  ]
+ },
+ {
+  "number": 241,
+  "q": "多條關鍵 Glue 管線，失敗時需通知利害關係人。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "EventBridge→CW 指標→警示→SNS"
+  },
+  "section": "14.2",
+  "why": "EventBridge rule 比對 Glue job failure 事件，以 rule 觸發數建 CloudWatch metric，再設 alarm 通知 SNS，所有 pipeline 統一告警。全靠設定，不必寫 Lambda 或讀 log 判斷失敗。",
+  "flow": [
+   "Glue job failure 事件",
+   "EventBridge rule",
+   "*CloudWatch metric＋alarm",
+   "SNS 通知"
+  ]
+ },
+ {
+  "number": 242,
+  "q": "Glue Spark 作業失敗（已啟用日誌與監控），要查看作業內各 stage 的指標，該去哪看？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Spark UI 查看 job 與 stage"
+  },
+  "section": "6.5",
+  "why": "要看 job 內各 stage 的指標，正是 Spark UI 的用途：可逐一看 stages、tasks、executors 的耗時與 shuffle 讀寫。CloudWatch metrics 多是 job 層級的聚合值，細不到單一 stage。",
+  "flow": [
+   "Glue Spark job 失敗",
+   "*Spark UI",
+   "stage / task 指標",
+   "找出瓶頸"
+  ]
+ },
+ {
+  "number": 243,
+  "q": "Athena 表依日期分區、含5年每日資料，查詢慢。要提升效能並自動化分區管理？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Athena 分區投影，設5年日期範圍"
+  },
+  "section": "8.4",
+  "why": "5 年每日分區很多，慢在向 Glue Catalog 取大量 partition metadata。partition projection 在 table properties 設 5 年前到現在的日期範圍，Athena 直接推算分區，又免手動加分區。",
+  "flow": [
+   "5 年每日分區表",
+   "*partition projection",
+   "日期範圍：5 年前～NOW",
+   "Athena 直接推算分區"
+  ]
+ },
+ {
+  "number": 244,
+  "q": "以 Iceberg 建 100TB 資料湖，要在 Glue Spark 作業中使用 Iceberg？（選2）",
+  "answer": "BC",
+  "answer_text": {
+   "B": "--extra-jars 指定版本+設 formats",
+   "C": "--datalake-formats 設為 iceberg"
+  },
+  "section": "1.6",
+  "why": "Glue 原生支援 Iceberg，關鍵是 job parameter --datalake-formats 設為 iceberg；要用特定 Iceberg 版本，再以 --extra-jars 指定該版 JAR。auto scaling、job bookmark 都無關。",
+  "flow": [
+   "Glue Spark job",
+   "*--datalake-formats=iceberg",
+   "選用 --extra-jars 版本",
+   "Iceberg tables"
+  ]
+ },
+ {
+  "number": 245,
+  "q": "Glue Spark 作業對兩個同樣大的 DataFrame 做 sort-merge join，報錯 No space left on device，如何解決？",
+  "answer": "A",
+  "answer_text": {
+   "A": "使用 Glue Spark shuffle manager"
+  },
+  "section": "6.5",
+  "why": "兩個大 DataFrame 做 sort-merge join 會產生大量 shuffle，No space left on device 是 worker 本機磁碟被塞滿。Glue Spark shuffle manager 把 shuffle 寫到 S3，不再受本機磁碟限制。",
+  "flow": [
+   "大表 sort-merge join",
+   "大量 shuffle 寫本機磁碟",
+   "*Glue Spark shuffle manager",
+   "shuffle 改寫到 S3"
+  ]
+ },
+ {
+  "number": 246,
+  "q": "交易需多層依序驗證，每筆須24小時內處理或拒絕，總執行<24小時。最低營運成本？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Step Functions 標準+Callback"
+  },
+  "section": "7.3",
+  "why": "驗證須逐層依序、總時長可能近 24 小時。Step Functions Standard 支援長時間執行，Wait for Callback 以 task token 暫停到驗證完成再續跑，等待不計費；Express 最多只跑 5 分鐘。",
+  "flow": [
+   "交易",
+   "*Step Functions Standard",
+   "task token 等 callback",
+   "下一層驗證或拒絕"
+  ]
+ },
+ {
+  "number": 247,
+  "q": "大量 Glue 作業同時啟動於同 VPC 同一子網，偶報「子網沒有足夠可用位址」。可能根因？",
+  "answer": "A",
+  "answer_text": {
+   "A": "子網的 IP 位址不足"
+  },
+  "section": "13.3",
+  "why": "錯誤訊息已直說 subnet 可用位址不足。Glue job 連 VPC 會在指定 subnet 建 ENI 占用 private IP，大量 job 同時在同一 subnet 啟動就把 IP 用光，與 worker type、IAM 無關。",
+  "flow": [
+   "大量 Glue job 同時啟動",
+   "同一 subnet 建 ENI",
+   "*subnet 可用 IP 耗盡",
+   "job 啟動失敗"
+  ]
+ },
+ {
+  "number": 248,
+  "q": "EMR（EC2）每晚以 cluster mode 跑 Spark 出錯，錯誤在 driver stderr 日誌。去哪找？",
+  "answer": "C",
+  "answer_text": {
+   "C": "EMR 主控台看存於 S3 的 step 日誌"
+  },
+  "section": "6.2",
+  "why": "EMR 會把 step logs 歸檔到 S3，事後仍查得到；從 EMR console 開該 step 的 logs 即可看 Spark driver stderr。live cluster 的 YARN UI 或 SSH 到 primary node 都不利事後追查。",
+  "flow": [
+   "Spark 應用程式錯誤",
+   "driver stderr",
+   "*EMR step logs（S3 歸檔）",
+   "EMR console 檢視"
+  ]
+ },
+ {
+  "number": 249,
+  "q": "每日500GB CSV（已註冊 Glue Catalog）轉 Parquet，需15GiB記憶體長時間並行處理，前兩程序完成後才跑第三個。最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue workflow 前兩平行再接第三"
+  },
+  "section": "7.1",
+  "why": "資料在 S3、schema 在 Glue Catalog，轉 Parquet 用 Glue job 最直接。Glue workflows 讓前兩個 process 平行跑，trigger 等兩者完成才啟動第三個，比 MWAA 或 Step Functions 省維運。",
+  "flow": [
+   "*Glue workflow",
+   "Process 1、2 平行",
+   "兩者皆完成",
+   "Process 3 correlation"
+  ]
+ },
+ {
+  "number": 250,
+  "q": "KDS（增強扇出）在帳號A，帳號B 的 Lambda 要處理資料，B 已建有權限的執行角色。還需做什麼？",
+  "answer": "B",
+  "answer_text": {
+   "B": "KDS 加資源型政策允許該角色"
+  },
+  "section": "12.3",
+  "why": "跨帳號需兩端授權：Account B 的 Lambda role 已有權限，還缺 Account A 資源端的允許，在 data stream 加 resource-based policy 開放該 role 讀取即可。SCP 只能限制、不能授權。",
+  "flow": [
+   "Account B Lambda role",
+   "*KDS resource-based policy",
+   "Account A data stream",
+   "Lambda 讀取處理"
+  ]
+ },
+ {
+  "number": 251,
+  "q": "Athena 查 S3，Glue 表需年/月/日分區，且需每天建立分區以因應 schema 變更？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue 表設定分區投影屬性"
+  },
+  "section": "8.4",
+  "why": "year/month/day 分區要每天新增，改用 partition projection：在 Glue table properties 定義分區範圍與 S3 路徑樣板，Athena 查詢時自動推算分區，不必每天跑 crawler 或 Lambda。",
+  "flow": [
+   "S3 year/month/day 路徑",
+   "*partition projection 屬性",
+   "Athena 自動推算分區"
+  ]
+ },
+ {
+  "number": 252,
+  "q": "飯店每日檔案由地端程式送至全託管擷取服務，以 Athena 查詢，需防誤刪。最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Kinesis Agent→Firehose→S3 版控"
+  },
+  "section": "3.1",
+  "why": "地端裝 Kinesis Agent，自動把檔案送到全託管的 Data Firehose，再交付到 S3 供 Athena 查詢。S3 開 versioning 後，誤刪只會加上 delete marker，舊版本仍救得回來。",
+  "flow": [
+   "飯店地端伺服器",
+   "Kinesis Agent",
+   "*Data Firehose",
+   "S3（versioning）",
+   "Athena"
+  ]
+ },
+ {
+  "number": 253,
+  "q": "EMR Spark 處理串流資料存 S3，以 Athena 分析，要最佳化格式使查詢時間最短？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "ORC 格式+Glue Catalog 追 schema",
+   "D": "Parquet+Glue Catalog 追 schema"
+  },
+  "section": "8.2",
+  "why": "Athena 要查得快就用欄式格式：ORC 與 Parquet 都支援欄位裁剪、壓縮與 predicate pushdown，只讀需要的欄位，掃描量遠小於 CSV、JSON。再用 Glue Data Catalog 追蹤 schema 變更。",
+  "flow": [
+   "EMR Spark 串流處理",
+   "*ORC / Parquet 寫入 S3",
+   "Glue Data Catalog schema",
+   "Athena 快速查詢"
+  ]
+ },
+ {
+  "number": 254,
+  "q": "S3 大型 CSV 每日追加，含5年銷售資料，Athena 需查特定期間資料。最具成本效益？",
+  "answer": "B",
+  "answer_text": {
+   "B": "依 SALE_DATE 以前綴每日分區"
+  },
+  "section": "8.3",
+  "why": "查詢都撈特定期間，依 SALE_DATE 用 S3 prefix 建每日分區並加進 Glue Catalog，Athena 帶日期條件就只掃相關日期，按掃描量計費的成本跟著降。轉 JSON 或搬到 RDS 都更貴更麻煩。",
+  "flow": [
+   "S3 銷售 CSV",
+   "*依 SALE_DATE 每日分區",
+   "Glue Catalog 加分區",
+   "Athena 篩日期區間"
+  ]
+ },
+ {
+  "number": 255,
+  "q": "需實作資料目錄方案，追蹤 Redshift 資料表的 schema 變更？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue crawler 每日 JDBC 更新 Catalog"
+  },
+  "section": "4.2",
+  "why": "要建資料目錄並追蹤 schema 變更：Glue crawler 透過 JDBC 連 Redshift 讀 table metadata，排程每天跑，欄位一變就更新 Glue Data Catalog。DataSync、SCT 都不做 cataloging。",
+  "flow": [
+   "Redshift table",
+   "*Glue crawler（JDBC、每日）",
+   "Glue Data Catalog"
+  ]
+ },
+ {
+  "number": 256,
+  "q": "偵測跨多個 S3 bucket 資料湖中專有格式的 PII。最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue Detect PII 轉換+自訂模式"
+  },
+  "section": "12.7",
+  "why": "PII 藏在專有格式，Macie 的 managed identifiers 只認標準格式；Glue Detect PII transform 可設 specific patterns，在 ETL 中直接掃多個 S3 bucket，比自寫 Lambda regex 省維運。",
+  "flow": [
+   "多個 S3 bucket",
+   "*Glue Detect PII＋patterns",
+   "標記 PII 資料"
+  ]
+ },
+ {
+  "number": 257,
+  "q": "DynamoDB 表每日須移除超過指定年限的項目。最少設定工作？",
+  "answer": "A",
+  "answer_text": {
+   "A": "啟用 TTL，程式設定 TTL 屬性"
+  },
+  "section": "10.4",
+  "why": "DynamoDB TTL 是原生過期刪除：啟用後由應用程式在 item 寫入過期時間（epoch 秒）屬性，到期自動刪除、不耗 WCU。只開功能加一個屬性，比 EventBridge 加 Lambda 每日掃表刪除省設定。",
+  "flow": [
+   "App 寫入 item＋TTL 屬性",
+   "*DynamoDB TTL",
+   "過期 item 自動刪除"
+  ]
+ },
+ {
+  "number": 258,
+  "q": "DynamoDB 數十億筆，PK=RideID、SK=TripStartTime。要讓司機依 RideStatus 查自己的行程且不掃全表？",
+  "answer": "C",
+  "answer_text": {
+   "C": "GSI：PK=DriverID、SK=RideStatus"
+  },
+  "section": "10.2",
+  "why": "原表 key 是 RideID＋TripStartTime，依司機查只能 scan 全表。建 GSI，以 DriverID 為 partition key、RideStatus 為 sort key 即可直接 Query。LSI 須沿用原表 partition key，不可行。",
+  "flow": [
+   "司機依狀態查行程",
+   "*GSI：DriverID＋RideStatus",
+   "Query index（免 scan）"
+  ]
+ },
+ {
+  "number": 259,
+  "q": "S3 事件觸發的 Lambda（128MB 記憶體、15秒逾時）CPU 常近100%而變慢，要提升效能並縮短總執行時間？",
+  "answer": "A",
+  "answer_text": {
+   "A": "記憶體提高到 512MB"
+  },
+  "section": "7.7",
+  "why": "Lambda 的 CPU 依記憶體按比例配置，128 MB 分到的 CPU 太少才常卡 100%。記憶體調到 512 MB 會一併拿到更多 CPU，執行變快、pipeline 縮短；加長 timeout 解不了 CPU 瓶頸。",
+  "flow": [
+   "S3 事件",
+   "Lambda CPU 近 100%",
+   "*記憶體調到 512 MB",
+   "CPU 增加、執行變快"
+  ]
+ },
+ {
+  "number": 260,
+  "q": "KDS→Glue ETL 偵測異常後通知 SNS，高流量時通知延遲且 diskSpaceUsed_MB 很高。最少工作量？",
+  "answer": "D",
+  "answer_text": {
+   "D": "啟用 Glue ETL auto scaling"
+  },
+  "section": "6.6",
+  "why": "高流量時 diskSpaceUsed_MB 飆高、SNS 通知延遲，代表 Glue 固定資源在尖峰不夠。啟用 Glue auto scaling 讓 worker 隨負載自動增減，尖峰加、平時不浪費，不必手動調 DPU 或搬到 EMR。",
+  "flow": [
+   "Kinesis 高流量",
+   "Glue 磁碟用量高、通知延遲",
+   "*Glue auto scaling",
+   "尖峰自動加 worker"
+  ]
+ },
+ {
+  "number": 261,
+  "q": "Redshift 查詢改為 join S1（100億筆）與 S2（9億筆）後變慢，如何提升效能？（選2）",
+  "answer": "BE",
+  "answer_text": {
+   "B": "兩表 KEY 分布，用高基數欄 join",
+   "E": "用 Redshift Advisor 檢視建議"
+  },
+  "section": "9.5",
+  "why": "兩張大表 join 慢在跨節點重分佈資料。兩表都用 KEY distribution、以高基數 join 欄為 key，同 key 落同節點就地 join、不傾斜；Redshift Advisor 再依 workload 給出最佳化建議。",
+  "flow": [
+   "S1 join S2（大表）",
+   "*KEY distribution：join 欄",
+   "co-located join",
+   "Advisor 建議再優化"
+  ]
+ },
+ {
+  "number": 262,
+  "q": "Glue 讀寫即時串流的 Iceberg 表（Parquet），查詢效能變慢，如何改善？（選2）",
+  "answer": "BD",
+  "answer_text": {
+   "B": "Catalog 自動壓縮 Iceberg 表",
+   "D": "Catalog 啟用 copy-on-write"
+  },
+  "section": "1.6",
+  "why": "串流寫入 Iceberg 會累積大量小檔與 delete files，查詢要開很多檔。Glue Catalog 自動 compaction 合併小檔；copy-on-write 在寫入時就重寫資料檔，查詢不必再合併 delete files。",
+  "flow": [
+   "串流寫入 Iceberg",
+   "大量小檔與 delete files",
+   "*Catalog 自動 compaction",
+   "copy-on-write",
+   "查詢變快"
+  ]
+ },
+ {
+  "number": 263,
+  "q": "現用 EMR Spark+Glue 做 ETL 寫入 S3，要改全託管無伺服器、續用 Spark，並以最少人工自動編排多個作業？",
+  "answer": "A",
+  "answer_text": {
+   "A": "全遷到 Glue，用 Glue workflows"
+  },
+  "section": "6.1",
+  "why": "要全託管 serverless 又得用 Spark：Glue 本身就是 serverless Spark ETL，把 EMR 的轉換一併遷過來就不用管 cluster，再用 Glue workflows 編排多個 job 的順序與 trigger，自動執行。",
+  "flow": [
+   "EMR Spark＋Glue ETL",
+   "*全部遷到 Glue Spark job",
+   "Glue workflows 編排",
+   "S3 data lake"
+  ]
+ },
+ {
+  "number": 264,
+  "q": "法規要求資料僅限所在區域存取；以 AD+自訂身分代理呼叫 AssumeRole 取臨時憑證。最少管理負擔的區域限制？",
+  "answer": "A",
+  "answer_text": {
+   "A": "單一角色+各區政策作 session policy"
+  },
+  "section": "12.3",
+  "why": "身分代理本就呼叫 AssumeRole，可順勢傳 session policy：只建一個能建資源的 IAM role，每個 Region 一份限該區的 policy，依員工所在地傳入，權限取交集。不必每區各建 role 或 group。",
+  "flow": [
+   "AD 登入",
+   "identity broker",
+   "*AssumeRole＋session policy",
+   "臨時憑證限本地 Region"
+  ]
+ },
+ {
+  "number": 265,
+  "q": "每日自動將 S3 資料載入 Redshift，敏感資料須遮蔽、使用者不可見明文。最少營運負擔？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Glue 載入，Redshift 動態遮罩"
+  },
+  "section": "12.8",
+  "why": "要讓使用者看不到明文，就在 Redshift 用 dynamic data masking：Glue job 每日把 S3 資料載入 Redshift，建 masking policy 套到敏感欄位，查詢時依角色遮罩，原始資料不必改寫。",
+  "flow": [
+   "S3 每日資料",
+   "Glue job 載入",
+   "Redshift table",
+   "*dynamic data masking",
+   "使用者看到遮罩值"
+  ]
+ },
+ {
+  "number": 266,
+  "q": "需低延遲即時彙總、過濾大量串流資料，並存入 S3 供分析。最具營運效率？",
+  "answer": "C",
+  "answer_text": {
+   "C": "KDS+Managed Flink 處理寫 S3"
+  },
+  "section": "3.5",
+  "why": "串流資料的低延遲彙總、過濾是有狀態串流運算，正是 Managed Service for Apache Flink 的強項。Kinesis Data Streams 當來源，Flink 處理後寫入 S3；Lambda、Firehose 不適合複雜聚合。",
+  "flow": [
+   "串流資料",
+   "Kinesis Data Streams",
+   "*Managed Flink 彙總過濾",
+   "S3 供分析"
+  ]
+ },
+ {
+  "number": 267,
+  "q": "ML 訓練資料存於 S3，需套用資料品質規則，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "DataBrew 規則集+Profile job+EB"
+  },
+  "section": "5.7",
+  "why": "最少營運負擔就是不自寫檢查程式：DataBrew ruleset 定義品質規則、profile job 執行檢查，EventBridge 在 S3 新增資料時自動觸發。Lambda 或 EMR 自寫檢查都要維護程式碼與資源。",
+  "flow": [
+   "S3 新增訓練資料",
+   "EventBridge",
+   "*DataBrew profile job",
+   "ruleset 品質檢查"
+  ]
+ },
+ {
+  "number": 268,
+  "q": "用 Glue Data Catalog 查 S3 銷售資料，發現部分記錄遺失或過時，最可能原因？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Catalog 未同步最新 S3 分割區"
+  },
+  "section": "4.4",
+  "why": "資料在 S3 卻查不到或是舊的，代表查詢依據的 metadata 落後：新的 S3 partition 沒同步進 Glue Data Catalog，查詢就只看得到舊分區。IAM 錯誤會直接拒絕存取，versioning 也不影響查詢結果。",
+  "flow": [
+   "S3 新增 partition",
+   "*Data Catalog 未同步",
+   "查詢漏掉或過時"
+  ]
+ },
+ {
+  "number": 269,
+  "q": "POS 交易在 RDS MySQL，歷史在 Redshift，需每日合併報表、近即時，且傳輸成本與維護最低？",
+  "answer": "A",
+  "answer_text": {
+   "A": "DMS 持續複寫到 Redshift 再查"
+  },
+  "section": "2.2",
+  "why": "要近即時把當日交易併入歷史資料：DMS 持續複寫（CDC）把 RDS MySQL 變更同步進 Redshift，報表直接在 Redshift 內 join。每小時 Glue ETL 或 S3 匯出再 COPY 不夠即時，還多一條批次管線。",
+  "flow": [
+   "RDS MySQL 交易",
+   "*DMS 持續複寫（CDC）",
+   "Redshift 合併歷史",
+   "近即時報表"
+  ]
+ },
+ {
+  "number": 270,
+  "q": "資料分析師需在進階轉換前準備、標準化資料湖資料，不能寫新程式碼，最少工作量？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue Studio 資料準備 recipe 轉換"
+  },
+  "section": "5.1",
+  "why": "分析師不能寫程式：Glue Studio 的 data preparation recipe 以視覺化步驟清理、標準化資料，工程師再於同一 Glue pipeline 加進階轉換。Pandas notebook 要寫程式，寫文件則仍靠工程師實作。",
+  "flow": [
+   "原始資料",
+   "*Glue Studio recipe 轉換",
+   "工程師加進階轉換",
+   "data lake"
+  ]
+ },
+ {
+  "number": 271,
+  "q": "RDS Oracle 全表需供未來分析，customer_complaints 表須近即時經 REST API 處理，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DMS→KDS(該表)+DMS→S3+Lambda"
+  },
+  "section": "2.3",
+  "why": "分兩路最省：一個 DMS task 只把 customer_complaints 以 CDC 串到 Kinesis，Lambda 消費後呼叫 REST API；另一個 DMS task 把全部資料表送到 S3 供分析。不必多養 PostgreSQL 或 Redshift。",
+  "flow": [
+   "RDS Oracle complaints 表",
+   "*DMS CDC task",
+   "Kinesis Data Streams",
+   "Lambda 呼叫 REST API"
+  ]
+ },
+ {
+  "number": 272,
+  "q": "Redshift 複雜轉換查詢要跑數小時，要盡可能縮短查詢時間？",
+  "answer": "D",
+  "answer_text": {
+   "D": "對常用查詢建物化檢視(MV)"
+  },
+  "section": "9.6",
+  "why": "慢在重複執行的複雜轉換：materialized view 把常用 join、聚合結果預先算好存起來，查詢直接讀結果不必重算。concurrency scaling 只解決排隊，改用 Athena 或 Spectrum 也不會更快。",
+  "flow": [
+   "常用複雜轉換查詢",
+   "*materialized view",
+   "讀預先算好的結果",
+   "查詢時間大幅縮短"
+  ]
+ },
+ {
+  "number": 273,
+  "q": "S3 資料湖需轉換清理後，讓多個夥伴在上班時間跑 SQL，最具成本效益？",
+  "answer": "B",
+  "answer_text": {
+   "B": "下班後 Glue Flex→Redshift Serverless"
+  },
+  "section": "9.1",
+  "why": "資料可下班後批次處理：Glue Flex 用閒置運算資源跑 ETL，比標準 job 便宜；Redshift Serverless 讓夥伴上班時間用 SQL 查、依用量計費。EMR 或 provisioned Redshift 閒置也要付費。",
+  "flow": [
+   "前一天 S3 資料",
+   "*下班後 Glue Flex job",
+   "Redshift Serverless",
+   "上班時間夥伴 SQL"
+  ]
+ },
+ {
+  "number": 274,
+  "q": "批次 ETL 分擷取、轉換、儲存階段，存 S3，每階段自動重試、可見各階段成敗，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Step Functions 編排 Lambda+Glue"
+  },
+  "section": "7.2",
+  "why": "要每階段自動重試、看得到各階段成敗：Step Functions 每個 state 都能設 Retry，並視覺化執行狀態；Lambda 擷取、Glue job 轉換寫入 S3。Glue trigger 設 MaxRetries 0 等於不重試。",
+  "flow": [
+   "*Step Functions workflow",
+   "Lambda 擷取資料",
+   "Glue job 轉換",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 275,
+  "q": "資料網格：3 團隊各擁資料，Glue Catalog 千張表，用 Athena/Redshift，需跨域分析、稽核、限制 PII，可擴展？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Lake Formation 跨域存取+細粒度"
+  },
+  "section": "12.1",
+  "why": "千張表跨 domain 共享又要限制 PII：Lake Formation 直接在 Glue Data Catalog 上做跨 domain 授權與欄、列級細粒度控制，Athena、Redshift 都適用，存取可由 CloudTrail 稽核。",
+  "flow": [
+   "各 domain 擁有資料表",
+   "*Lake Formation 跨域授權",
+   "欄/列級控管 PII",
+   "CloudTrail 稽核"
+  ]
+ },
+ {
+  "number": 276,
+  "q": "S3 與 RDS 需備份並依期限保留，且保留期間防意外或惡意刪除，最少營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "AWS Backup 計畫+Vault Lock 合規"
+  },
+  "section": "1.4",
+  "why": "一次管 S3 與 RDS 的備份與保留期：AWS Backup plan 集中設排程與 lifecycle，Vault Lock compliance mode 讓保留期內連 root 都刪不掉。各服務分設 versioning、snapshot 維運多且仍可被刪。",
+  "flow": [
+   "S3 + RDS",
+   "AWS Backup plan",
+   "backup vault",
+   "*Vault Lock compliance"
+  ]
+ },
+ {
+  "number": 277,
+  "q": "每天上傳機密文件到 S3，需獨立驗證所有上傳資料完整性，確認傳輸未損毀？",
+  "answer": "C",
+  "answer_text": {
+   "C": "上傳前算 SHA-256 傳給 SDK"
+  },
+  "section": "1.5",
+  "why": "要獨立驗證傳輸沒損毀：上傳前在本地算 SHA-256 checksum，隨上傳請求交給 AWS SDK，S3 收到後比對、不符就拒絕寫入。下載抽樣或全量比對效率差，SSE-C 加密與完整性驗證無關。",
+  "flow": [
+   "本地算 SHA-256",
+   "*SDK 上傳附 checksum",
+   "S3 比對驗證"
+  ]
+ },
+ {
+  "number": 278,
+  "q": "S3 物件超過 1 年須 5 小時內可取，所有版本 WORM 不可變保留 7 年？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Object Lock+1年轉 Glacier Flexible"
+  },
+  "section": "1.4",
+  "why": "WORM 且所有版本 7 年不可變，只能靠 S3 Object Lock（versioning 仍可刪）；1 年後轉 Glacier Flexible Retrieval，standard 取回 3～5 小時符合需求。Deep Archive 取回約 12 小時，太慢。",
+  "flow": [
+   "*S3 Object Lock（WORM）",
+   "1 年後 Glacier Flexible",
+   "7 年後 lifecycle 刪除"
+  ]
+ },
+ {
+  "number": 279,
+  "q": "部署複雜管線，各階段要能執行腳本，只能用全託管、無伺服器服務？",
+  "answer": "B",
+  "answer_text": {
+   "B": "MWAA 建置並排程管線"
+  },
+  "section": "7.4",
+  "why": "複雜多階段、每階段都要跑腳本：MWAA 是全託管 Apache Airflow，用 DAG 編排與排程任意 script 任務，不用自管伺服器。EC2 要自己維運主機，DataBrew 只做資料準備、不能跑自訂腳本。",
+  "flow": [
+   "各階段腳本",
+   "*Airflow DAG（MWAA）",
+   "託管排程與編排"
+  ]
+ },
+ {
+  "number": 280,
+  "q": "S3 每天千萬小物件：前60天即時取、61–180天偶爾取、181–365天1小時內可取、365天後刪，最佳化成本？",
+  "answer": "B",
+  "answer_text": {
+   "B": "生命週期：60天IA→180天GFR→刪"
+  },
+  "section": "1.2",
+  "why": "存取頻率隨天數下降，用 lifecycle 自動轉換：60 天後轉 Standard-IA 仍可即時取用，180 天後轉 Glacier Flexible Retrieval（expedited 數分鐘可取回），365 天 expire，不必自建 Lambda。",
+  "flow": [
+   "*S3 Lifecycle policy",
+   "60 天後 Standard-IA",
+   "180 天後 Glacier Flexible",
+   "365 天 expire"
+  ]
+ },
+ {
+  "number": 281,
+  "q": "Glue PySpark 需從 DynamoDB 讀已知分割鍵的資料，需 DynamicFrame，RCU 最少？",
+  "answer": "D",
+  "answer_text": {
+   "D": "用分割鍵做 query 再轉 DF"
+  },
+  "section": "10.2",
+  "why": "已知 partition key，就用 DynamoDB Query 放進 key condition expression，只讀符合的 items、RCU 最少，再轉 DynamicFrame。Scan 或 connector filter 會先讀整張表再篩，浪費 RCU。",
+  "flow": [
+   "已知 partition key",
+   "*Query：key condition",
+   "只讀所需 items",
+   "DynamicFrame"
+  ]
+ },
+ {
+  "number": 282,
+  "q": "多租戶 EMR，團隊用 EMR Step 跑 Spark 讀 DynamoDB 機密表，只允許特定團隊存取？",
+  "answer": "A",
+  "answer_text": {
+   "A": "為 EMR Step 設 runtime role"
+  },
+  "section": "12.3",
+  "why": "多租戶要讓各團隊 step 權限不同：EMR runtime role 讓每個 step 以自己的 IAM role 執行，只有該團隊的 role 能讀 DynamoDB 機密表。EMRFS role 只管 S3，Lake Formation 不管 DynamoDB。",
+  "flow": [
+   "團隊提交 EMR step",
+   "*step runtime role",
+   "僅該團隊讀 DynamoDB"
+  ]
+ },
+ {
+  "number": 283,
+  "q": "S3 每小時進數千個 50–100KB Parquet，評估 Iceberg+Glue Catalog，需確保檔案增多效能不下降？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Iceberg 依檔案大小/數量自動壓縮"
+  },
+  "section": "1.6",
+  "why": "每小時數千個 50～100KB 小檔，檔案越多 Iceberg 要讀的 metadata 越多、查詢越慢：設定依檔案大小與數量門檻自動 compaction，持續把小檔合併。每天跑一次 Glue job 壓縮，中間仍會退化。",
+  "flow": [
+   "每小時數千小檔",
+   "*Iceberg 自動 compaction",
+   "維持較大檔案",
+   "查詢效能穩定"
+  ]
+ },
+ {
+  "number": 284,
+  "q": "IoT 管線用 KDS→Firehose→S3，需監控管線健康，最少營運工作？",
+  "answer": "B",
+  "answer_text": {
+   "B": "CW 警報監控 IncomingBytes 等指標"
+  },
+  "section": "14.1",
+  "why": "KDS 與 Firehose 原生把 metrics 送進 CloudWatch，直接對 IncomingBytes、OutgoingBytes、DeliveryToS3.Success 設 alarm 即可告警、不用寫程式。人工看 logs、Lambda 每日檢查都更費工。",
+  "flow": [
+   "KDS + Firehose",
+   "CloudWatch metrics",
+   "*CloudWatch alarms",
+   "異常即告警"
+  ]
+ },
+ {
+  "number": 285,
+  "q": "產品屬性可變，需高量突發查詢、個位數毫秒延遲，以 Product ID 取值並可依 Category、Brand 查？",
+  "answer": "A",
+  "answer_text": {
+   "A": "DynamoDB 隨需容量+主鍵+GSI"
+  },
+  "section": "10.2",
+  "why": "可變屬性、突發流量、個位數毫秒延遲，正是 DynamoDB on-demand：自動吸收尖峰、免規劃容量；Product ID 當 primary key，Category、Brand 用 GSI 查詢。Aurora 需固定 schema、難應付突發。",
+  "flow": [
+   "*DynamoDB on-demand",
+   "PK：Product ID",
+   "GSI：Category / Brand",
+   "毫秒級查詢"
+  ]
+ },
+ {
+  "number": 286,
+  "q": "地端日誌上傳 S3，需驗證 S3 上的日誌與地端一致？",
+  "answer": "A",
+  "answer_text": {
+   "A": "SDK 上傳自動算 CRC32 存中繼資料"
+  },
+  "section": "1.5",
+  "why": "要確認 S3 上的 log 與地端一致：AWS SDK 上傳時自動算 CRC32 checksum 讓 S3 比對，checksum 也存進物件中繼資料供日後再驗。Object Lock 是防刪改、不是驗證內容一致。",
+  "flow": [
+   "地端 log 檔",
+   "*SDK 上傳算 CRC32",
+   "S3 驗證並存 checksum"
+  ]
+ },
+ {
+  "number": 287,
+  "q": "EventBridge Scheduler 呼叫 Glue workflow，取消訂單 FailedInvocations 很高，須找出失敗原因？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Scheduler 設 DLQ 存失敗事件分析"
+  },
+  "section": "7.6",
+  "why": "FailedInvocations 只看得出失敗多、看不到原因：EventBridge Scheduler 設 DLQ，失敗事件連同錯誤資訊存進 SQS，就能分析取消訂單為何呼叫 Glue 失敗。調整 retry 只改重試行為，查不出根因。",
+  "flow": [
+   "Scheduler 呼叫 Glue",
+   "呼叫失敗",
+   "*DLQ 保存失敗事件",
+   "分析失敗原因"
+  ]
+ },
+ {
+  "number": 288,
+  "q": "處理 S3 1TB 檔產生 3 個 DataFrame 平行存另一 S3，管線為 EventBridge 規則目標，最少維護？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue workflow 平行跑 3 個 job"
+  },
+  "section": "7.1",
+  "why": "1 TB 檔要用 Spark、Lambda 跑不動：Glue workflow 平行啟動三個 Glue job，各寫一個 DataFrame 到第二個 bucket，workflow 也能直接當 EventBridge 的 target，不必再套 Step Functions。",
+  "flow": [
+   "S3 上傳事件",
+   "EventBridge rule",
+   "*Glue workflow",
+   "3 個 Glue job 平行",
+   "第二個 S3 bucket"
+  ]
+ },
+ {
+  "number": 289,
+  "q": "KDS 的 IoT 資料需近即時做複雜、有狀態轉換後存 S3，最少營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Managed Service for Apache Flink"
+  },
+  "section": "3.5",
+  "why": "近即時、複雜且有狀態的轉換正是 Flink 強項：Managed Service for Apache Flink 直接讀 Kinesis 處理後寫 S3，全託管免管叢集。Glue、EMR 偏批次或要管叢集，Lambda 不適合有狀態處理。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*Managed Apache Flink",
+   "有狀態轉換",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 290,
+  "q": "S3 時序資料只允許部署在公司 VPC 內的工作負載存取？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Bucket policy 條件限定來源 VPC"
+  },
+  "section": "13.1",
+  "why": "只讓公司 VPC 內的 workload 存取，就用 S3 bucket policy 的 condition（如 aws:SourceVpc）擋掉其他來源。S3 bucket 無法套 security group，NACL 是 subnet 層級、管不到 bucket。",
+  "flow": [
+   "VPC 內 workload",
+   "VPC endpoint",
+   "*bucket policy 限來源 VPC",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 291,
+  "q": "Glue 平台需資料品質驗證：含已知問題規則，且能自動偵測未預期問題，最少營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue Data Quality+異常偵測"
+  },
+  "section": "5.7",
+  "why": "已在用 Glue，就在 Glue job 加 Glue Data Quality：rules 檢查已知問題，anomaly detection 自動學習資料統計、抓出沒寫成規則的未預期問題。開源框架或手寫 SQL 要自己維護、也不會自動偵測。",
+  "flow": [
+   "Glue job",
+   "*Glue Data Quality",
+   "rules：已知問題",
+   "anomaly：未預期問題"
+  ]
+ },
+ {
+  "number": 292,
+  "q": "自管 Iceberg 資料湖，即時表由大量小檔組成導致查詢慢，需提升效能？",
+  "answer": "D",
+  "answer_text": {
+   "D": "執行壓縮(compaction)"
+  },
+  "section": "1.6",
+  "why": "即時寫入產生大量小檔，查詢要開更多檔案、讀更多 metadata 而變慢：compaction 把小檔合併成大檔，直接改善效能。expire、archive snapshots 或刪孤兒檔只省空間，不減少要讀的檔案數。",
+  "flow": [
+   "即時寫入",
+   "大量小檔",
+   "*compaction 合併",
+   "查詢變快"
+  ]
+ },
+ {
+  "number": 293,
+  "q": "每日 CSV 交易日誌存 S3，Athena 當天查部分欄位，量增變慢，要查詢時間最短？",
+  "answer": "D",
+  "answer_text": {
+   "D": "每日單一 Parquet+日期分割+下推"
+  },
+  "section": "8.3",
+  "why": "只查當天、部分欄位：Parquet 欄式儲存只讀需要的欄位，依日期分區讓 Athena 只掃當天，predicate pushdown 再略過不符的資料區塊，每天單一檔也避免小檔開銷。JSON、Avro 是列式，掃描量大。",
+  "flow": [
+   "每日 CSV 日誌",
+   "*每日一個 Parquet",
+   "S3 依日期分區",
+   "Athena predicate pushdown"
+  ]
+ },
+ {
+  "number": 294,
+  "q": "S3 客戶資料超過 7 年必須永久刪除？",
+  "answer": "A",
+  "answer_text": {
+   "A": "生命週期政策刪除超過7年物件"
+  },
+  "section": "1.3",
+  "why": "超過固定年限就永久刪除，S3 Lifecycle expiration 依物件年齡自動執行、不用寫程式。Athena 只能查詢不能刪 S3 物件，轉 Deep Archive 或加 Object Lock 都沒有把資料刪掉。",
+  "flow": [
+   "S3 客戶資料",
+   "*Lifecycle expiration",
+   "滿 7 年永久刪除"
+  ]
+ },
+ {
+  "number": 295,
+  "q": "兩團隊各在不同帳號，要存取第三帳號 Redshift 的 datashare salesshare，用 SQL 授權？",
+  "answer": "D",
+  "answer_text": {
+   "D": "兩條 GRANT … TO NAMESPACE"
+  },
+  "section": "9.9",
+  "why": "兩個團隊是兩個 consumer，各要一條授權：GRANT USAGE ON DATASHARE salesshare TO NAMESPACE 每次只指定一個 namespace，所以分兩條執行。TO NAMESPACES 或用 AND 列多個對象都不是有效語法。",
+  "flow": [
+   "salesshare datashare",
+   "*GRANT TO NAMESPACE A",
+   "GRANT TO NAMESPACE B",
+   "兩團隊皆可存取"
+  ]
+ },
+ {
+  "number": 296,
+  "q": "DynamoDB 資料保留 1 年，之後封存 5 年再刪除，最具作業效率？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Streams+TTL+Lambda→DA+生命週期刪"
+  },
+  "section": "10.4",
+  "why": "全用託管功能自動化：TTL 1 年後自動刪 item，Streams 把被刪的 item 交給 Lambda 直接寫入 Glacier Deep Archive（封存最便宜），S3 Lifecycle 5 年後刪除。自建 timestamp 掃描較費工。",
+  "flow": [
+   "*TTL 1 年刪 item",
+   "Streams + Lambda",
+   "Glacier Deep Archive",
+   "Lifecycle 5 年刪除"
+  ]
+ },
+ {
+  "number": 297,
+  "q": "已啟用版本控制的 S3，設 365 天過期規則後物件數反而加倍，須如何永久刪除舊物件？",
+  "answer": "D",
+  "answer_text": {
+   "D": "加規則刪除現行與非現行版本"
+  },
+  "section": "1.3",
+  "why": "有 versioning 時 expire current 只加 delete marker、舊版仍在，物件數才翻倍：要再加 lifecycle rule 刪除超過 365 天的 current 與 noncurrent versions 才會永久刪除。",
+  "flow": [
+   "versioned bucket",
+   "expire current",
+   "產生 delete marker",
+   "*刪除 noncurrent versions"
+  ]
+ },
+ {
+  "number": 298,
+  "q": "Glue 處理 IoT 資料，需自動標記溫度超出 -50~150°C 及缺時間戳記錄，極少寫程式？",
+  "answer": "A",
+  "answer_text": {
+   "A": "DataBrew：完整性+數值範圍規則"
+  },
+  "section": "5.7",
+  "why": "規則明確已知：timestamp 不可缺、溫度在 -50～150°C。DataBrew 以視覺化定義 completeness rule 與 numeric range 規則，profile 時自動標記、幾乎不寫程式；ML 異常偵測是找未知問題。",
+  "flow": [
+   "IoT sensor data",
+   "*DataBrew profile",
+   "completeness + 範圍規則",
+   "標記問題記錄"
+  ]
+ },
+ {
+  "number": 299,
+  "q": "推薦系統需整合第三方資料集到既有分析平台，最少營運負擔與時間？",
+  "answer": "A",
+  "answer_text": {
+   "A": "API 從 AWS Data Exchange 取用"
+  },
+  "section": "2.4",
+  "why": "AWS Data Exchange 是 AWS 上尋找、訂閱第三方資料集的服務，用 API 直接把訂閱的資料整合進既有分析平台，省去自找來源與維護整合。DataSync 是搬移資料的工具、不提供第三方資料集。",
+  "flow": [
+   "需要第三方資料",
+   "*AWS Data Exchange",
+   "API 取用資料集",
+   "既有分析平台"
+  ]
+ },
+ {
+  "number": 300,
+  "q": "年度報表存 S3，1 週後少存取，需保留 7 年且隨時可存取，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "7天後轉 Glacier IR，7年過期"
+  },
+  "section": "1.2",
+  "why": "1 週後很少讀但仍要立即可讀：lifecycle 7 天後轉 Glacier Instant Retrieval，毫秒級取回、儲存費遠低於 Standard，7 年後 expire。Deep Archive 取回要數小時，不符合隨時可讀。",
+  "flow": [
+   "S3 年度報表",
+   "7 天後 lifecycle",
+   "*Glacier Instant Retrieval",
+   "7 年後 expire"
+  ]
+ },
+ {
+  "number": 301,
+  "q": "Glue ETL 處理 PII 並寫入 CW Logs 日誌群組，需在日誌群組遮罩 PII？",
+  "answer": "B",
+  "answer_text": {
+   "B": "日誌群組套用資料保護政策"
+  },
+  "section": "14.5",
+  "why": "PII 已寫進 CloudWatch Logs，要在 log group 端遮罩：data protection policy 掛到 log group 後自動偵測並遮罩敏感資料。Glue security configuration 管加密，Macie 只掃 S3，都不遮罩 log。",
+  "flow": [
+   "Glue ETL job",
+   "CloudWatch log group",
+   "*data protection policy",
+   "PII 遮罩顯示"
+  ]
+ },
+ {
+  "number": 302,
+  "q": "EC2 與 RDS 同子網，EC2 應用需以 JDBC 連 RDS？",
+  "answer": "C",
+  "answer_text": {
+   "C": "DB 安全群組允許 EC2 連入"
+  },
+  "section": "13.2",
+  "why": "同 subnet 不代表能互連，RDS 連入由 security group 控制：DB security group 加 inbound rule 允許來自 EC2（或其 SG）的 DB port，JDBC 才連得上。IAM role 不控制網路連線。",
+  "flow": [
+   "EC2 應用（JDBC）",
+   "*DB SG inbound 允許 EC2",
+   "RDS DB instance"
+  ]
+ },
+ {
+  "number": 303,
+  "q": "電商需收集網站與 App 點擊流做即時分析並儲存，最少持續維護？",
+  "answer": "C",
+  "answer_text": {
+   "C": "KDS 收集+Firehose 送 S3"
+  },
+  "section": "3.1",
+  "why": "即時收點擊流又要最少維護：Kinesis Data Streams 承接網站與 App 事件，Data Firehose 全託管、自動批次寫入 S3 供分析。EC2 agent 要管主機、MSK 要管 broker，RDS 不適合存串流。",
+  "flow": [
+   "網站 / App 點擊流",
+   "*Kinesis Data Streams",
+   "Data Firehose",
+   "S3 分析"
+  ]
+ },
+ {
+  "number": 304,
+  "q": "Glue ETL 需檢查出貨日>訂單日、送達日>出貨日，不合格存另一 S3，最具成本效益？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Glue DQ 自訂規則用三日期欄"
+  },
+  "section": "5.5",
+  "why": "已在用 Glue ETL，直接加 Glue Data Quality custom rule，一條規則比較三個日期欄位（出貨日>訂單日、送達日>出貨日），不合格記錄再分流到第二個 bucket。DataBrew 或 Athena 多一個服務。",
+  "flow": [
+   "Glue ETL job",
+   "*Glue DQ custom rule",
+   "失敗記錄分流",
+   "第二個 S3 bucket"
+  ]
+ },
+ {
+  "number": 305,
+  "q": "日誌表需持續寫入，供其他應用以 API 可靠查特定記錄；每秒>4,000 寫入、6,500 讀取。哪個方案？",
+  "answer": "D",
+  "answer_text": {
+   "D": "DynamoDB 佈建容量＋API 讀寫"
+  },
+  "section": "10.1",
+  "why": "每秒 4,000 寫、6,500 讀的持續寫入，還要讓其他應用以 API 依 key 查特定記錄，正是 DynamoDB 的強項，用 provisioned capacity 配足容量即可。Redshift 是分析倉儲，不適合高頻 API 讀寫。",
+  "flow": [
+   "Application logs",
+   "*DynamoDB（provisioned）",
+   "DynamoDB API 讀寫",
+   "其他應用依 key 查詢"
+  ]
+ },
+ {
+  "number": 306,
+  "q": "大量 IoT 資料需無限期保留，在 Redshift 分析。最具成本效益？",
+  "answer": "B",
+  "answer_text": {
+   "B": "S3 存 Parquet＋Redshift Spectrum"
+  },
+  "section": "9.4",
+  "why": "資料要無限期保留，最省錢是放在低成本的 S3 並存成欄式 Parquet，再用 Redshift Spectrum 直接查外部資料。auto-copy 進 cluster 會讓儲存成本無限增長，JSON 掃描量也大。",
+  "flow": [
+   "IoT sensor data",
+   "S3（Parquet）",
+   "*Redshift Spectrum",
+   "Redshift 分析"
+  ]
+ },
+ {
+  "number": 307,
+  "q": "S3 資料湖含多部門資料，每天匯入百萬筆；各部門只能存取所需子集，最小權限。最少營運工作？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Lake Formation＋LF-Tags(TBAC)"
+  },
+  "section": "12.1",
+  "why": "多部門共用資料湖又要最小權限，最省力是 Lake Formation：在 Glue Data Catalog 資源貼 LF-Tags（如部門），以 LF-TBAC 依標籤授權。比替每個部門各寫 IAM policy 和 S3 路徑好維護。",
+  "flow": [
+   "S3 data lake",
+   "Glue Data Catalog",
+   "*LF-Tags + LF-TBAC",
+   "各部門最小權限存取"
+  ]
+ },
+ {
+  "number": 308,
+  "q": "地端 MySQL 存病歷，每 30 天輪換憑證，不想每次輪換都改程式碼。最低營運負擔？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Secrets Manager 自動輪換＋API 取"
+  },
+  "section": "12.6",
+  "why": "要定期輪換 DB 憑證又不改程式碼，就交給 Secrets Manager 自動輪換，應用程式每次以 API 取最新 secret，密碼不再寫死。KMS key rotation 換的是金鑰，不是 DB 密碼。",
+  "flow": [
+   "地端 MySQL 憑證",
+   "*Secrets Manager 自動輪換",
+   "App 以 API 取最新 secret"
+  ]
+ },
+ {
+  "number": 309,
+  "q": "擷取多個 Aurora MySQL 更新，近即時供分析；需無伺服器、維護最少。最低營運負擔？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Aurora zero-ETL→Redshift SL"
+  },
+  "section": "2.5",
+  "why": "要近即時擷取多個 Aurora MySQL 的變更且 serverless、少維護：Aurora zero-ETL integration 直接把變更複寫進 Redshift Serverless，每個 DB 建一個即可，不必自建 DMS 或 Debezium。",
+  "flow": [
+   "多個 Aurora MySQL",
+   "*zero-ETL integration",
+   "Redshift Serverless",
+   "近即時分析"
+  ]
+ },
+ {
+  "number": 310,
+  "q": "Athena 聯結兩表，要選正確聯結順序以優化效能。哪個做法？",
+  "answer": "A",
+  "answer_text": {
+   "A": "小表放左、大表放右"
+  },
+  "section": "8.6",
+  "why": "考點是 Athena join 的表順序：Athena 會依 SQL 撰寫的左右位置分配表來執行 join，所以順序會影響效能。依本題官方答案，應把較小的表寫在 join 左側、較大的表寫在右側。",
+  "flow": [
+   "Athena 兩表 JOIN",
+   "*左：小表／右：大表",
+   "依撰寫順序執行 join"
+  ]
+ },
+ {
+  "number": 311,
+  "q": "Redshift 報表用 30 表，來源 Aurora MySQL 有 100 表；每小時全量刷新造成延遲。最低營運負擔？（選2）",
+  "answer": "BC",
+  "answer_text": {
+   "B": "Redshift 建立使用整合的 DB",
+   "C": "Aurora 建 zero-ETL 只選所需表"
+  },
+  "section": "2.5",
+  "why": "全量刷新 100 張表才拖慢報表：在 Aurora 建 zero-ETL integration 並只選報表要的 30 張表（C），再於 Redshift 建立使用該 integration 的 database（B），即可近即時同步、免維護 ETL。",
+  "flow": [
+   "Aurora MySQL（30 張表）",
+   "*zero-ETL integration",
+   "Redshift 整合 database",
+   "報表即時產出"
+  ]
+ },
+ {
+  "number": 312,
+  "q": "每小時自動檢查 RDS、DynamoDB、OpenSearch 新資料並處理，單次≤10MB；成本與營運最佳、錯誤處理穩健。哪個方案？",
+  "answer": "A",
+  "answer_text": {
+   "A": "EventBridge→Step Functions＋Lambda"
+  },
+  "section": "7.2",
+  "why": "EventBridge 每小時觸發 Step Functions，由 Lambda 檢查 RDS、DynamoDB、OpenSearch 新資料再交給後續 state 處理，各 state 設 Retry/Catch 做錯誤處理，比 EMR、MWAA 省錢省事。",
+  "flow": [
+   "EventBridge 每小時",
+   "*Step Functions",
+   "Lambda 檢查新資料",
+   "各 state 錯誤處理"
+  ]
+ },
+ {
+  "number": 313,
+  "q": "Glue job 排程將 Redshift 供應商資料寫入 S3，已設好私有網路連線。下一步？",
+  "answer": "A",
+  "answer_text": {
+   "A": "建可寫 S3 的 IAM 角色掛 Redshift"
+  },
+  "section": "13.5",
+  "why": "私有網路已通，缺的是授權：Redshift 要把資料寫到 S3（如 UNLOAD），需要有 S3 寫入權限的 IAM role 並關聯到 Redshift cluster。data sharing、Spectrum 都不是寫出到 S3 的機制。",
+  "flow": [
+   "Glue job 排程",
+   "Redshift cluster",
+   "*IAM role：S3 寫入權限",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 314,
+  "q": "S3 中 100MB Parquet 資料，需在資料準備前先做剖析(profile)。最具營運效率？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue DataBrew 建 profile job"
+  },
+  "section": "5.7",
+  "why": "只是要在資料準備前剖析 100 MB 的 Parquet；Glue DataBrew profile job 直接產出欄位統計、分佈、缺失值等報告，免寫程式。Flink、Spectrum、QuickSight topic 都不是剖析工具。",
+  "flow": [
+   "S3 Parquet（100 MB）",
+   "*DataBrew profile job",
+   "檢視 profile 結果",
+   "資料準備"
+  ]
+ },
+ {
+  "number": 315,
+  "q": "零售點擊流即時分析載入 Redshift，每秒數百 MB。分析查詢延遲最低？",
+  "answer": "C",
+  "answer_text": {
+   "C": "KDS＋Redshift 串流擷取到 MV"
+  },
+  "section": "9.3",
+  "why": "數百 MB/s 的 clickstream 由 Kinesis Data Streams 承接，Redshift streaming ingestion 直接寫進 materialized view，資料一到就能查，省去 Firehose 先落地 S3 再 COPY 的延遲。",
+  "flow": [
+   "Clickstream",
+   "Kinesis Data Streams",
+   "*streaming ingestion",
+   "Materialized view 查詢"
+  ]
+ },
+ {
+  "number": 316,
+  "q": "即時交易管線依錯誤類型（安全/驗證/系統）立即通知不同團隊，不得延遲。最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "EventBridge 規則分類→各 SNS 主題"
+  },
+  "section": "14.2",
+  "why": "要依錯誤類型立即通知不同團隊：EventBridge rule 用不同 event pattern 比對錯誤類型，各自路由到專屬 SNS topic，團隊即時收到。不必寫 Lambda 判斷，也不用讓團隊輪詢 SQS。",
+  "flow": [
+   "Pipeline 錯誤事件",
+   "*EventBridge rules 分類",
+   "各類專屬 SNS topic",
+   "對應團隊收到通知"
+  ]
+ },
+ {
+  "number": 317,
+  "q": "需可擴展、全託管、事件驅動編排複雜 ETL（Glue、EMR→Redshift、S3），支援相依管理、自動重試、監控。哪個方案？",
+  "answer": "C",
+  "answer_text": {
+   "C": "MWAA 以 Airflow DAG 管理 ETL"
+  },
+  "section": "7.4",
+  "why": "要協調 Glue、EMR、Redshift、S3 的複雜 ETL，並需相依管理、自動重試與監控；Airflow DAG 原生支援 task 相依、retries 與監控，MWAA 又是全託管，不必自己維運 Airflow。",
+  "flow": [
+   "複雜 ETL 任務",
+   "*MWAA Airflow DAG",
+   "Glue／EMR 處理",
+   "Redshift／S3"
+  ]
+ },
+ {
+  "number": 318,
+  "q": "Redshift＋QuickSight 報表，部分分析師不會 SQL，想用自然語言建儀表板與報表。最低營運工作？",
+  "answer": "B",
+  "answer_text": {
+   "B": "QS 啟用 Amazon Q 產生報表"
+  },
+  "section": "11.4",
+  "why": "分析師不一定會 SQL 卻要常建報表；既然已用 Redshift 加 Quick Suite，直接啟用 Amazon Q in Quick Suite，就能用自然語言產生視覺化、dashboard 與報表，不必另導入 Tableau 等工具。",
+  "flow": [
+   "Redshift",
+   "Quick Suite（QuickSight）",
+   "*Amazon Q 自然語言",
+   "Dashboard／報表"
+  ]
+ },
+ {
+  "number": 319,
+  "q": "SageMaker Unified Studio：各業務單位隔離管理資產/專案/中繼資料，核准後可跨單位共享，需集中驗證與身分對應。哪個方案？",
+  "answer": "D",
+  "answer_text": {
+   "D": "domain unit＋IdC＋存取申請核准"
+  },
+  "section": "12.2",
+  "why": "每個業務單位設成獨立 domain unit，自管 assets、projects、metadata 權限；IAM Identity Center 集中驗證並把使用者對應到各 domain unit；跨單位共享走 access request，由 owner 核准。",
+  "flow": [
+   "IAM Identity Center",
+   "*各 BU 獨立 domain unit",
+   "Access request",
+   "Owner 核准共享"
+  ]
+ },
+ {
+  "number": 320,
+  "q": "集中資料集供多個跨帳號下游團隊（各自 RA3 Redshift）存取，需立即存取且維持 Redshift 效能。哪個方案？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Redshift data sharing 生產/消費"
+  },
+  "section": "9.9",
+  "why": "下游各帳號有自己的 RA3 Redshift，Redshift data sharing 讓 producer 把集中資料集分享給跨帳號 consumer，免複製、即時可查，且各用自己的運算資源。UNLOAD/COPY、DataSync 都有延遲。",
+  "flow": [
+   "Producer Redshift",
+   "*Redshift data sharing",
+   "各帳號 RA3 consumer",
+   "即時查詢"
+  ]
+ },
+ {
+  "number": 321,
+  "q": "三區域交易資料近即時同步，傳輸加密、保順序一致、跨區 DR，延遲<500ms。最低營運工作？",
+  "answer": "B",
+  "answer_text": {
+   "B": "MSK Replicator 三區互連＋TLS"
+  },
+  "section": "3.6",
+  "why": "MSK Replicator 是全託管的跨 Region Kafka 複寫，三區互連即可近即時同步並保有 Kafka 的順序性；TLS 加密傳輸、IAM 驗證存取，加上跨區備援支援 DR。自建 MirrorMaker 維運較重。",
+  "flow": [
+   "三區 MSK clusters",
+   "*MSK Replicator 互連",
+   "TLS＋IAM 驗證",
+   "跨區 DR"
+  ]
+ },
+ {
+  "number": 322,
+  "q": "需近即時搜尋分析，每秒 1,000 請求低延遲；各資料團隊可自行擁有並調整成本/效能。哪個方案？",
+  "answer": "C",
+  "answer_text": {
+   "C": "OpenSearch 索引，各隊一叢集"
+  },
+  "section": "11.3",
+  "why": "近即時搜尋、每秒 1,000 請求低延遲，是 OpenSearch 索引查詢的強項；再讓每個團隊擁有獨立 cluster，自行調整節點、儲存與索引來平衡成本與效能。Athena 查 S3 延遲太高。",
+  "flow": [
+   "資料寫入",
+   "OpenSearch 索引",
+   "*各團隊獨立 cluster",
+   "低延遲搜尋分析"
+  ]
+ },
+ {
+  "number": 323,
+  "q": "Redshift 表 orders.complete_orders_history 有 100 欄，要查全部欄位但排除 companyId、unique_system_id。哪個 SQL？",
+  "answer": "A",
+  "answer_text": {
+   "A": "SELECT * EXCLUDE 兩欄 FROM 表"
+  },
+  "section": "9.8",
+  "why": "Redshift 支援 SELECT * EXCLUDE 語法，可在選取全部欄位時直接排除指定欄位，寫 SELECT * EXCLUDE companyId, unique_system_id FROM 該表 即可，不必手動列出其餘 98 個欄名。",
+  "flow": [
+   "100 欄的表",
+   "*SELECT * EXCLUDE 兩欄",
+   "回傳其餘 98 欄"
+  ]
+ },
+ {
+  "number": 324,
+  "q": "S3 存敏感交易資料，需防止意外刪除。哪個方案？",
+  "answer": "A",
+  "answer_text": {
+   "A": "啟用版本控制＋MFA Delete"
+  },
+  "section": "1.3",
+  "why": "防誤刪最直接的是 S3 Versioning：刪除只會加上 delete marker，舊版本仍可復原；再啟用 MFA Delete，永久刪除版本或關閉 versioning 都要 MFA，大幅降低誤刪風險。",
+  "flow": [
+   "S3 敏感資料",
+   "啟用 Versioning",
+   "*MFA Delete",
+   "防止誤刪"
+  ]
+ },
+ {
+  "number": 325,
+  "q": "Redshift Email 欄含 null 與非 email 值；需 Glue Data Quality 規則在有效 email 比例<90% 時失敗。哪個？",
+  "answer": "C",
+  "answer_text": {
+   "C": "ColumnValues matches，門檻>0.9"
+  },
+  "section": "5.5",
+  "why": "要量的是有效 email 的比例：ColumnValues 搭配 matches 逐值比對 email pattern，threshold > 0.9 代表符合列須超過 90%，否則失敗。Uniqueness 量的是唯一性，0.1 門檻也不對。",
+  "flow": [
+   "Email 欄位",
+   "*ColumnValues matches",
+   "threshold > 0.9",
+   "未達 90% 規則失敗"
+  ]
+ },
+ {
+  "number": 326,
+  "q": "Glue job 存取 S3，需依分類只能存取特定前綴，且限營業時間 9–17 點。自訂 IAM 政策需含哪些元素？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Resource 前綴＋aws:CurrentTime Date"
+  },
+  "section": "12.3",
+  "why": "兩個限制對應 policy 兩個元素：Resource 用帶 wildcard 的 S3 object ARN 限定分類前綴；Condition 用 aws:CurrentTime 搭配 DateGreaterThan、DateLessThan 限定 9 點到 17 點。",
+  "flow": [
+   "Glue job IAM role",
+   "*Resource：prefix/* ARN",
+   "aws:CurrentTime 條件",
+   "營業時間內存取"
+  ]
+ },
+ {
+  "number": 327,
+  "q": "RDS MySQL 日誌供稽核，須追蹤每位修改資料或變更 DB 執行個體的使用者。哪個方案？",
+  "answer": "D",
+  "answer_text": {
+   "D": "RDS 原生稽核日誌＋CW＋CloudTrail"
+  },
+  "section": "14.4",
+  "why": "要追兩種人：改資料的靠 RDS 原生 audit logging 記錄資料庫活動，送進 CloudWatch Logs 並設 metric filter、alarm；改 DB instance 屬於 API 操作，要靠 CloudTrail 記錄。缺一都不完整。",
+  "flow": [
+   "RDS MySQL 活動",
+   "*RDS audit logging",
+   "CloudWatch Logs＋alarm",
+   "CloudTrail：instance 變更"
+  ]
+ },
+ {
+  "number": 328,
+  "q": "S3 每日百萬筆交易 CSV，需平行驗證後更新 DB，失敗>15% 就停止全部。最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Step Functions 分散式 Map 容忍15%"
+  },
+  "section": "7.3",
+  "why": "百萬筆交易要平行驗證，Step Functions Distributed Map 可直接讀 S3 CSV 平行處理；ToleratedFailurePercentage 設為 15，失敗比例一超過就讓整個 Map Run 失敗停止，免自建失敗統計。",
+  "flow": [
+   "S3 每日 CSV",
+   "*Distributed Map",
+   "ToleratedFailure 15%",
+   "超過即停止全部"
+  ]
+ },
+ {
+  "number": 329,
+  "q": "一次性報告需聯結 DynamoDB、RDS、Redshift、S3 資料，避免不必要搬移並縮短查詢時間。哪個方案？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Athena Federated Query 跨源聯結"
+  },
+  "section": "8.1",
+  "why": "一次性跨 DynamoDB、RDS、Redshift、S3 的 join，用 Athena Federated Query 透過 connector 就地查詢各來源，不必先搬資料或建 ETL。為一次報告建 DMS、Glue 或 EMR 流程又慢又不划算。",
+  "flow": [
+   "四種資料來源（就地）",
+   "*Athena Federated Query",
+   "跨來源 join",
+   "一次性報告"
+  ]
+ },
+ {
+  "number": 330,
+  "q": "無伺服器多步驟 ETL：S3 資料湖→Glue ETL→Redshift，需編排工作流程。哪些方案？（選2）",
+  "answer": "AB",
+  "answer_text": {
+   "A": "Step Functions 協調 Glue＋重試",
+   "B": "Glue workflows 建相依與觸發圖"
+  },
+  "section": "7.2",
+  "why": "兩者都能編排 serverless 的 Glue ETL：Step Functions 依序協調多個 Glue job 並自動重試處理錯誤（A）；Glue workflows 是 Glue 原生編排，以圖形呈現 job 與 trigger 相依（B）。",
+  "flow": [
+   "S3 data lake",
+   "Glue ETL jobs",
+   "*SFN／Glue workflows 編排",
+   "Redshift"
+  ]
+ },
+ {
+  "number": 331,
+  "q": "S3 原始影片處理後保留 90 天以備重處理，之後可刪除。原始檔最具成本效益的 Lifecycle？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Standard 90 天後 Lifecycle 到期刪"
+  },
+  "section": "1.2",
+  "why": "原始檔 90 天內可能要重新處理，需即時存取，S3 Standard 最合適；90 天後即可刪除，直接用 Lifecycle expiration 到期刪除最省。轉 Glacier 反而多了轉換與最低保存天數費用。",
+  "flow": [
+   "原始影片上傳",
+   "S3 Standard 90 天",
+   "*Lifecycle expiration",
+   "自動刪除"
+  ]
+ },
+ {
+  "number": 332,
+  "q": "大學 App 分析多語論文，回饋需精準引用教科書章節並用學生所選語言。最低營運負擔？",
+  "answer": "B",
+  "answer_text": {
+   "B": "Bedrock Knowledge Bases＋多語模型"
+  },
+  "section": "11.4",
+  "why": "要依教科書給回饋、引用章節並用學生所選語言：Bedrock Knowledge Bases 是託管 RAG，以教材為來源並附 source citations，搭配多語模型輸出指定語言，不必自建向量庫或微調模型。",
+  "flow": [
+   "大學教科書",
+   "*Bedrock Knowledge Bases",
+   "多語模型",
+   "附引用的個人化回饋"
+  ]
+ },
+ {
+  "number": 333,
+  "q": "限制 S3 存取並用 AWS 託管金鑰加密；需管理 Lambda 用的 DB 憑證並自動輪換。哪個方案？",
+  "answer": "B",
+  "answer_text": {
+   "B": "IAM＋SSE-KMS＋Secrets Manager 輪換"
+  },
+  "section": "12.5",
+  "why": "IAM policies 控管 S3 存取；SSE-KMS 以 KMS 金鑰做伺服器端加密；Secrets Manager 儲存 Lambda 用的 DB 憑證並以 rotation Lambda 自動輪換。環境變數、Parameter Store 沒有原生輪換。",
+  "flow": [
+   "IAM policies 控存取",
+   "S3 SSE-KMS 加密",
+   "*Secrets Manager 輪換",
+   "Lambda 取 DB 憑證"
+  ]
+ },
+ {
+  "number": 334,
+  "q": "半結構化交易資料存無伺服器 DB，少寫多讀，需毫秒內取回。最低營運負擔？",
+  "answer": "D",
+  "answer_text": {
+   "D": "DynamoDB＋DAX 快取"
+  },
+  "section": "10.3",
+  "why": "要 serverless、存半結構化資料、毫秒內讀取，DynamoDB 正好符合；讀多寫少再加上 DAX 記憶體快取，熱門讀取延遲更低，且兩者都全託管。S3 Transfer Acceleration 只加速傳輸，不是資料庫。",
+  "flow": [
+   "半結構化交易資料",
+   "DynamoDB table",
+   "*DAX cache",
+   "高頻毫秒讀取"
+  ]
+ },
+ {
+  "number": 335,
+  "q": "Redshift 分析查詢與更新維度表的 ETL 同時跑，造成表鎖、逾時與死結。哪個方案能修正？",
+  "answer": "D",
+  "answer_text": {
+   "D": "ETL/分析分叢集＋data sharing"
+  },
+  "section": "9.9",
+  "why": "根源是 ETL 寫入與分析查詢在同一叢集搶鎖；把 ETL 與分析拆到不同 Redshift cluster 隔離工作負載，再用 data sharing 與跨資料庫查詢讓分析端讀到一致資料，鎖表、逾時與死結就消失。",
+  "flow": [
+   "ETL cluster 更新維度表",
+   "Redshift data sharing",
+   "*獨立 analytics cluster",
+   "不再鎖表／死結"
+  ]
+ },
+ {
+  "number": 336,
+  "q": "S3 資料湖每天數百萬筆感測資料，每天依感測器類別做複雜查詢。查詢最快？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Parquet，依類別分區，依日期排序"
+  },
+  "section": "8.3",
+  "why": "查詢都針對特定 sensor category，依類別分區可讓查詢只掃相關分區；Parquet 欄式格式減少讀取量，分區內再依日期排序利於時間範圍跳讀。依日期分區則查單一類別仍要掃所有分區。",
+  "flow": [
+   "Sensor telemetry",
+   "Parquet 欄式",
+   "*依 sensor category 分區",
+   "分區內依 date 排序"
+  ]
+ },
+ {
+  "number": 337,
+  "q": "Redshift orders 表需刪除過時記錄並從 staging 表插入最新資料，下游需即時最新。哪個方案？",
+  "answer": "D",
+  "answer_text": {
+   "D": "Redshift 預存程序刪除後插入"
+  },
+  "section": "9.8",
+  "why": "資料都已在 Redshift 內，最直接是寫 stored procedure：先刪除 orders 的過時記錄，再從 staging 表插入最新記錄，在庫內一次完成更新。Spectrum、Athena 都不適合拿來改 Redshift 表。",
+  "flow": [
+   "Staging table",
+   "*Redshift stored procedure",
+   "DELETE 過時＋INSERT 最新",
+   "最新 orders 表"
+  ]
+ },
+ {
+  "number": 338,
+  "q": "Firehose 將 CW Logs 送到 S3 供稽核，只送相關日誌且轉成相容格式，需穩定效能。哪個方案？",
+  "answer": "B",
+  "answer_text": {
+   "B": "訂閱篩選目的地為 Firehose＋Lambda"
+  },
+  "section": "14.3",
+  "why": "在 log group 建 subscription filter，只把相關日誌送往目的地 Firehose，再由 Firehose 呼叫 Lambda 轉成分析要的格式後交付 S3。filter 沒把 Firehose 設成目的地，日誌就送不過去。",
+  "flow": [
+   "CloudWatch Logs",
+   "*Subscription filter",
+   "Firehose＋Lambda 轉換",
+   "S3（稽核用）"
+  ]
+ },
+ {
+  "number": 339,
+  "q": "網站與 App 即時分析，以最低延遲擷取百萬事件，需可擴展、耐久不遺失。最具成本效益？",
+  "answer": "A",
+  "answer_text": {
+   "A": "KDS＋Lambda 處理＋Redshift"
+  },
+  "section": "3.1",
+  "why": "Kinesis Data Streams 能低延遲擷取百萬事件、可擴展且持久保存不遺失，Lambda 即時消費處理免管伺服器，結果存入 Redshift。Glue 每 10 分鐘批次延遲高，MSK 自管 consumer 較貴。",
+  "flow": [
+   "網站／App 事件",
+   "*Kinesis Data Streams",
+   "Lambda 處理",
+   "Redshift 分析"
+  ]
+ },
+ {
+  "number": 340,
+  "q": "Athena 常對 S3 大資料集跑相同參數的重複複雜查詢，需優化效能與成本。哪個方案？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Workgroup 啟用查詢結果重用"
+  },
+  "section": "8.5",
+  "why": "重點是相同參數的查詢重複執行：在 Athena workgroup 啟用 query result reuse，相同查詢在設定時間內直接回傳先前結果、不再掃描 S3，同時省下掃描費用與查詢時間。",
+  "flow": [
+   "重複的 Athena 查詢",
+   "*Workgroup result reuse",
+   "回傳先前結果",
+   "省成本、更快"
+  ]
+ },
+ {
+  "number": 341,
+  "q": "每天以依賴自訂函式庫的複雜 PySpark 轉換 S3 點擊流後存 Redshift，需高擴展。最低營運負擔？",
+  "answer": "A",
+  "answer_text": {
+   "A": "Glue Studio PySpark＋連線含函式庫"
+  },
+  "section": "5.1",
+  "why": "Glue 是 serverless Spark，可自動擴展處理大量資料；用 Glue Studio 建立並排程 PySpark job，以 Glue connection 帶入自訂函式庫，轉換後寫入 Redshift。EMR、EC2 都得自管叢集。",
+  "flow": [
+   "S3 raw clickstream",
+   "*Glue Studio PySpark job",
+   "自訂函式庫",
+   "Redshift 分析"
+  ]
+ },
+ {
+  "number": 342,
+  "q": "Lambda（受管執行環境）寫 CW Logs，需應用日誌只顯示 ERROR、系統日誌只顯示 WARN。哪個方案？",
+  "answer": "C",
+  "answer_text": {
+   "C": "Lambda 改用 JSON 日誌格式"
+  },
+  "section": "14.5",
+  "why": "Lambda 進階 logging controls 可分別設 application 與 system log level，但須搭配 JSON log format，設好後 app 只記 ERROR、system 只記 WARN。只在程式碼設 level 管不到 system log。",
+  "flow": [
+   "Lambda managed runtime",
+   "*JSON log format",
+   "App=ERROR／System=WARN",
+   "CloudWatch Logs"
+  ]
+ }
+]
