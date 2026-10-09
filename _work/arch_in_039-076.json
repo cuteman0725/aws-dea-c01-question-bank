@@ -1,0 +1,538 @@
+[
+ {
+  "number": 39,
+  "q": "EC2 上 SQL Server 遷移至 RDS 期間，每日需匯出多表 JOIN 結果為 Parquet 存 S3。最具營運效率？",
+  "answer_text": {
+   "A": "View＋Glue job 直讀轉 Parquet"
+  },
+  "why": "每天要把多表 JOIN 結果以 Parquet 存 S3 且最省維運：SQL Server 建 view 固化 join，Glue job 直接讀 view、轉 Parquet 寫 S3 並每日排程。自寫 Lambda 或 SQL Agent 較費工。",
+  "flow": [
+   "SQL Server view（join）",
+   "*Glue job（每日排程）",
+   "Parquet",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 40,
+  "q": "Redshift 要在查詢最佳化器偵測到可能造成效能問題的條件時記錄異常，應使用哪個系統表？",
+  "answer_text": {
+   "B": "STL_ALERT_EVENT_LOG"
+  },
+  "why": "要在 query optimizer 偵測到可能影響效能的條件時記錄異常，正是 STL_ALERT_EVENT_LOG 的用途，還附建議解法。STL_QUERY_METRICS 記查詢指標，STL_PLAN_INFO 記執行計畫。",
+  "flow": [
+   "長時間 query",
+   "query optimizer 偵測異常",
+   "*STL_ALERT_EVENT_LOG",
+   "依建議調校"
+  ]
+ },
+ {
+  "number": 41,
+  "q": "15 欄 csv 匯入 S3 資料湖，分析師用 Athena 多只查 1~2 欄。最具成本效益？",
+  "answer_text": {
+   "D": "Glue ETL 存成 Parquet"
+  },
+  "why": "Athena 依掃描量計費，分析師只查 15 欄中的 1～2 欄。Glue ETL 轉成欄式 Parquet 後只讀需要的欄位且有壓縮，掃描量大降最省；留 CSV 或轉 Avro（列式）都要掃整列。",
+  "flow": [
+   "CSV（15 欄）",
+   "*Glue ETL 轉 Parquet",
+   "S3 data lake",
+   "Athena 只掃 1～2 欄"
+  ]
+ },
+ {
+  "number": 42,
+  "q": "5 區域 HR 各有 IAM 角色，S3 資料湖員工記錄需限制只能看自己區域。最少營運負擔？（選2）",
+  "answer_text": {
+   "B": "將 S3 路徑註冊為 Lake Formation 位置",
+   "D": "啟用 LF 細粒度存取＋各區 data filter"
+  },
+  "why": "各區 HR 只能看自己區域的記錄：B 把 S3 路徑註冊為 Lake Formation location；D 啟用細粒度存取控制，每個 Region 建 data filter 授權給對應 role。拆 bucket 或改 IAM 都較費工。",
+  "flow": [
+   "S3 data lake",
+   "註冊為 LF location",
+   "*LF data filter（每區）",
+   "各區 HR IAM role"
+  ]
+ },
+ {
+  "number": 43,
+  "q": "Step Functions 手動建置，EMR 叢集在 VPC 內，狀態機無法執行 EMR job。如何找出原因？（選2）",
+  "answer_text": {
+   "B": "查狀態機 IAM 權限(EMR/S3)",
+   "D": "查 VPC Flow Logs 與 SG 連線"
+  },
+  "why": "狀態機跑不動 EMR job，從權限與網路排查：B 檢查狀態機有沒有執行 EMR job 與存取 S3 的 IAM 權限；D 查 VPC flow logs 與 security group，確認 EMR 連得到資料來源。",
+  "flow": [
+   "Step Functions 狀態機",
+   "*查 IAM 權限（EMR／S3）",
+   "EMR cluster（VPC）",
+   "查 flow logs／SG",
+   "資料來源"
+  ]
+ },
+ {
+  "number": 44,
+  "q": "從 AMI 啟動新 EC2，應用資料需在執行個體終止後仍保留。哪個方案可行？",
+  "answer_text": {
+   "C": "instance store AMI＋另掛 EBS 存資料"
+  },
+  "why": "instance store 是暫存，執行個體終止資料就消失；要保留資料應放在另掛的 EBS volume，非 root EBS 預設不隨終止刪除。root EBS 預設 DeleteOnTermination，會一起被刪。",
+  "flow": [
+   "AMI 啟動 EC2",
+   "*另掛 EBS volume（資料）",
+   "EC2 終止",
+   "EBS 資料保留"
+  ]
+ },
+ {
+  "number": 45,
+  "q": "公司用 Athena CTAS 做 ETL，需改用 Apache Spark 產生分析。哪個方案可讓 Spark 存取 Athena？",
+  "answer_text": {
+   "B": "Athena workgroup"
+  },
+  "why": "Athena 要跑 Apache Spark，得建立以 Spark 為引擎的 workgroup，notebook 與 session 都在 workgroup 內執行。query settings、data source、query editor 只跟 SQL 查詢有關。",
+  "flow": [
+   "*Athena workgroup（Spark）",
+   "notebook／Spark session",
+   "Glue Catalog／S3",
+   "分析結果"
+  ]
+ },
+ {
+  "number": 46,
+  "q": "S3 依 year/month/day 分區，新增分區時 Glue Data Catalog 需同步。延遲最低？",
+  "answer_text": {
+   "C": "寫 S3 的程式呼叫 create_partition"
+  },
+  "why": "要新分區最快同步到 Glue Data Catalog：寫 S3 的程式寫完就呼叫 Boto3 create_partition，分區立即可查。排程 crawler、定時手動跑 API 或 MSCK REPAIR TABLE 都得等下一次執行。",
+  "flow": [
+   "寫入 S3 分區路徑",
+   "*Boto3 create_partition",
+   "Glue Data Catalog",
+   "新分區立即可查"
+  ]
+ },
+ {
+  "number": 47,
+  "q": "從 SaaS 應用收集資料存入 S3，再用 Redshift 分析。最少營運負擔的服務？",
+  "answer_text": {
+   "B": "AppFlow"
+  },
+  "why": "SaaS 資料要搬進 S3 給 Redshift 分析且維運最少：AppFlow 是全託管 SaaS 整合服務，內建連接器，設好來源與目的地就能傳輸。MSK、Kinesis 是串流服務，Data Catalog 只管 metadata。",
+  "flow": [
+   "SaaS 應用",
+   "*Amazon AppFlow",
+   "S3 bucket",
+   "Redshift 分析"
+  ]
+ },
+ {
+  "number": 48,
+  "q": "Athena 查詢 SELECT product_name,sum(sales_amount) … WHERE year=2023 GROUP BY 未回傳所有產品。如何修改？",
+  "answer_text": {
+   "B": "改 WHERE extract(year FROM …)=2023"
+  },
+  "why": "WHERE year = 2023 沒篩對 2023 年資料，部分產品沒被計入；應從日期欄取出年份比對，改成 extract(year FROM …) = 2023。改 count(*)、加 HAVING 或去掉 GROUP BY 都沒修到篩選。",
+  "flow": [
+   "WHERE year = 2023（錯）",
+   "*extract(year FROM 日期欄)",
+   "篩出 2023 年資料",
+   "依產品 sum"
+  ]
+ },
+ {
+  "number": 49,
+  "q": "一次性任務：讀 S3 上 Parquet 物件，只查詢一欄。最少營運負擔？",
+  "answer_text": {
+   "B": "S3 Select 用 SQL 取該欄"
+  },
+  "why": "一次性任務且只要一欄：S3 Select 直接對 S3 上的 Parquet 物件下 SQL SELECT 取出該欄，不用部署任何資源。Lambda＋pandas 要寫程式，DataBrew 或 crawler＋Athena 要先建設定。",
+  "flow": [
+   "S3 Parquet 物件",
+   "*S3 Select（SQL）",
+   "取回單一欄位"
+  ]
+ },
+ {
+  "number": 50,
+  "q": "需自動排程重新整理 Redshift 具體化檢視（MV）。最省力？",
+  "answer_text": {
+   "C": "Query Editor v2 排程重新整理"
+  },
+  "why": "要排程 refresh Redshift materialized view 且最省力：query editor v2 內建排程查詢，直接排定 REFRESH MATERIALIZED VIEW 即可。Airflow、Lambda UDF、Glue workflow 都要另建。",
+  "flow": [
+   "Redshift MV",
+   "*query editor v2 排程",
+   "定期 REFRESH MV"
+  ]
+ },
+ {
+  "number": 51,
+  "q": "編排 1 個 Lambda 與 1 個 Glue job 的管線，需整合 AWS 服務。最少管理負擔？",
+  "answer_text": {
+   "A": "Step Functions 先 Lambda 後 Glue"
+  },
+  "why": "依序跑一個 Lambda 和一個 Glue job：Step Functions 是無伺服器編排，state machine 可先呼叫 Lambda 再跑 Glue job。Airflow 放 EC2/EKS 要自管，Glue workflow 不能跑 Lambda。",
+  "flow": [
+   "*Step Functions",
+   "Lambda function",
+   "Glue job",
+   "完成"
+  ]
+ },
+ {
+  "number": 52,
+  "q": "RDS、Redshift 與 S3 JSON/XML 需統一資料目錄，定期更新並偵測中繼資料變更。最少營運負擔？",
+  "answer_text": {
+   "B": "Glue Catalog＋Crawler 定期爬所有來源"
+  },
+  "why": "要集中 RDS、Redshift、S3 JSON/XML 的 metadata 並定期偵測變更：Glue Data Catalog 當中央目錄，crawler 連多種來源推斷 schema 並排程更新。Aurora、DynamoDB＋Lambda 要自己寫。",
+  "flow": [
+   "RDS／Redshift／S3",
+   "*Glue crawler（定期排程）",
+   "Glue Data Catalog（更新）"
+  ]
+ },
+ {
+  "number": 53,
+  "q": "DynamoDB 預置容量，負載可預測：週一清晨暴增、週末很低。需尖峰效能穩定，最具成本效益？",
+  "answer_text": {
+   "C": "Auto Scaling 排程尖峰調高離峰調低"
+  },
+  "why": "負載可預測：週一清晨暴增、週末很低。用 Application Auto Scaling 排程在尖峰調高、離峰調低 provisioned capacity，穩又省。一直開最大量太貴，on-demand 對可預測負載不划算。",
+  "flow": [
+   "可預測尖峰／離峰",
+   "*scheduled scaling",
+   "調整 RCU／WCU",
+   "效能穩、成本低"
+  ]
+ },
+ {
+  "number": 54,
+  "q": "地端 Hadoop 遷移至 EMR，Hive metastore 目錄需遷到持久儲存，要求無伺服器。最具成本效益？",
+  "answer_text": {
+   "B": "EMR metastore＋Glue Catalog 外部"
+  },
+  "why": "Hive metastore 要搬到持久且 serverless 的目錄：遷入 EMR 後以 Glue Data Catalog 當 external catalog，由 AWS 託管免管 DB。Aurora MySQL 要管 DB，EMR 本機 metastore 不持久。",
+  "flow": [
+   "地端 Hive metastore",
+   "遷入 EMR",
+   "*Glue Catalog（external）",
+   "EMR 查詢"
+  ]
+ },
+ {
+  "number": 55,
+  "q": "Redshift 5 節點 KEY 分佈，其中 1 節點 CPU>90%、其他<15%。不增節點要平衡負載？",
+  "answer_text": {
+   "B": "distribution key 改基數最大欄"
+  },
+  "why": "某節點 CPU 90%、其他不到 15%，是 distribution key 選錯造成 data skew。改用基數最大（值最分散）的欄位當 dist key，資料才會平均分到各節點。改 sort key、PK 或升級都解不了。",
+  "flow": [
+   "單一節點 CPU 90%",
+   "data skew",
+   "*改高基數 distribution key",
+   "負載平均"
+  ]
+ },
+ {
+  "number": 56,
+  "q": "S3 中 IoT JSON 資料結構會隨裝置升級改變，需建資料目錄供分析部門索引。最具成本效益？",
+  "answer_text": {
+   "A": "Glue Catalog＋Registry＋Glue 匯入"
+  },
+  "why": "IoT JSON 結構會變，需管 schema 演進：Schema Registry 管版本、Data Catalog 供索引，再由 Glue workload 匯入 Redshift Serverless，全由 Glue 託管；改用 Lambda UDF 較繁瑣。",
+  "flow": [
+   "S3 IoT JSON",
+   "*Glue Schema Registry",
+   "Glue Data Catalog",
+   "Glue workload 匯入",
+   "Redshift Serverless"
+  ]
+ },
+ {
+  "number": 57,
+  "q": "需將 S3 bucket 的所有寫入記錄到同區域另一個 S3 bucket。最少營運工作？",
+  "answer_text": {
+   "D": "CloudTrail 資料事件 trail，只寫入"
+  },
+  "why": "S3 物件的寫入屬於 CloudTrail data events，非 management events。建 data events trail、prefix 留空、只收 write-only，寫到 log bucket 即可。S3 事件＋Lambda 要自寫程式。",
+  "flow": [
+   "transactions bucket 寫入",
+   "*CloudTrail data events",
+   "write-only 篩選",
+   "logs S3 bucket"
+  ]
+ },
+ {
+  "number": 58,
+  "q": "需建中央中繼資料庫供 EMR 與 Athena 查詢，並從 Hive 匯入中繼資料。最少開發工作？",
+  "answer_text": {
+   "C": "Glue Data Catalog"
+  },
+  "why": "要給 EMR 與 Athena 共用、可匯入 Hive metadata 的中央目錄：Glue Data Catalog 相容 Hive metastore，Athena、EMR 都原生整合，開發最少。自建 Hive 或 RDS metastore 要自行維護。",
+  "flow": [
+   "Hive metadata 匯入",
+   "*Glue Data Catalog",
+   "EMR／Athena 查詢"
+  ]
+ },
+ {
+  "number": 59,
+  "q": "建資料湖，需對特定團隊提供列級與欄級權限，透過 Athena、Redshift Spectrum、EMR Hive 存取。最少營運負擔？",
+  "answer_text": {
+   "D": "S3＋Lake Formation 列/欄級權限"
+  },
+  "why": "要列/欄級權限並給 Athena、Spectrum、EMR Hive 共用：Lake Formation 可集中授權 row/column 權限並整合三者，維運最少。S3 policy 做不到列欄級，自管 Ranger 維運重。",
+  "flow": [
+   "S3 data lake",
+   "*Lake Formation 列／欄權限",
+   "Athena／Spectrum／EMR"
+  ]
+ },
+ {
+  "number": 60,
+  "q": "S3 中依日期分區的 csv 用 Athena 查詢，資料量增加需最佳化儲存以提升查詢效能？（選2）",
+  "answer_text": {
+   "C": "S3 bucket 與 Athena 同區域",
+   "E": "csv 預處理轉 Parquet"
+  },
+  "why": "提升 Athena 效能：C 讓 S3 bucket 與 Athena 同一 Region，避免跨區延遲與傳輸成本；E 把 CSV 預先轉成欄式 Parquet，只讀需要的欄位與資料區塊，掃描量大降。轉 JSON 沒這效果。",
+  "flow": [
+   "CSV（依日期分區）",
+   "*轉 Parquet",
+   "同 Region S3 bucket",
+   "Athena 掃描量大降"
+  ]
+ },
+ {
+  "number": 61,
+  "q": "RDS MySQL 以寫入為主、讀取少，CPU 使用率過高拖慢應用，需降低 CPU？（選2）",
+  "answer_text": {
+   "A": "Performance Insights 找出並優化查詢",
+   "D": "升級較大執行個體"
+  },
+  "why": "寫入為主的 RDS MySQL CPU 過高：A 用 Performance Insights 找出最吃 CPU 的查詢並優化，從根源降負載；D 升級較大的執行個體，立即增加 CPU 餘裕。快取主要救讀取，對寫入幫助小。",
+  "flow": [
+   "RDS CPU 過高",
+   "*Performance Insights",
+   "優化高 CPU 查詢",
+   "仍不足就升級規格"
+  ]
+ },
+ {
+  "number": 62,
+  "q": "Redshift Orders 表每週更新刪除，用交錯排序鍵（Region 欄）。需回收磁碟空間並分析排序鍵欄？",
+  "answer_text": {
+   "C": "VACUUM REINDEX Orders"
+  },
+  "why": "interleaved sort key 又常更新刪除，要回收空間並分析 sort key：VACUUM REINDEX 先分析交錯鍵值分佈再完整 VACUUM。FULL 不 reindex，DELETE ONLY 不排序，SORT ONLY 不回收空間。",
+  "flow": [
+   "每週 update／delete",
+   "interleaved sort key",
+   "*VACUUM REINDEX",
+   "回收空間＋重分析 sort key"
+  ]
+ },
+ {
+  "number": 63,
+  "q": "感測器資料需近即時擷取，持久儲存為巢狀 JSON，查詢延遲<10 毫秒。最少營運負擔？",
+  "answer_text": {
+   "C": "KDS 擷取＋存 DynamoDB 查詢"
+  },
+  "why": "要近即時擷取、持久存巢狀 JSON、查詢低於 10 毫秒：Kinesis Data Streams 託管串流擷取，DynamoDB 能存巢狀 JSON 並提供個位數毫秒查詢。S3 查詢達不到毫秒級，自架 Kafka 維運重。",
+  "flow": [
+   "感測器",
+   "Kinesis Data Streams",
+   "*DynamoDB（巢狀 JSON）",
+   "查詢 <10ms"
+  ]
+ },
+ {
+  "number": 64,
+  "q": "S3 資料湖含 PII，多個使用者群組需存取原始資料但只能看所需 PII。最省力？",
+  "answer_text": {
+   "A": "Athena＋LF data filter 綁 IAM 角色"
+  },
+  "why": "各群組只能看所需的 PII：用 Lake Formation data filter 設定列/欄範圍並綁到不同 IAM role，使用者指派到對應 role，用 Athena 查詢即受控。自建查詢介面或逐一寫 policy 較費工。",
+  "flow": [
+   "S3 data lake（PII）",
+   "*LF data filter",
+   "各群組 IAM role",
+   "Athena 查詢"
+  ]
+ },
+ {
+  "number": 65,
+  "q": "10 個來源每 15 分鐘送 csv/JSON/Parquet（10MB~20GB）到 S3，載入 Redshift 10 表，schema 變更仍需正常運作？（選2）",
+  "answer_text": {
+   "B": "EventBridge 跑 workflow：爬→job",
+   "D": "S3 到檔 Lambda 觸發 Glue workflow"
+  },
+  "why": "schema 會變，先用 crawler 更新 Data Catalog 再跑 job 載入 Redshift，Glue workflow 串成「crawler 成功才跑 job」。B 用 EventBridge 每 15 分鐘、D 用 S3 到檔 Lambda 觸發。",
+  "flow": [
+   "排程或到檔觸發",
+   "*Glue workflow",
+   "crawler 更新 schema",
+   "Glue job 載入",
+   "Redshift 10 表"
+  ]
+ },
+ {
+  "number": 66,
+  "q": "Athena 查 PB 級資料供 BI，資料每天更新一次，BI 每小時刷新。不增基礎設施成本下省 Athena 費用，最少營運負擔？",
+  "answer_text": {
+   "B": "啟用 Athena 查詢結果重用"
+  },
+  "why": "資料每天更新一次，BI 每小時重跑相同查詢：Athena query result reuse 直接回用先前結果、不重掃 S3，省錢又不加基礎設施。ElastiCache 要多養叢集，轉 Parquet 要改寫 PB 級資料。",
+  "flow": [
+   "每日 Glue job 更新",
+   "BI 每小時查詢",
+   "*Athena query result reuse",
+   "免重掃 S3"
+  ]
+ },
+ {
+  "number": 67,
+  "q": "Redshift 預算限制無法擴叢集，表皆用 EVEN 分佈，有數百 GB 大表與<10MB 小表。如何最佳化查詢？",
+  "answer_text": {
+   "C": "少更新小表改 ALL，設 PK/FK"
+  },
+  "why": "不能擴叢集就調整分佈：很少更新的小表改用 ALL distribution，每個節點都有完整副本，與大表 join 時不必重分佈；再設 PK/FK 幫 optimizer 規劃 join。大表用 ALL 會浪費空間。",
+  "flow": [
+   "*小表改 DISTSTYLE ALL",
+   "各節點有完整副本",
+   "設 PK／FK",
+   "join 免重分佈"
+  ]
+ },
+ {
+  "number": 68,
+  "q": "csv 含 Door_No、Street_Name、City、Zip_Code 欄，需合併成單一 key-value 欄。最少程式碼？",
+  "answer_text": {
+   "B": "DataBrew NEST_TO_MAP"
+  },
+  "why": "要把四個地址欄合成單一 key-value 欄且最少寫程式：DataBrew 的 NEST_TO_MAP 會把選定欄位轉成 map，欄名當 key、值當 value。NEST_TO_ARRAY 只留值的陣列，PIVOT 是轉置。",
+  "flow": [
+   "CSV 四個地址欄",
+   "*DataBrew NEST_TO_MAP",
+   "單一 key-value 欄"
+  ]
+ },
+ {
+  "number": 69,
+  "q": "S3 通話紀錄含敏感資訊需加密，且金鑰只限特定員工存取。最省力？",
+  "answer_text": {
+   "C": "SSE-KMS＋IAM 限制 KMS 金鑰存取"
+  },
+  "why": "要加密且金鑰只限特定員工：SSE-KMS 由 S3 搭配 KMS 加密，再用 IAM policy 限制誰能用該 KMS key，解密就被管住。SSE-S3 無法控管金鑰存取對象，CloudHSM、SSE-C 要自己管金鑰。",
+  "flow": [
+   "S3 通話紀錄",
+   "*SSE-KMS 加密",
+   "IAM 限制 KMS key",
+   "僅特定員工可解密"
+  ]
+ },
+ {
+  "number": 70,
+  "q": "PB 級資料在數千個 S3 Standard bucket，存取模式不可預測，部分數月不用但需毫秒取回。最少營運負擔省成本？",
+  "answer_text": {
+   "D": "Intelligent-Tiering 預設層級"
+  },
+  "why": "存取模式不可預測又要毫秒取回：Intelligent-Tiering 預設層級依存取自動搬層，各層皆毫秒存取、免管規則。Deep Archive Access 取回要數小時，Storage Lens＋Lifecycle 要自己分析。",
+  "flow": [
+   "S3 Standard（PB 級）",
+   "*Intelligent-Tiering 預設層",
+   "自動搬移存取層",
+   "毫秒取回、成本降低"
+  ]
+ },
+ {
+  "number": 71,
+  "q": "Glue job 腳本中硬編碼 Redshift 憑證，需修補並安全儲存憑證？（選2）",
+  "answer_text": {
+   "D": "憑證存 Secrets Manager",
+   "E": "授權 Glue job IAM 角色讀取憑證"
+  },
+  "why": "移除硬編碼的 Redshift 憑證：D 把憑證存進 Secrets Manager，可加密、輪替與稽核；E 授權 Glue job 的 IAM role 讀取該 secret 再取用。job parameters 或 S3 設定檔仍是明文。",
+  "flow": [
+   "*Secrets Manager 存憑證",
+   "Glue job IAM role 授權",
+   "執行時取 secret",
+   "連線 Redshift"
+  ]
+ },
+ {
+  "number": 72,
+  "q": "每月建 Redshift 預置叢集跑高負載分析，完成後卸載備份至 S3 並刪除。需免手動管理基礎設施，最少營運負擔？",
+  "answer_text": {
+   "B": "Redshift Serverless 自動處理"
+  },
+  "why": "每月跑一次重量級分析卻要手動建、刪 provisioned cluster：改用 Redshift Serverless 自動配置與擴縮容量、依用量計費，免管基礎設施。暫停叢集、CLI、CloudFormation 仍要管叢集。",
+  "flow": [
+   "每月分析工作",
+   "*Redshift Serverless",
+   "自動配置容量",
+   "依用量計費"
+  ]
+ },
+ {
+  "number": 73,
+  "q": "每日 2GB .xls 客戶檔存 S3，串接姓與名後需算不重複客戶數。最少營運工作？",
+  "answer_text": {
+   "D": "DataBrew 用 COUNT_DISTINCT 配方"
+  },
+  "why": "每日 2 GB .xls，串接姓名後算不重複客戶數：DataBrew 可直接讀 Excel，在 recipe 串接欄位再用 COUNT_DISTINCT 聚合，免寫程式免管叢集。Spark job 要寫程式，Athena 不支援 .xls。",
+  "flow": [
+   "S3 .xls（2 GB）",
+   "*DataBrew recipe",
+   "串接 first／last name",
+   "COUNT_DISTINCT"
+  ]
+ },
+ {
+  "number": 74,
+  "q": "KDS 串流醫療即時資料，需存入 Redshift Serverless，支援近即時分析串流與前一天資料。最少營運負擔？",
+  "answer_text": {
+   "B": "Redshift 串流擷取功能"
+  },
+  "why": "KDS 資料要近即時進 Redshift Serverless：streaming ingestion 直接讀入 materialized view，免 Firehose 與 S3 中繼，可和前一天資料同查。COPY 是批次，zero-ETL 不接 Kinesis。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*streaming ingestion（MV）",
+   "Redshift Serverless",
+   "即時＋前一天資料分析"
+  ]
+ },
+ {
+  "number": 75,
+  "q": "QS 儀表板基於 Athena 查詢 S3 資料，連線時出現權限不足錯誤，可能原因？（選2）",
+  "answer_text": {
+   "C": "QS 無權存取 S3 bucket",
+   "D": "QS 無權解密 S3 資料"
+  },
+  "why": "QuickSight 透過 Athena 查 S3，讀檔用的是 QuickSight 的權限：C 沒被授權存取 S3 bucket 就會權限不足；D 資料以 KMS 加密而 QuickSight 沒有 kms:Decrypt，也會報權限錯誤。",
+  "flow": [
+   "QuickSight 儀表板",
+   "Athena 查詢",
+   "*S3 存取＋KMS 解密",
+   "S3 資料"
+  ]
+ },
+ {
+  "number": 76,
+  "q": "S3 JSON/csv、RDS SQL Server、DynamoDB、Redshift，需讓資料科學家用類 SQL 語法查詢全部來源。最少營運負擔？",
+  "answer_text": {
+   "A": "Glue 爬取＋Athena，JSON 用 PartiQL"
+  },
+  "why": "要用類 SQL 查 S3、RDS、DynamoDB、Redshift：Glue crawler 把 metadata 收進 Data Catalog，Athena 查詢時結構化用 SQL、JSON 用 PartiQL，維運最少。Spectrum 只查 S3。",
+  "flow": [
+   "多種資料來源",
+   "Glue crawler",
+   "Glue Data Catalog",
+   "*Athena（SQL／PartiQL）"
+  ]
+ }
+]

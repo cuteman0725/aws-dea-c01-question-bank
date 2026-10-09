@@ -1,0 +1,537 @@
+[
+ {
+  "number": 153,
+  "q": "Redshift 實體化檢視要刪除所有列以回收儲存空間，哪個指令能回收最多空間？",
+  "answer_text": {
+   "B": "TRUNCATE mv"
+  },
+  "why": "要清空整個 materialized view 並回收最多空間，TRUNCATE 會直接移除所有列並立即釋放儲存空間。DELETE 只把列標記為刪除，要再跑 VACUUM 才回收；VACUUM 本身也不會刪資料。",
+  "flow": [
+   "Redshift materialized view",
+   "*TRUNCATE mv",
+   "儲存空間立即釋放"
+  ]
+ },
+ {
+  "number": 154,
+  "q": "Redshift Spectrum 查詢 S3 單一路徑 CSV（100+欄、每日30+檔）效能變差，最少開發工作量改善？（選2）",
+  "answer_text": {
+   "A": "第三方程式改輸出欄式格式",
+   "C": "S3 資料依訂單日期分區"
+  },
+  "why": "查詢只選部分欄位，但 100+ 欄的 CSV 全放同一路徑，Spectrum 每次都掃全部資料。改用 Parquet 等欄式格式只讀需要的欄，再依 order date 分區做 partition pruning，掃描量大減。",
+  "flow": [
+   "第三方 app 每日輸出",
+   "*Parquet + 依日期分區",
+   "S3 data lake",
+   "Redshift Spectrum 少掃描"
+  ]
+ },
+ {
+  "number": 155,
+  "q": "S3 客戶記錄建立後7年內不可刪改，連 root 也不行，用 S3 Object Lock 怎麼設？",
+  "answer_text": {
+   "B": "Compliance 模式，預設保留7年"
+  },
+  "why": "7 年內連 root 都不能刪改，就要 Compliance mode：保留期內物件版本不能覆寫或刪除，誰都無法 bypass。Governance 可被特殊權限繞過；default retention 讓新物件自動套 7 年。",
+  "flow": [
+   "S3 bucket（Object Lock）",
+   "*Compliance mode",
+   "default retention 7 年",
+   "含 root 都無法刪改"
+  ]
+ },
+ {
+  "number": 156,
+  "q": "在 Athena 建立與 old_table 相同結構的空資料表，該用哪個 SQL？",
+  "answer_text": {
+   "D": "CTAS SELECT * FROM old WITH NO DATA"
+  },
+  "why": "要建立與 old_table 同 schema 的空表：CTAS 依 SELECT 結果建新表，加上 WITH NO DATA 就只建結構、不寫入資料。沒加 WITH NO DATA 會連資料一起複製，INSERT INTO 則要目標表已存在。",
+  "flow": [
+   "old_table schema",
+   "*CTAS + WITH NO DATA",
+   "空的 new_table"
+  ]
+ },
+ {
+  "number": 157,
+  "q": "從 Athena 表 cities_world 取出美國城市放入新表 cities_us，該用哪個 SQL？",
+  "answer_text": {
+   "A": "INSERT INTO usa(city,state) SELECT…"
+  },
+  "why": "把 cities_world 中 country='usa' 的子集合寫進目標表，用 INSERT INTO … SELECT … WHERE，並列出 city、state 欄位對應查詢結果。MOVE 不是 SQL 語法，UPDATE 是改既有列而非插入。",
+  "flow": [
+   "cities_world",
+   "WHERE country='usa'",
+   "*INSERT INTO (city,state)",
+   "cities_us"
+  ]
+ },
+ {
+  "number": 158,
+  "q": "資料網格由治理帳號 Lake Formation 集中授權；Redshift Serverless 表要分給行銷與合規團隊各看不同欄位？（選2）",
+  "answer_text": {
+   "B": "建立 Redshift data share 含這些表",
+   "D": "data share 分享至治理帳號 LF 目錄"
+  },
+  "why": "先建 Redshift data share 打包這些 Serverless 表，再分享到治理帳號的 Lake Formation catalog 納入集中治理，就能用 LF 欄位層級權限，讓行銷與合規團隊各看不同欄位。",
+  "flow": [
+   "Redshift Serverless tables",
+   "Redshift data share",
+   "*治理帳號 LF catalog",
+   "各團隊欄位層級授權"
+  ]
+ },
+ {
+  "number": 159,
+  "q": "Glue Studio ETL 管線每次執行都要依預設閾值檢查資料品質，最少實作工作量？",
+  "answer_text": {
+   "B": "加 Evaluate Data Quality + DQDL"
+  },
+  "why": "要每次 ETL 都依閾值檢查資料品質，Glue Studio 內建 Evaluate Data Quality transform，用 DQDL 宣告規則與門檻即可。SQL transform、PyDeequ、Great Expectations 都得自寫規則邏輯。",
+  "flow": [
+   "Glue Studio ETL job",
+   "*Evaluate Data Quality",
+   "DQDL ruleset（閾值）",
+   "pass / fail 結果"
+  ]
+ },
+ {
+  "number": 160,
+  "q": "EKS 微服務需收集叢集日誌與應用追蹤，並關聯找出故障點，最少開發工作量？（選2）",
+  "answer_text": {
+   "A": "FluentBit收日誌+OpenTelemetry收追蹤",
+   "D": "OpenSearch 關聯日誌與追蹤"
+  },
+  "why": "Fluent Bit 是 EKS 常用的輕量 log 收集器，OpenTelemetry 是收集 traces 的開放標準；再由 OpenSearch 關聯 logs 與 traces 找出故障點。Kinesis、MSK 不是 trace 收集工具。",
+  "flow": [
+   "EKS 微服務",
+   "Fluent Bit + OpenTelemetry",
+   "*OpenSearch 關聯分析",
+   "定位故障點"
+  ]
+ },
+ {
+  "number": 161,
+  "q": "DynamoDB 遊戲資料需近即時同步到 OpenSearch，哪個方案？",
+  "answer_text": {
+   "C": "DynamoDB Streams + Lambda 更新"
+  },
+  "why": "要近即時同步 DynamoDB 變更到 OpenSearch：DynamoDB Streams 捕捉 item 層級的增刪改，Lambda 消費 stream records 後更新 OpenSearch 索引。Step Functions 定期匯出是批次，不夠即時。",
+  "flow": [
+   "DynamoDB table",
+   "*DynamoDB Streams",
+   "Lambda 處理/更新",
+   "OpenSearch index"
+  ]
+ },
+ {
+  "number": 162,
+  "q": "Redshift 去正規化大表持續成長、沒有適合的分佈鍵，最低維護負擔用哪種分佈？",
+  "answer_text": {
+   "C": "AUTO 分佈"
+  },
+  "why": "表持續成長又找不到合適的 distribution key，手動 KEY 容易資料傾斜、ALL 不適合大表，都要人工調整。AUTO distribution 讓 Redshift 依表大小自動選擇並切換分佈方式，維護負擔最低。",
+  "flow": [
+   "持續成長的去正規化表",
+   "無合適 dist key",
+   "*AUTO distribution",
+   "Redshift 自動調整"
+  ]
+ },
+ {
+  "number": 163,
+  "q": "QuickSight 匯率需算到小數4位，且須預先計算並實體化到 SPICE，計算欄位建在哪？",
+  "answer_text": {
+   "A": "在 dataset 建計算欄位"
+  },
+  "why": "要預先計算並物化到 SPICE，calculated field 須建在 dataset 層，匯入 SPICE 時就一併算好，四位小數邏輯也能統一。analysis、visual、dashboard 層的欄位在顯示時才計算，不會物化。",
+  "flow": [
+   "Dataset（data prep）",
+   "*dataset calculated field",
+   "SPICE 預先物化",
+   "analysis / dashboard"
+  ]
+ },
+ {
+  "number": 164,
+  "q": "整合 Redshift、Teradata、BigQuery，用各來源引擎轉換後 join 寫入 S3 Iceberg，最少營運負擔？",
+  "answer_text": {
+   "B": "Athena 聯合查詢，SQL join+MERGE"
+  },
+  "why": "要用各來源引擎轉換再 join 寫入 Iceberg，Athena federated query connectors 可直接查三個來源，一段 SQL 完成 join 與 MERGE，全 serverless；Glue、EMR 要維護 Spark 管線。",
+  "flow": [
+   "Redshift/Teradata/BigQuery",
+   "*Athena federated query",
+   "SQL join + MERGE",
+   "S3 Iceberg table"
+  ]
+ },
+ {
+  "number": 165,
+  "q": "EKS 容器需安全存取 DynamoDB，且不可在容器內嵌入 AWS 憑證？",
+  "answer_text": {
+   "B": "IAM 角色搭配 IRSA 服務帳戶"
+  },
+  "why": "不嵌入憑證又要存取 DynamoDB，就用 IRSA：把 IAM role 關聯到 Kubernetes service account，Pod 自動取得臨時憑證。access key 放 S3、環境變數或 K8s Secrets 都還是長期憑證。",
+  "flow": [
+   "EKS Pod",
+   "Kubernetes service account",
+   "*IRSA IAM role",
+   "DynamoDB table"
+  ]
+ },
+ {
+  "number": 166,
+  "q": "地端資料生產者遷移到 AWS，不可走公網，且各管線服務帳號憑證需安全保管？",
+  "answer_text": {
+   "B": "Direct Connect+Secrets Manager"
+  },
+  "why": "不走公網就用 Direct Connect 專線連地端；各管線的 service account 憑證放 Secrets Manager 集中保管與輪替。再加 presigned URL 與需求無關，public subnet 方案則仍走網際網路。",
+  "flow": [
+   "地端資料中心",
+   "*AWS Direct Connect",
+   "AWS 資料管線",
+   "Secrets Manager 取憑證"
+  ]
+ },
+ {
+  "number": 167,
+  "q": "S3 事件已送到 SQS，Glue Data Catalog 需增量更新，最少營運負擔？（選2）",
+  "answer_text": {
+   "A": "S3 事件型 Glue crawler 讀 SQS",
+   "B": "定時排程執行 crawler 增量更新"
+  },
+  "why": "S3 事件已進 SQS，event-based Glue crawler 直接消費這些事件、只爬有變動的路徑；再設 time-based 排程定期執行，增量更新 Data Catalog。Lambda、Step Functions 都要自寫程式。",
+  "flow": [
+   "S3 事件進 SQS",
+   "*event-based Glue crawler",
+   "time-based 排程執行",
+   "Data Catalog 增量更新"
+  ]
+ },
+ {
+  "number": 168,
+  "q": "每日報表有時在 S3 資料未齊時就執行，需把不完整資料通知既有 SNS，最少營運負擔？",
+  "answer_text": {
+   "C": "Glue DQ 檢查→EventBridge→SNS"
+  },
+  "why": "Glue Data Quality 檢查每日資料集的 completeness 與 consistency，不完整時由 data quality action 發事件到 EventBridge 再轉既有 SNS。Airflow、EMR、Lambda 都要另建並維護。",
+  "flow": [
+   "每日 S3 資料集",
+   "*Glue Data Quality 檢查",
+   "EventBridge 事件",
+   "SNS 通知"
+  ]
+ },
+ {
+  "number": 169,
+  "q": "Redshift 含 PII，行銷、理賠、分析三團隊需看到不同遮罩程度的資料，最少管理負擔？",
+  "answer_text": {
+   "C": "每團隊建 DB 角色+套用遮罩政策"
+  },
+  "why": "三個團隊對同份 PII 要不同遮罩程度，Redshift 可為各團隊建 database role 並附加各自的 masking policy，查詢時依角色回傳原值或遮罩值。分 cluster 或建大量 view 都要重複維護。",
+  "flow": [
+   "Redshift 客戶資料（PII）",
+   "各團隊 database role",
+   "*masking policy 依角色",
+   "完整或遮罩資料"
+  ]
+ },
+ {
+  "number": 170,
+  "q": "MSK 新增 topic 數天後，CW 對 RootDiskUsed 指標發出告警，該如何處理？",
+  "answer_text": {
+   "A": "擴充 broker 儲存並設自動擴展"
+  },
+  "why": "新增 topic 後資料持續累積，RootDiskUsed 告警代表 broker 磁碟快滿。擴充 MSK broker storage 並開自動擴展即可解決並防止再發；ZooKeeper 不存 topic 資料，換大 instance 也不加磁碟。",
+  "flow": [
+   "新增 MSK topic",
+   "broker 磁碟用量上升",
+   "RootDiskUsed 告警",
+   "*擴充 storage + 自動擴展"
+  ]
+ },
+ {
+  "number": 171,
+  "q": "以 S3 與 RDS 建企業資料目錄，需含資料儲存格式中繼資料，最少工作量？",
+  "answer_text": {
+   "B": "Glue crawler+classifier 辨識格式"
+  },
+  "why": "Glue crawler 能掃描 S3 與 RDS 建立 Data Catalog，classifier 自動辨識 CSV、JSON、Parquet 等格式寫入 metadata，工作量最少。人工 data steward 或自寫腳本費工，Macie 是找敏感資料。",
+  "flow": [
+   "S3 + RDS",
+   "*Glue crawler + classifiers",
+   "Data Catalog（含格式）"
+  ]
+ },
+ {
+  "number": 172,
+  "q": "DataBrew 掃描 PII，但公司自訂的 PII 類別不在標準規則中，需跨多個資料集掃描，最低營運負擔？",
+  "answer_text": {
+   "B": "DataBrew 自訂 DQ 規則套用至各資料集"
+  },
+  "why": "已用 DataBrew 偵測 PII，只差自訂類別不在標準規則內，建 DataBrew custom data quality rules 套用到多個 datasets 即可沿用原流程。人工檢查、自寫 Python 或 regex 都要額外維護。",
+  "flow": [
+   "自訂 PII 類別",
+   "*DataBrew custom DQ rules",
+   "套用至多個 datasets",
+   "PII 偵測結果"
+  ]
+ },
+ {
+  "number": 173,
+  "q": "Glue ETL 每日輸出 Daily.csv，新檔為空或必填欄缺值時須保留前一天檔案，最少工作量？",
+  "answer_text": {
+   "B": "Glue DQ 以 DQDL 檢查空檔與缺值"
+  },
+  "why": "新檔完整有效才能覆蓋前一天的 Daily.csv：在 Glue ETL 加 Glue Data Quality，用 DQDL 檢查必填欄缺值與空檔，不過就不覆寫。Lambda 或 Glue Studio 補值會改動資料，不符需求。",
+  "flow": [
+   "每日 partner 檔",
+   "Glue ETL",
+   "*Glue DQ（DQDL 檢查）",
+   "通過才覆寫 Daily.csv"
+  ]
+ },
+ {
+  "number": 174,
+  "q": "要收集 S3 中未完成 multipart upload 與舊版本物件資訊以優化成本，最低營運工作量？",
+  "answer_text": {
+   "C": "S3 Storage Lens 儀表板"
+  },
+  "why": "要看未完成 multipart upload 與舊版本物件以優化成本，S3 Storage Lens dashboard 直接跨 bucket 提供這些指標，開箱即用。CLI 要自寫指令逐桶查，S3 Inventory 要設報表再另外分析。",
+  "flow": [
+   "多個 S3 buckets",
+   "*S3 Storage Lens dashboard",
+   "未完成 MPU、舊版本指標"
+  ]
+ },
+ {
+  "number": 175,
+  "q": "KDS→Firehose 以 JSON 存 S3 供 Athena 查詢，要降低 Athena 成本且不重建管線，最少管理工作？",
+  "answer_text": {
+   "A": "Firehose改Parquet+分區，舊檔Glue轉"
+  },
+  "why": "Athena 依掃描量計費：Firehose 輸出改 Parquet、加 YYYYMMDD prefix 分區、加大 buffer 減少小檔，不必重建管線；既有 JSON 用 Glue 合併轉 Parquet 再 ADD PARTITION。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*Firehose 轉 Parquet + 分區",
+   "S3（YYYYMMDD prefix）",
+   "Athena partition pruning"
+  ]
+ },
+ {
+  "number": 176,
+  "q": "DynamoDB 表需自動刪除1個月前的資料以控管成本，且不影響讀寫，最低持續維護？",
+  "answer_text": {
+   "A": "啟用 DynamoDB TTL 依時間戳過期"
+  },
+  "why": "要一個月後自動刪資料又不影響讀寫，DynamoDB TTL 依 item 的 timestamp 屬性讓資料到期，背景自動刪除且不耗寫入容量。EventBridge 或 Streams 觸發 Lambda 掃描刪除都要寫程式又耗容量。",
+  "flow": [
+   "item 的到期 timestamp",
+   "*DynamoDB TTL",
+   "到期背景自動刪除"
+  ]
+ },
+ {
+  "number": 177,
+  "q": "Hub 帳號的 S3 以 KMS 加密，BI 帳號的 QS 需跨帳號存取；桶政策已授權 QS 角色，還要做？（選2）",
+  "answer_text": {
+   "B": "將 S3 桶加入 QS 角色可存取資源",
+   "E": "將 KMS 金鑰加入 QS 角色可存取資源"
+  },
+  "why": "bucket policy 放行後，BI 帳號的 QuickSight 端也要授權：把 S3 bucket 加入 QuickSight service role 可存取的資源；資料以 KMS 加密，KMS key 也要一併加入，QuickSight 才能解密讀取。",
+  "flow": [
+   "Hub 帳號 S3（KMS 加密）",
+   "bucket policy 放行 QS role",
+   "*QS 資源加 bucket + KMS key",
+   "BI 帳號 QuickSight"
+  ]
+ },
+ {
+  "number": 178,
+  "q": "每日上傳≤5KB壓縮檔到 S3，需上傳即處理、自動編排、儀表板及可擴展臨時查詢，最具成本效益？",
+  "answer_text": {
+   "D": "Glue+S3事件+Lambda+Athena+QS"
+  },
+  "why": "要上傳即處理又最省錢：S3 事件搭 Lambda 觸發編排，Glue 處理，Athena 做可擴展的臨時查詢與報表，QuickSight 做儀表板，全 serverless 按用量計費；EMR、OpenSearch 有常駐成本。",
+  "flow": [
+   "S3 上傳",
+   "*S3 Event + Lambda 編排",
+   "Glue 處理",
+   "Athena 查詢",
+   "QuickSight 儀表板"
+  ]
+ },
+ {
+  "number": 179,
+  "q": "多區域各有 EFS，資料須留在資料科學團隊區域，用 Step Functions+Lambda 處理成單一資料集，最少工作量？",
+  "answer_text": {
+   "D": "DataSync 傳至團隊區 EFS 再掛載"
+  },
+  "why": "資料要留在團隊 Region，Lambda 又只能掛載同 Region 的單一 EFS，所以用 DataSync 把各 Region 檔案集中到團隊 Region 的 EFS，再由當地 Lambda 掛載處理。跨 Region 直接掛載不可行。",
+  "flow": [
+   "各 Region EFS",
+   "*AWS DataSync",
+   "團隊 Region EFS",
+   "Lambda 掛載處理",
+   "單一資料集"
+  ]
+ },
+ {
+  "number": 180,
+  "q": "EC2 應用需 SSL/TLS 加密傳輸，憑證要自動產生、輪替與續約部署，最低營運負擔？",
+  "answer_text": {
+   "B": "AWS Certificate Manager (ACM)"
+  },
+  "why": "要自動產生、輪替並續約部署 SSL/TLS 憑證，ACM 是 AWS 原生憑證管理服務，可自動續期並部署到整合的 AWS 服務，營運負擔最低。EC2 上自管憑證或在 Secrets Manager 寫腳本都得自己輪替。",
+  "flow": [
+   "*AWS Certificate Manager",
+   "簽發 / 自動續期",
+   "部署到整合服務",
+   "TLS 加密傳輸"
+  ]
+ },
+ {
+  "number": 181,
+  "q": "S3 以 SSE-KMS 加密且含 PII，分析前須遮罩，預處理階段部分使用者可安全存取，要低維護？（選2）",
+  "answer_text": {
+   "A": "Glue DataBrew ETL 遮罩 PII",
+   "D": "以 IAM 管理權限控管 PII 存取"
+  },
+  "why": "DataBrew 以低程式碼 ETL 在分析前遮罩 PII；IAM 控管誰能在預處理階段存取原始 PII，做到最小權限。SSE-KMS 只是靜態加密不等於遮罩，Macie、GuardDuty 只偵測不遮罩。",
+  "flow": [
+   "S3 PII 資料（SSE-KMS）",
+   "IAM 控管原始 PII 存取",
+   "*DataBrew 遮罩 PII",
+   "分析用資料集"
+  ]
+ },
+ {
+  "number": 182,
+  "q": "EMR 叢集需靜態與傳輸中加密；S3 資料以 KMS 加密，另有 S3 上的 PEM 憑證檔，怎麼做？",
+  "answer_text": {
+   "C": "單一組態 KMS 靜態+PEM，建立時指定"
+  },
+  "why": "用一個 EMR security configuration 同時設 KMS key（S3 at-rest）與 PEM 路徑（in-transit），建立 cluster 時指定。一個 cluster 只能用一個 security configuration，也無法事後附加。",
+  "flow": [
+   "*EMR security configuration",
+   "KMS key（S3 at-rest）",
+   "PEM 路徑（in-transit）",
+   "建立 cluster 時套用"
+  ]
+ },
+ {
+  "number": 183,
+  "q": "Redshift 支援即時庫存，SageMaker 即時端點已部署模型，需即時庫存建議並預測未來需求？（選2）",
+  "answer_text": {
+   "A": "Redshift ML 產生庫存建議",
+   "B": "用 SQL 呼叫遠端 SageMaker 端點預測"
+  },
+  "why": "資料已在 Redshift，Redshift ML 可用 SQL 建模產生庫存建議；既有 SageMaker 即時 endpoint 也能從 Redshift 以 SQL 遠端呼叫，預測未來需求。排程匯出離線訓練則不夠即時。",
+  "flow": [
+   "Redshift 庫存資料",
+   "*Redshift ML（SQL）",
+   "SageMaker 即時 endpoint",
+   "庫存建議與需求預測"
+  ]
+ },
+ {
+  "number": 184,
+  "q": "S3 CSV 需改欄名、刪欄、略過第2列、依首列建新欄、依數值篩選，最少開發工作量？",
+  "answer_text": {
+   "D": "Glue DataBrew recipe 轉換"
+  },
+  "why": "改欄名、刪欄、略過列、依首列建新欄、依數值篩選，都是 DataBrew recipe 內建的轉換步驟，點選即可、幾乎不寫程式。Glue Python job 要自己寫碼，crawler 只建 Catalog 不做轉換。",
+  "flow": [
+   "S3 CSV 檔",
+   "*DataBrew recipe",
+   "改名/刪欄/篩選",
+   "新 S3 bucket"
+  ]
+ },
+ {
+  "number": 185,
+  "q": "Redshift 部分表的壓縮編碼不適合資料，需改善編碼，怎麼做？",
+  "answer_text": {
+   "B": "ANALYZE COMPRESSION 後手動改編碼"
+  },
+  "why": "ANALYZE COMPRESSION 會抽樣資料，建議各欄最佳 encoding 與預估節省比例，再依結果手動改編碼。ANALYZE 只更新統計資料，VACUUM REINDEX/RECLUSTER 是重整排序，都不會建議 encoding。",
+  "flow": [
+   "encoding 不佳的表",
+   "*ANALYZE COMPRESSION",
+   "建議 encoding",
+   "手動更新欄位編碼"
+  ]
+ },
+ {
+  "number": 186,
+  "q": "S3 大量記錄前30天須能立即存取，30天後少用，最具成本效益？",
+  "answer_text": {
+   "A": "生命週期30天後轉 Standard-IA"
+  },
+  "why": "前 30 天要立即存取，留在 S3 Standard；之後少用但仍需毫秒級讀取，lifecycle policy 30 天後轉 Standard-IA 最划算。Deep Archive 取回要數小時；全放 IA 則前 30 天常讀會多付取回費。",
+  "flow": [
+   "新記錄存 S3 Standard",
+   "*lifecycle：30 天後轉換",
+   "S3 Standard-IA"
+  ]
+ },
+ {
+  "number": 187,
+  "q": "QuickSight 要顯示區域總營收，且不受視覺下鑽層級影響，用什麼？",
+  "answer_text": {
+   "C": "LAC-A 層級感知聚合函數"
+  },
+  "why": "要讓 Region 總營收不受下鑽影響，LAC-A 可固定在 Region 維度聚合，結果不隨 visual 分組改變。table calculation 與一般 calculated field 都依 visual 當下分組計算，下鑽就會變。",
+  "flow": [
+   "Revenue",
+   "*LAC-A：固定 Region 層級",
+   "任何下鑽層級",
+   "同一個 Region 總額"
+  ]
+ },
+ {
+  "number": 188,
+  "q": "S3 部分客戶資料含 PII，提供給合作夥伴前需判斷是否含 PII，最少人工介入？",
+  "answer_text": {
+   "A": "Macie 自動敏感資料探索"
+  },
+  "why": "要少人工判斷 S3 資料是否含 PII，Macie 的 automated sensitive data discovery 會自動抽樣掃描並分類敏感資料。CloudTrail 只記錄 API 看不到內容，Lambda、Athena 都要自寫偵測邏輯。",
+  "flow": [
+   "S3 客戶資料",
+   "*Macie 自動敏感資料探索",
+   "PII 發現結果",
+   "決定是否分享"
+  ]
+ },
+ {
+  "number": 189,
+  "q": "Athena 現有表有1,000列，要建立它的空白副本，用哪個查詢？",
+  "answer_text": {
+   "B": "CTAS SELECT * FROM old WITH NO DATA"
+  },
+  "why": "要建立現有表的空副本，CTAS 依 SELECT * 建出相同 schema 的新表，加上 WITH NO DATA 就只建結構、不複製那 1,000 列。沒有 WITH NO DATA 或用 WHERE 1=1 都會把資料一起複製進去。",
+  "flow": [
+   "old_table（1,000 列）",
+   "*CTAS + WITH NO DATA",
+   "空的 new_table"
+  ]
+ },
+ {
+  "number": 190,
+  "q": "S3 中依年分區、Glue 編目的 CloudTrail 日誌，Athena 查詢沒有資料，該做哪些排查？（選2）",
+  "answer_text": {
+   "A": "確認 Athena 指向正確 S3 位置",
+   "C": "執行 MSCK REPAIR TABLE"
+  },
+  "why": "Athena 查分區表沒資料，原因多是 table LOCATION 沒指到正確 S3 路徑，或新的 year partition 未註冊進 Catalog。確認 S3 位置並跑 MSCK REPAIR TABLE 載入分區；timeout、重啟無關。",
+  "flow": [
+   "Athena 查無資料",
+   "確認 S3 LOCATION",
+   "*MSCK REPAIR TABLE",
+   "分區註冊，查到資料"
+  ]
+ }
+]

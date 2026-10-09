@@ -44,6 +44,7 @@
 | 完整版總覽（中英對照） | https://cuteman0725.github.io/aws-dea-c01-question-bank/ |
 | 中文精簡版（作答練習） | https://cuteman0725.github.io/aws-dea-c01-question-bank/Short_ZH.html |
 | 答案速讀版（只看正確答案） | https://cuteman0725.github.io/aws-dea-c01-question-bank/Answer_ZH.html |
+| 架構圖版（點題號亮起服務與流向） | https://cuteman0725.github.io/aws-dea-c01-question-bank/Arch_ZH.html |
 
 ## 使用方式
 
@@ -172,3 +173,31 @@ python gen_answer_zh.py build   # 合併 _work/ans_out_*.json → answer_zh.json
 ```
 
 不需要 PDF；Notion 解析取自完整版 `Q*.html`。
+
+## 架構圖版（點題號看資料流向）
+
+> 新增日期：2026-10-09
+
+`Arch_ZH.html`：一張 AWS 資料工程架構總圖（45 個服務節點），342 題都對應到圖上的路徑。
+
+- 由左到右：來源 → 擷取・串流 → 儲存 → 目錄・治理・品質 → 處理 → 分析・資料庫 → 使用端；上方是編排・事件・通知，下方是安全・監控・網路
+- 點題號：亮起該題用到的服務，橘色箭頭與編號是資料流向，橘底是答案重點，虛線框是相關服務（權限、加密、網路或並列來源）；自動縮放把整條路徑框進畫面
+- 下方顯示題目、正確答案、說明（同速讀版）與路徑
+- ◀ ▶ 逐題複習；可依主題、爭議題，或某個服務篩選
+- 點圖上的服務：看它和哪些服務最常一起考，題號列只留相關題目
+- 底圖細線是至少 3 題共用的連線，越粗越常考
+- 記住篩選與上次看的題目
+
+| 檔案 | 說明 |
+|------|------|
+| `Arch_ZH.html` | 架構圖版（單一檔案） |
+| `arch_zh.json` | 每題對應的節點路徑（path）、答案重點（key）、相關節點（also） |
+| `gen_arch_zh.py` | 產生腳本：節點清單與版面、`prep` 切批次、`check` 檢查單批、`build` 產生 HTML |
+| `gen_arch_zh.md` | 產生腳本的 Mermaid 圖表 |
+| `_work/arch_in_*.json`、`_work/arch_out_*.json` | 批次輸入（取自 `answer_zh.json`）與對應結果 |
+
+```powershell
+python gen_answer_zh.py build   # 先產生 answer_zh.json（說明文字來源）
+python gen_arch_zh.py prep      # 切批次到 _work/
+python gen_arch_zh.py build     # 合併 _work/arch_out_*.json → arch_zh.json、Arch_ZH.html
+```

@@ -1,0 +1,527 @@
+[
+ {
+  "number": 267,
+  "q": "ML 訓練資料存於 S3，需套用資料品質規則，最少營運負擔？",
+  "answer_text": {
+   "B": "DataBrew 規則集+Profile job+EB"
+  },
+  "why": "最少營運負擔就是不自寫檢查程式：DataBrew ruleset 定義品質規則、profile job 執行檢查，EventBridge 在 S3 新增資料時自動觸發。Lambda 或 EMR 自寫檢查都要維護程式碼與資源。",
+  "flow": [
+   "S3 新增訓練資料",
+   "EventBridge",
+   "*DataBrew profile job",
+   "ruleset 品質檢查"
+  ]
+ },
+ {
+  "number": 268,
+  "q": "用 Glue Data Catalog 查 S3 銷售資料，發現部分記錄遺失或過時，最可能原因？",
+  "answer_text": {
+   "A": "Catalog 未同步最新 S3 分割區"
+  },
+  "why": "資料在 S3 卻查不到或是舊的，代表查詢依據的 metadata 落後：新的 S3 partition 沒同步進 Glue Data Catalog，查詢就只看得到舊分區。IAM 錯誤會直接拒絕存取，versioning 也不影響查詢結果。",
+  "flow": [
+   "S3 新增 partition",
+   "*Data Catalog 未同步",
+   "查詢漏掉或過時"
+  ]
+ },
+ {
+  "number": 269,
+  "q": "POS 交易在 RDS MySQL，歷史在 Redshift，需每日合併報表、近即時，且傳輸成本與維護最低？",
+  "answer_text": {
+   "A": "DMS 持續複寫到 Redshift 再查"
+  },
+  "why": "要近即時把當日交易併入歷史資料：DMS 持續複寫（CDC）把 RDS MySQL 變更同步進 Redshift，報表直接在 Redshift 內 join。每小時 Glue ETL 或 S3 匯出再 COPY 不夠即時，還多一條批次管線。",
+  "flow": [
+   "RDS MySQL 交易",
+   "*DMS 持續複寫（CDC）",
+   "Redshift 合併歷史",
+   "近即時報表"
+  ]
+ },
+ {
+  "number": 270,
+  "q": "資料分析師需在進階轉換前準備、標準化資料湖資料，不能寫新程式碼，最少工作量？",
+  "answer_text": {
+   "C": "Glue Studio 資料準備 recipe 轉換"
+  },
+  "why": "分析師不能寫程式：Glue Studio 的 data preparation recipe 以視覺化步驟清理、標準化資料，工程師再於同一 Glue pipeline 加進階轉換。Pandas notebook 要寫程式，寫文件則仍靠工程師實作。",
+  "flow": [
+   "原始資料",
+   "*Glue Studio recipe 轉換",
+   "工程師加進階轉換",
+   "data lake"
+  ]
+ },
+ {
+  "number": 271,
+  "q": "RDS Oracle 全表需供未來分析，customer_complaints 表須近即時經 REST API 處理，最具成本效益？",
+  "answer_text": {
+   "C": "DMS→KDS(該表)+DMS→S3+Lambda"
+  },
+  "why": "分兩路最省：一個 DMS task 只把 customer_complaints 以 CDC 串到 Kinesis，Lambda 消費後呼叫 REST API；另一個 DMS task 把全部資料表送到 S3 供分析。不必多養 PostgreSQL 或 Redshift。",
+  "flow": [
+   "RDS Oracle complaints 表",
+   "*DMS CDC task",
+   "Kinesis Data Streams",
+   "Lambda 呼叫 REST API"
+  ]
+ },
+ {
+  "number": 272,
+  "q": "Redshift 複雜轉換查詢要跑數小時，要盡可能縮短查詢時間？",
+  "answer_text": {
+   "D": "對常用查詢建物化檢視(MV)"
+  },
+  "why": "慢在重複執行的複雜轉換：materialized view 把常用 join、聚合結果預先算好存起來，查詢直接讀結果不必重算。concurrency scaling 只解決排隊，改用 Athena 或 Spectrum 也不會更快。",
+  "flow": [
+   "常用複雜轉換查詢",
+   "*materialized view",
+   "讀預先算好的結果",
+   "查詢時間大幅縮短"
+  ]
+ },
+ {
+  "number": 273,
+  "q": "S3 資料湖需轉換清理後，讓多個夥伴在上班時間跑 SQL，最具成本效益？",
+  "answer_text": {
+   "B": "下班後 Glue Flex→Redshift Serverless"
+  },
+  "why": "資料可下班後批次處理：Glue Flex 用閒置運算資源跑 ETL，比標準 job 便宜；Redshift Serverless 讓夥伴上班時間用 SQL 查、依用量計費。EMR 或 provisioned Redshift 閒置也要付費。",
+  "flow": [
+   "前一天 S3 資料",
+   "*下班後 Glue Flex job",
+   "Redshift Serverless",
+   "上班時間夥伴 SQL"
+  ]
+ },
+ {
+  "number": 274,
+  "q": "批次 ETL 分擷取、轉換、儲存階段，存 S3，每階段自動重試、可見各階段成敗，最少營運負擔？",
+  "answer_text": {
+   "B": "Step Functions 編排 Lambda+Glue"
+  },
+  "why": "要每階段自動重試、看得到各階段成敗：Step Functions 每個 state 都能設 Retry，並視覺化執行狀態；Lambda 擷取、Glue job 轉換寫入 S3。Glue trigger 設 MaxRetries 0 等於不重試。",
+  "flow": [
+   "*Step Functions workflow",
+   "Lambda 擷取資料",
+   "Glue job 轉換",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 275,
+  "q": "資料網格：3 團隊各擁資料，Glue Catalog 千張表，用 Athena/Redshift，需跨域分析、稽核、限制 PII，可擴展？",
+  "answer_text": {
+   "C": "Lake Formation 跨域存取+細粒度"
+  },
+  "why": "千張表跨 domain 共享又要限制 PII：Lake Formation 直接在 Glue Data Catalog 上做跨 domain 授權與欄、列級細粒度控制，Athena、Redshift 都適用，存取可由 CloudTrail 稽核。",
+  "flow": [
+   "各 domain 擁有資料表",
+   "*Lake Formation 跨域授權",
+   "欄/列級控管 PII",
+   "CloudTrail 稽核"
+  ]
+ },
+ {
+  "number": 276,
+  "q": "S3 與 RDS 需備份並依期限保留，且保留期間防意外或惡意刪除，最少營運負擔？",
+  "answer_text": {
+   "C": "AWS Backup 計畫+Vault Lock 合規"
+  },
+  "why": "一次管 S3 與 RDS 的備份與保留期：AWS Backup plan 集中設排程與 lifecycle，Vault Lock compliance mode 讓保留期內連 root 都刪不掉。各服務分設 versioning、snapshot 維運多且仍可被刪。",
+  "flow": [
+   "S3 + RDS",
+   "AWS Backup plan",
+   "backup vault",
+   "*Vault Lock compliance"
+  ]
+ },
+ {
+  "number": 277,
+  "q": "每天上傳機密文件到 S3，需獨立驗證所有上傳資料完整性，確認傳輸未損毀？",
+  "answer_text": {
+   "C": "上傳前算 SHA-256 傳給 SDK"
+  },
+  "why": "要獨立驗證傳輸沒損毀：上傳前在本地算 SHA-256 checksum，隨上傳請求交給 AWS SDK，S3 收到後比對、不符就拒絕寫入。下載抽樣或全量比對效率差，SSE-C 加密與完整性驗證無關。",
+  "flow": [
+   "本地算 SHA-256",
+   "*SDK 上傳附 checksum",
+   "S3 比對驗證"
+  ]
+ },
+ {
+  "number": 278,
+  "q": "S3 物件超過 1 年須 5 小時內可取，所有版本 WORM 不可變保留 7 年？",
+  "answer_text": {
+   "C": "Object Lock+1年轉 Glacier Flexible"
+  },
+  "why": "WORM 且所有版本 7 年不可變，只能靠 S3 Object Lock（versioning 仍可刪）；1 年後轉 Glacier Flexible Retrieval，standard 取回 3～5 小時符合需求。Deep Archive 取回約 12 小時，太慢。",
+  "flow": [
+   "*S3 Object Lock（WORM）",
+   "1 年後 Glacier Flexible",
+   "7 年後 lifecycle 刪除"
+  ]
+ },
+ {
+  "number": 279,
+  "q": "部署複雜管線，各階段要能執行腳本，只能用全託管、無伺服器服務？",
+  "answer_text": {
+   "B": "MWAA 建置並排程管線"
+  },
+  "why": "複雜多階段、每階段都要跑腳本：MWAA 是全託管 Apache Airflow，用 DAG 編排與排程任意 script 任務，不用自管伺服器。EC2 要自己維運主機，DataBrew 只做資料準備、不能跑自訂腳本。",
+  "flow": [
+   "各階段腳本",
+   "*Airflow DAG（MWAA）",
+   "託管排程與編排"
+  ]
+ },
+ {
+  "number": 280,
+  "q": "S3 每天千萬小物件：前60天即時取、61–180天偶爾取、181–365天1小時內可取、365天後刪，最佳化成本？",
+  "answer_text": {
+   "B": "生命週期：60天IA→180天GFR→刪"
+  },
+  "why": "存取頻率隨天數下降，用 lifecycle 自動轉換：60 天後轉 Standard-IA 仍可即時取用，180 天後轉 Glacier Flexible Retrieval（expedited 數分鐘可取回），365 天 expire，不必自建 Lambda。",
+  "flow": [
+   "*S3 Lifecycle policy",
+   "60 天後 Standard-IA",
+   "180 天後 Glacier Flexible",
+   "365 天 expire"
+  ]
+ },
+ {
+  "number": 281,
+  "q": "Glue PySpark 需從 DynamoDB 讀已知分割鍵的資料，需 DynamicFrame，RCU 最少？",
+  "answer_text": {
+   "D": "用分割鍵做 query 再轉 DF"
+  },
+  "why": "已知 partition key，就用 DynamoDB Query 放進 key condition expression，只讀符合的 items、RCU 最少，再轉 DynamicFrame。Scan 或 connector filter 會先讀整張表再篩，浪費 RCU。",
+  "flow": [
+   "已知 partition key",
+   "*Query：key condition",
+   "只讀所需 items",
+   "DynamicFrame"
+  ]
+ },
+ {
+  "number": 282,
+  "q": "多租戶 EMR，團隊用 EMR Step 跑 Spark 讀 DynamoDB 機密表，只允許特定團隊存取？",
+  "answer_text": {
+   "A": "為 EMR Step 設 runtime role"
+  },
+  "why": "多租戶要讓各團隊 step 權限不同：EMR runtime role 讓每個 step 以自己的 IAM role 執行，只有該團隊的 role 能讀 DynamoDB 機密表。EMRFS role 只管 S3，Lake Formation 不管 DynamoDB。",
+  "flow": [
+   "團隊提交 EMR step",
+   "*step runtime role",
+   "僅該團隊讀 DynamoDB"
+  ]
+ },
+ {
+  "number": 283,
+  "q": "S3 每小時進數千個 50–100KB Parquet，評估 Iceberg+Glue Catalog，需確保檔案增多效能不下降？",
+  "answer_text": {
+   "C": "Iceberg 依檔案大小/數量自動壓縮"
+  },
+  "why": "每小時數千個 50～100KB 小檔，檔案越多 Iceberg 要讀的 metadata 越多、查詢越慢：設定依檔案大小與數量門檻自動 compaction，持續把小檔合併。每天跑一次 Glue job 壓縮，中間仍會退化。",
+  "flow": [
+   "每小時數千小檔",
+   "*Iceberg 自動 compaction",
+   "維持較大檔案",
+   "查詢效能穩定"
+  ]
+ },
+ {
+  "number": 284,
+  "q": "IoT 管線用 KDS→Firehose→S3，需監控管線健康，最少營運工作？",
+  "answer_text": {
+   "B": "CW 警報監控 IncomingBytes 等指標"
+  },
+  "why": "KDS 與 Firehose 原生把 metrics 送進 CloudWatch，直接對 IncomingBytes、OutgoingBytes、DeliveryToS3.Success 設 alarm 即可告警、不用寫程式。人工看 logs、Lambda 每日檢查都更費工。",
+  "flow": [
+   "KDS + Firehose",
+   "CloudWatch metrics",
+   "*CloudWatch alarms",
+   "異常即告警"
+  ]
+ },
+ {
+  "number": 285,
+  "q": "產品屬性可變，需高量突發查詢、個位數毫秒延遲，以 Product ID 取值並可依 Category、Brand 查？",
+  "answer_text": {
+   "A": "DynamoDB 隨需容量+主鍵+GSI"
+  },
+  "why": "可變屬性、突發流量、個位數毫秒延遲，正是 DynamoDB on-demand：自動吸收尖峰、免規劃容量；Product ID 當 primary key，Category、Brand 用 GSI 查詢。Aurora 需固定 schema、難應付突發。",
+  "flow": [
+   "*DynamoDB on-demand",
+   "PK：Product ID",
+   "GSI：Category / Brand",
+   "毫秒級查詢"
+  ]
+ },
+ {
+  "number": 286,
+  "q": "地端日誌上傳 S3，需驗證 S3 上的日誌與地端一致？",
+  "answer_text": {
+   "A": "SDK 上傳自動算 CRC32 存中繼資料"
+  },
+  "why": "要確認 S3 上的 log 與地端一致：AWS SDK 上傳時自動算 CRC32 checksum 讓 S3 比對，checksum 也存進物件中繼資料供日後再驗。Object Lock 是防刪改、不是驗證內容一致。",
+  "flow": [
+   "地端 log 檔",
+   "*SDK 上傳算 CRC32",
+   "S3 驗證並存 checksum"
+  ]
+ },
+ {
+  "number": 287,
+  "q": "EventBridge Scheduler 呼叫 Glue workflow，取消訂單 FailedInvocations 很高，須找出失敗原因？",
+  "answer_text": {
+   "A": "Scheduler 設 DLQ 存失敗事件分析"
+  },
+  "why": "FailedInvocations 只看得出失敗多、看不到原因：EventBridge Scheduler 設 DLQ，失敗事件連同錯誤資訊存進 SQS，就能分析取消訂單為何呼叫 Glue 失敗。調整 retry 只改重試行為，查不出根因。",
+  "flow": [
+   "Scheduler 呼叫 Glue",
+   "呼叫失敗",
+   "*DLQ 保存失敗事件",
+   "分析失敗原因"
+  ]
+ },
+ {
+  "number": 288,
+  "q": "處理 S3 1TB 檔產生 3 個 DataFrame 平行存另一 S3，管線為 EventBridge 規則目標，最少維護？",
+  "answer_text": {
+   "C": "Glue workflow 平行跑 3 個 job"
+  },
+  "why": "1 TB 檔要用 Spark、Lambda 跑不動：Glue workflow 平行啟動三個 Glue job，各寫一個 DataFrame 到第二個 bucket，workflow 也能直接當 EventBridge 的 target，不必再套 Step Functions。",
+  "flow": [
+   "S3 上傳事件",
+   "EventBridge rule",
+   "*Glue workflow",
+   "3 個 Glue job 平行",
+   "第二個 S3 bucket"
+  ]
+ },
+ {
+  "number": 289,
+  "q": "KDS 的 IoT 資料需近即時做複雜、有狀態轉換後存 S3，最少營運負擔？",
+  "answer_text": {
+   "B": "Managed Service for Apache Flink"
+  },
+  "why": "近即時、複雜且有狀態的轉換正是 Flink 強項：Managed Service for Apache Flink 直接讀 Kinesis 處理後寫 S3，全託管免管叢集。Glue、EMR 偏批次或要管叢集，Lambda 不適合有狀態處理。",
+  "flow": [
+   "Kinesis Data Streams",
+   "*Managed Apache Flink",
+   "有狀態轉換",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 290,
+  "q": "S3 時序資料只允許部署在公司 VPC 內的工作負載存取？",
+  "answer_text": {
+   "A": "Bucket policy 條件限定來源 VPC"
+  },
+  "why": "只讓公司 VPC 內的 workload 存取，就用 S3 bucket policy 的 condition（如 aws:SourceVpc）擋掉其他來源。S3 bucket 無法套 security group，NACL 是 subnet 層級、管不到 bucket。",
+  "flow": [
+   "VPC 內 workload",
+   "VPC endpoint",
+   "*bucket policy 限來源 VPC",
+   "S3 bucket"
+  ]
+ },
+ {
+  "number": 291,
+  "q": "Glue 平台需資料品質驗證：含已知問題規則，且能自動偵測未預期問題，最少營運負擔？",
+  "answer_text": {
+   "A": "Glue Data Quality+異常偵測"
+  },
+  "why": "已在用 Glue，就在 Glue job 加 Glue Data Quality：rules 檢查已知問題，anomaly detection 自動學習資料統計、抓出沒寫成規則的未預期問題。開源框架或手寫 SQL 要自己維護、也不會自動偵測。",
+  "flow": [
+   "Glue job",
+   "*Glue Data Quality",
+   "rules：已知問題",
+   "anomaly：未預期問題"
+  ]
+ },
+ {
+  "number": 292,
+  "q": "自管 Iceberg 資料湖，即時表由大量小檔組成導致查詢慢，需提升效能？",
+  "answer_text": {
+   "D": "執行壓縮(compaction)"
+  },
+  "why": "即時寫入產生大量小檔，查詢要開更多檔案、讀更多 metadata 而變慢：compaction 把小檔合併成大檔，直接改善效能。expire、archive snapshots 或刪孤兒檔只省空間，不減少要讀的檔案數。",
+  "flow": [
+   "即時寫入",
+   "大量小檔",
+   "*compaction 合併",
+   "查詢變快"
+  ]
+ },
+ {
+  "number": 293,
+  "q": "每日 CSV 交易日誌存 S3，Athena 當天查部分欄位，量增變慢，要查詢時間最短？",
+  "answer_text": {
+   "D": "每日單一 Parquet+日期分割+下推"
+  },
+  "why": "只查當天、部分欄位：Parquet 欄式儲存只讀需要的欄位，依日期分區讓 Athena 只掃當天，predicate pushdown 再略過不符的資料區塊，每天單一檔也避免小檔開銷。JSON、Avro 是列式，掃描量大。",
+  "flow": [
+   "每日 CSV 日誌",
+   "*每日一個 Parquet",
+   "S3 依日期分區",
+   "Athena predicate pushdown"
+  ]
+ },
+ {
+  "number": 294,
+  "q": "S3 客戶資料超過 7 年必須永久刪除？",
+  "answer_text": {
+   "A": "生命週期政策刪除超過7年物件"
+  },
+  "why": "超過固定年限就永久刪除，S3 Lifecycle expiration 依物件年齡自動執行、不用寫程式。Athena 只能查詢不能刪 S3 物件，轉 Deep Archive 或加 Object Lock 都沒有把資料刪掉。",
+  "flow": [
+   "S3 客戶資料",
+   "*Lifecycle expiration",
+   "滿 7 年永久刪除"
+  ]
+ },
+ {
+  "number": 295,
+  "q": "兩團隊各在不同帳號，要存取第三帳號 Redshift 的 datashare salesshare，用 SQL 授權？",
+  "answer_text": {
+   "D": "兩條 GRANT … TO NAMESPACE"
+  },
+  "why": "兩個團隊是兩個 consumer，各要一條授權：GRANT USAGE ON DATASHARE salesshare TO NAMESPACE 每次只指定一個 namespace，所以分兩條執行。TO NAMESPACES 或用 AND 列多個對象都不是有效語法。",
+  "flow": [
+   "salesshare datashare",
+   "*GRANT TO NAMESPACE A",
+   "GRANT TO NAMESPACE B",
+   "兩團隊皆可存取"
+  ]
+ },
+ {
+  "number": 296,
+  "q": "DynamoDB 資料保留 1 年，之後封存 5 年再刪除，最具作業效率？",
+  "answer_text": {
+   "D": "Streams+TTL+Lambda→DA+生命週期刪"
+  },
+  "why": "全用託管功能自動化：TTL 1 年後自動刪 item，Streams 把被刪的 item 交給 Lambda 直接寫入 Glacier Deep Archive（封存最便宜），S3 Lifecycle 5 年後刪除。自建 timestamp 掃描較費工。",
+  "flow": [
+   "*TTL 1 年刪 item",
+   "Streams + Lambda",
+   "Glacier Deep Archive",
+   "Lifecycle 5 年刪除"
+  ]
+ },
+ {
+  "number": 297,
+  "q": "已啟用版本控制的 S3，設 365 天過期規則後物件數反而加倍，須如何永久刪除舊物件？",
+  "answer_text": {
+   "D": "加規則刪除現行與非現行版本"
+  },
+  "why": "有 versioning 時 expire current 只加 delete marker、舊版仍在，物件數才翻倍：要再加 lifecycle rule 刪除超過 365 天的 current 與 noncurrent versions 才會永久刪除。",
+  "flow": [
+   "versioned bucket",
+   "expire current",
+   "產生 delete marker",
+   "*刪除 noncurrent versions"
+  ]
+ },
+ {
+  "number": 298,
+  "q": "Glue 處理 IoT 資料，需自動標記溫度超出 -50~150°C 及缺時間戳記錄，極少寫程式？",
+  "answer_text": {
+   "A": "DataBrew：完整性+數值範圍規則"
+  },
+  "why": "規則明確已知：timestamp 不可缺、溫度在 -50～150°C。DataBrew 以視覺化定義 completeness rule 與 numeric range 規則，profile 時自動標記、幾乎不寫程式；ML 異常偵測是找未知問題。",
+  "flow": [
+   "IoT sensor data",
+   "*DataBrew profile",
+   "completeness + 範圍規則",
+   "標記問題記錄"
+  ]
+ },
+ {
+  "number": 299,
+  "q": "推薦系統需整合第三方資料集到既有分析平台，最少營運負擔與時間？",
+  "answer_text": {
+   "A": "API 從 AWS Data Exchange 取用"
+  },
+  "why": "AWS Data Exchange 是 AWS 上尋找、訂閱第三方資料集的服務，用 API 直接把訂閱的資料整合進既有分析平台，省去自找來源與維護整合。DataSync 是搬移資料的工具、不提供第三方資料集。",
+  "flow": [
+   "需要第三方資料",
+   "*AWS Data Exchange",
+   "API 取用資料集",
+   "既有分析平台"
+  ]
+ },
+ {
+  "number": 300,
+  "q": "年度報表存 S3，1 週後少存取，需保留 7 年且隨時可存取，最具成本效益？",
+  "answer_text": {
+   "C": "7天後轉 Glacier IR，7年過期"
+  },
+  "why": "1 週後很少讀但仍要立即可讀：lifecycle 7 天後轉 Glacier Instant Retrieval，毫秒級取回、儲存費遠低於 Standard，7 年後 expire。Deep Archive 取回要數小時，不符合隨時可讀。",
+  "flow": [
+   "S3 年度報表",
+   "7 天後 lifecycle",
+   "*Glacier Instant Retrieval",
+   "7 年後 expire"
+  ]
+ },
+ {
+  "number": 301,
+  "q": "Glue ETL 處理 PII 並寫入 CW Logs 日誌群組，需在日誌群組遮罩 PII？",
+  "answer_text": {
+   "B": "日誌群組套用資料保護政策"
+  },
+  "why": "PII 已寫進 CloudWatch Logs，要在 log group 端遮罩：data protection policy 掛到 log group 後自動偵測並遮罩敏感資料。Glue security configuration 管加密，Macie 只掃 S3，都不遮罩 log。",
+  "flow": [
+   "Glue ETL job",
+   "CloudWatch log group",
+   "*data protection policy",
+   "PII 遮罩顯示"
+  ]
+ },
+ {
+  "number": 302,
+  "q": "EC2 與 RDS 同子網，EC2 應用需以 JDBC 連 RDS？",
+  "answer_text": {
+   "C": "DB 安全群組允許 EC2 連入"
+  },
+  "why": "同 subnet 不代表能互連，RDS 連入由 security group 控制：DB security group 加 inbound rule 允許來自 EC2（或其 SG）的 DB port，JDBC 才連得上。IAM role 不控制網路連線。",
+  "flow": [
+   "EC2 應用（JDBC）",
+   "*DB SG inbound 允許 EC2",
+   "RDS DB instance"
+  ]
+ },
+ {
+  "number": 303,
+  "q": "電商需收集網站與 App 點擊流做即時分析並儲存，最少持續維護？",
+  "answer_text": {
+   "C": "KDS 收集+Firehose 送 S3"
+  },
+  "why": "即時收點擊流又要最少維護：Kinesis Data Streams 承接網站與 App 事件，Data Firehose 全託管、自動批次寫入 S3 供分析。EC2 agent 要管主機、MSK 要管 broker，RDS 不適合存串流。",
+  "flow": [
+   "網站 / App 點擊流",
+   "*Kinesis Data Streams",
+   "Data Firehose",
+   "S3 分析"
+  ]
+ },
+ {
+  "number": 304,
+  "q": "Glue ETL 需檢查出貨日>訂單日、送達日>出貨日，不合格存另一 S3，最具成本效益？",
+  "answer_text": {
+   "C": "Glue DQ 自訂規則用三日期欄"
+  },
+  "why": "已在用 Glue ETL，直接加 Glue Data Quality custom rule，一條規則比較三個日期欄位（出貨日>訂單日、送達日>出貨日），不合格記錄再分流到第二個 bucket。DataBrew 或 Athena 多一個服務。",
+  "flow": [
+   "Glue ETL job",
+   "*Glue DQ custom rule",
+   "失敗記錄分流",
+   "第二個 S3 bucket"
+  ]
+ }
+]
