@@ -1,0 +1,870 @@
+[
+ {
+  "number": 229,
+  "answer": "A",
+  "q_zh": "Redshift 由兩部門共用，各部門僅能存取自己的表與檢視，且常在單一查詢中跨部門使用物件。最少營運負擔？",
+  "q_en": "A company uses an Amazon Redshift cluster as a data warehouse that is shared across two departments. To comply with a security policy, each department must have unique access permissions. Department A must have access to tables and views for Department A. Department B must have access to tables and views for Department B. The company often runs SQL queries that use objects from both departments in one query. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "各部門獨立 schema，schema 層級授權"
+  },
+  "answer_en": {
+   "A": "Group tables and views for each department into dedicated schemas. Manage permissions at the schema level."
+  },
+  "notion": {
+   "keypoint": "Redshift 中不同部門要隔離 tables/views 權限且常跨部門查詢，應用 dedicated schemas + schema-level permissions。",
+   "why": [
+    "同一 Redshift cluster 可保留跨部門查詢能力，避免拆成多個 database 造成跨庫查詢/管理複雜度。",
+    "每個部門的 tables/views 放進專屬 schema，可用 schema-level grants 統一管理權限。",
+    "比逐表授權、命名規則授權或 IAM user group 管資料庫物件更低維運。"
+   ],
+   "flow": "Dept A objects → schema_A grants；Dept B objects → schema_B grants；shared cluster still supports cross-schema queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 230,
+  "answer": "A",
+  "q_zh": "將 MSK 串流資料匯入 Redshift，需低資料存取延遲並最佳化儲存成本。最少營運負擔？",
+  "q_en": "A company wants to ingest streaming data into an Amazon Redshift data warehouse from an Amazon Managed Streaming for Apache Kafka (Amazon MSK) cluster. A data engineer needs to develop a solution that provides low data access time and that optimizes storage costs. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "外部 schema 對應 MSK+物化檢視"
+  },
+  "answer_en": {
+   "A": "Create an external schema that maps to the MSK cluster. Create a materialized view that references the external schema to consume the streaming data from the MSK topic."
+  },
+  "notion": {
+   "keypoint": "MSK 串流資料低延遲進 Redshift 且最低維運，用 Redshift streaming ingestion：external schema 對應 MSK，materialized view 消費 topic。",
+   "why": [],
+   "flow": "MSK topic → Redshift external schema → materialized view → low-latency analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 231,
+  "answer": "C",
+  "q_zh": "Glue 處理 44,000 個 200–300KB 小檔（最小 worker）效能很差。最具成本效益的改善？",
+  "q_en": "A sales company uses AWS Glue ETL to collect, process, and ingest data into an Amazon S3 bucket. The AWS Glue pipeline creates a new file in the S3 bucket every hour. File sizes vary from 200 KB to 300 KB. The company wants to build a sales prediction model by using data from the previous 5 years. The historic data includes 44,000 files. The company builds a second AWS Glue ETL pipeline by using the smallest worker type. The second pipeline retrieves the historic files from the S3 bucket and processes the files for downstream analysis. The company notices significant performance issues with the second ETL pipeline. The company needs to improve the performance of the second pipeline. Which solution will meet this requirement MOST cost-effectively?",
+  "answer_zh": {
+   "C": "使用 DynamicFrame grouping"
+  },
+  "answer_en": {
+   "C": "Use the AWS Glue DynamicFrame grouping option."
+  },
+  "notion": {
+   "keypoint": "Glue 讀取大量 S3 小檔時，最具成本效益的效能改善是啟用 DynamicFrame grouping，把多個小檔合併成較少的 processing tasks。",
+   "why": [
+    "題目有 5 年歷史資料、44,000 個檔案，每個檔案 200–300 KB，典型 small files 問題。",
+    "小檔會造成大量 task scheduling / file listing / open file overhead。",
+    "Glue DynamicFrame grouping 可把多個小檔合併成一組處理，降低 task 數量與讀取 overhead。",
+    "比直接加大 worker、增加 worker 數或 auto scaling 更符合 most cost-effective，因為根因是小檔過多。"
+   ],
+   "flow": "44,000 small S3 files → Glue DynamicFrame grouping → fewer tasks / less overhead → faster ETL"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 232,
+  "answer": "C",
+  "q_zh": "整合多個 SaaS 應用程式資料供 QS 分析與建儀表板，最具營運效率？",
+  "q_en": "A company wants to combine data from multiple software as a service (SaaS) applications for analysis. A data engineering team needs to use Amazon QuickSight to perform the analysis and build dashboards. A data engineer needs to extract the data from the SaaS applications and make the data available for QuickSight queries. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "answer_zh": {
+   "C": "AppFlow 排程抽到 S3+Glue+QS"
+  },
+  "answer_en": {
+   "C": "Use Amazon AppFlow to create a flow for each SaaS application. Set an Amazon S3 bucket as the destination. Schedule the flows to extract the data to the bucket. Use AWS Glue to catalog the data in the S3 bucket. Create a data source and a dataset in QuickSight."
+  },
+  "notion": {
+   "keypoint": "多個 SaaS 資料要低維運匯入分析，使用 Amazon AppFlow → S3 → Glue Catalog → QuickSight dataset。",
+   "why": [
+    "AppFlow 是 AWS 原生 SaaS integration 服務，適合從多個 SaaS 應用程式排程抽取資料。",
+    "S3 作為集中落地區，可供 Glue crawler/catalog 建立可查詢 metadata。",
+    "QuickSight 可透過資料來源與 dataset 使用 cataloged data 進行分析與 dashboard。",
+    "比自寫 Lambda 呼叫 SaaS API、Athena federation 或手動 Excel upload 更低維運。"
+   ],
+   "flow": "SaaS apps → AppFlow scheduled flows → S3 → Glue Catalog → QuickSight dataset/dashboard"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 233,
+  "answer": "B",
+  "q_zh": "多個應用程式輸出日誌，需近即時查詢並視覺化日誌？",
+  "q_en": "A company runs multiple applications on AWS. The company configured each application to output logs. The company wants to query and visualize the application logs in near real time. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "CW Logs 訂閱篩選串流至 OpenSearch"
+  },
+  "answer_en": {
+   "B": "Create an Amazon OpenSearch Service domain. Configure the applications to output logs to Amazon CloudWatch Logs log groups. Create an OpenSearch Service subscription filter for each log group to stream the data to OpenSearch. Create the required queries and dashboards in OpenSearch Service to analyze and visualize the data."
+  },
+  "notion": {
+   "keypoint": "應用程式 logs 要近即時查詢與視覺化，用 CloudWatch Logs subscription filters → Amazon OpenSearch Service，再用 OpenSearch dashboards 分析。",
+   "why": [
+    "CloudWatch Logs 可集中收集多個 AWS application logs。",
+    "Subscription filter 可把 log events 近即時串流到 OpenSearch。",
+    "OpenSearch 適合 log search、query、dashboard 與視覺化分析。",
+    "比先排程匯出到 S3 再 Athena 查更接近 real time。"
+   ],
+   "flow": "Application logs → CloudWatch Logs → subscription filters → OpenSearch → queries/dashboards"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 234,
+  "answer": "C",
+  "q_zh": "Glue 每日將百萬筆訂單以 CSV 存 S3 Standard 並每日分析，要最佳化儲存與檢索成本？",
+  "q_en": "An ecommerce company processes millions of orders each day. The company uses AWS Glue ETL to collect data from multiple sources, clean the data, and store the data in an Amazon S3 bucket in CSV format by using the S3 Standard storage class. The company uses the stored data to conduct daily analysis. The company wants to optimize costs for data storage and retrieval. Which solution will meet this requirement?",
+  "answer_zh": {
+   "C": "Glue ETL 轉為 Parquet 格式"
+  },
+  "answer_en": {
+   "C": "Configure AWS Glue ETL to transform the incoming data to Apache Parquet format."
+  },
+  "notion": {
+   "keypoint": "大量 CSV 存 S3 並每日分析時，要降低儲存與查詢掃描成本，將資料轉成 Apache Parquet。",
+   "why": [
+    "CSV 是 row-based，查詢部分欄位時仍會掃描較多資料。",
+    "Parquet 是 columnar format，支援壓縮與欄位裁剪，可降低 S3 儲存量與 Athena/分析查詢掃描量。",
+    "Glue ETL 可在資料進來時轉換格式，後續每日分析成本更低。",
+    "題目是每日分析，不適合轉到 Glacier 這類取回成本/延遲較高的儲存。"
+   ],
+   "flow": "Incoming CSV → Glue ETL → Parquet on S3 → lower storage + scan cost"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 235,
+  "answer": "A",
+  "q_zh": "Athena Spark 筆記本查詢 S3 已分區大資料集（crawler 更新分區），要最小化掃描資料量？",
+  "q_en": "A data engineer is optimizing query performance in Amazon Athena notebooks that use Apache Spark to analyze large datasets that are stored in Amazon S3. The data is partitioned. An AWS Glue crawler updates the partitions. The data engineer wants to minimize the amount of data that is scanned to improve efficiency of Athena queries. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "查詢中加入分區篩選條件"
+  },
+  "answer_en": {
+   "A": "Apply partition filters in the queries."
+  },
+  "notion": {
+   "keypoint": "Athena 查已分區資料時，要降低掃描量，查詢必須加上 partition filters 讓 Athena 做 partition pruning。",
+   "why": [
+    "題目已說資料已 partitioned，且 Glue crawler 會更新 partitions；問題是如何減少 query scanned data。",
+    "在 WHERE 條件中加入 partition columns，Athena 才能跳過不相關分區。",
+    "這可直接降低掃描量並改善查詢效率。",
+    "增加 crawler 頻率或調整 Spark cache 都不會讓 Athena 少掃不相關 partitions。"
+   ],
+   "flow": "Partitioned S3 data → Athena query WHERE partition_col = ... → partition pruning → less scanned data"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 236,
+  "answer": "A",
+  "q_zh": "Redshift 在帳號1公有子網，SG 只允許自身流量；QS Enterprise 在帳號2公有子網，SG 可出站至 Redshift。如何讓 QS 查詢 Redshift？",
+  "q_en": "A company manages an Amazon Redshift data warehouse. The data warehouse is in a public subnet inside a custom VPC. A security group allows only traffic from within itself. An ACL is open to all traffic. The company wants to generate several visualizations in Amazon QuickSight for an upcoming sales event. The company will run QuickSight Enterprise edition in a second AWS account inside a public subnet within a second custom VPC. The new public subnet has a security group that allows outbound traffic to the existing Redshift cluster. A data engineer needs to establish connections between Amazon Redshift and QuickSight. QuickSight must refresh dashboards by querying the Redshift cluster. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "Redshift SG 允許 QS SG 入站該埠"
+  },
+  "answer_en": {
+   "A": "Configure the Redshift security group to allow inbound traffic on the Redshift port from the QuickSight security group."
+  },
+  "notion": {
+   "keypoint": "QuickSight Enterprise 在另一個 VPC 連 Redshift 時，要在 Redshift security group 放行 Redshift port，source 設為 QuickSight VPC connection 的 security group。",
+   "why": [
+    "Redshift cluster 在 custom VPC 的 private subnet，security group 目前只允許 cluster 內部流量。",
+    "QuickSight Enterprise 會在另一個 VPC 建 VPC connection / network interface，並有自己的 security group。",
+    "要讓 QuickSight 查詢 Redshift，Redshift 端必須允許來自 QuickSight security group 的 inbound traffic。",
+    "正確做法是放行 Redshift port（例如 5439）而不是開放所有來源或使用固定 public IP。"
+   ],
+   "flow": "QuickSight VPC connection SG → Redshift SG inbound on Redshift port → Redshift query refresh"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 237,
+  "answer": "B",
+  "q_zh": "大型檔案每天不定時上傳 S3 一次，Glue workflow 處理後載入 Redshift，要盡快開始處理？",
+  "q_en": "A data engineer is building a data pipeline. A large data file is uploaded to an Amazon S3 bucket once each day at unpredictable times. An AWS Glue workflow uses hundreds of workers to process the file and load the data into Amazon Redshift. The company wants to process the file as quickly as possible. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "CloudTrail+EventBridge 事件觸發"
+  },
+  "answer_en": {
+   "B": "Create an event-based AWS Glue trigger to start the workflow. Configure Amazon S3 to log events to AWS CloudTrail. Create a rule in Amazon EventBridge to forward PutObject events to the AWS Glue trigger."
+  },
+  "notion": {
+   "keypoint": "S3 檔案上傳時間不可預測且要盡快處理，用 S3 data event → CloudTrail → EventBridge → event-based Glue trigger 啟動 Glue workflow。",
+   "why": [
+    "檔案每天一次但時間不可預測，排程每 15 分鐘輪詢會增加延遲與無效執行。",
+    "CloudTrail 可記錄 S3 PutObject data events。",
+    "EventBridge 可根據 PutObject 事件即時觸發 Glue event-based trigger，啟動 workflow。",
+    "這比 Lambda 定時檢查或 Glue scheduled trigger 更快、更事件驅動。"
+   ],
+   "flow": "S3 PutObject → CloudTrail data event → EventBridge rule → Glue event trigger → workflow starts"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 238,
+  "answer": "C",
+  "q_zh": "使用者每小時上傳一檔到 S3 即需轉換（<1分鐘），結果以 email 寄給工程師。最具營運效率？",
+  "q_en": "A data engineer needs to run a data transformation job whenever a user adds a file to an Amazon S3 bucket. The job will run for less than 1 minute. The job must send the output through an email message to the data engineer. The data engineer expects users to add one file every hour of the day. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "answer_zh": {
+   "C": "S3 事件觸發 Lambda，SNS 寄 email"
+  },
+  "answer_en": {
+   "C": "Create an AWS Lambda function to transform the data. Use Amazon S3 Event Notifications to invoke the Lambda function when a new object is created. Publish the output to an Amazon Simple Notification Service (Amazon SNS) topic. Subscribe the data engineer’s email account to the topic."
+  },
+  "notion": {
+   "keypoint": "S3 每小時新增檔案且需 1 分鐘內處理與 email 通知，用 S3 Event Notification → Lambda → SNS email subscription。",
+   "why": [
+    "S3 Event Notifications 可在新 object 建立時立即觸發 Lambda。",
+    "Lambda 適合每小時一個檔案的輕量轉換，無需維護 EC2/ECS/EMR。",
+    "SNS topic 可發送 email notification，工程師訂閱後可收到輸出通知。",
+    "整體是 serverless、事件驅動，最符合 operationally efficient。"
+   ],
+   "flow": "S3 ObjectCreated → Lambda transform → SNS topic → email to data engineer"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 239,
+  "answer": "A",
+  "q_zh": "Glue PySpark 以 DynamicFrame 處理資料湖，郵遞區號含多餘數字或無效字元導致錯誤，如何修正？",
+  "q_en": "A company uses Amazon S3 and AWS Glue Data Catalog to manage a data lake that contains contact information for customers. The company uses PySpark and AWS Glue jobs with a DynamicFrame to run a workflow that processes data within the data lake. A data engineer notices that the workflow is generating errors as a result of how customer postal codes are stored in the data lake. Some postal codes include unnecessary numbers or invalid characters. The data engineer needs a solution to address the errors and correct the postal codes in the data lake.",
+  "answer_zh": {
+   "A": "定義 schema 傳給 DynamicFrame"
+  },
+  "answer_en": {
+   "A": "Create a schema definition for PySpark that matches the format the processing workflow requires for postal codes. Pass the schema to the DynamicFrame during processing."
+  },
+  "notion": {
+   "keypoint": "郵遞區號含不必要數字或非法字元導致 Glue DynamicFrame 處理錯誤時，應明確定義符合需求的 PySpark schema，並在處理時套用到 DynamicFrame。",
+   "why": [
+    "問題根因是 postal code 在 data lake 中的儲存格式不一致或含非法字元。",
+    "明確 schema 可讓 PySpark / DynamicFrame 以正確型別與格式處理欄位，避免自動推斷造成錯誤。",
+    "在 processing workflow 中傳入 schema，可同時修正與標準化 postal codes。",
+    "這是針對欄位格式問題的直接解法。"
+   ],
+   "flow": "Postal code format issue → define PySpark schema → pass schema to DynamicFrame → corrected processing"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 240,
+  "answer": "B",
+  "q_zh": "Glue workflow 偶因資料品質問題失敗，業務團隊需在每次失敗時收到 email 通知？",
+  "q_en": "A data engineer is troubleshooting an AWS Glue workflow that occasionally fails. The engineer determines that the failures are a result of data quality issues. A business reporting team needs to receive an email notification any time the workflow fails in the future. Which solution will meet this requirement?",
+  "answer_zh": {
+   "B": "SNS 標準主題+EventBridge 規則"
+  },
+  "answer_en": {
+   "B": "Create an Amazon Simple Notification Service (Amazon SNS) standard topic. Subscribe the team’s email account to the SNS topic. Create an Amazon EventBridge rule that triggers when the AWS Glue job state changes to FAILED. Set the SNS topic as the target."
+  },
+  "notion": {
+   "keypoint": "Glue workflow / job 失敗要 email 通知，用 EventBridge 監聽 Glue FAILED 狀態 → SNS standard topic → email subscription。",
+   "why": [
+    "Glue job state changes 可送到 EventBridge。",
+    "EventBridge rule 可篩選 FAILED 狀態，只在失敗時觸發。",
+    "SNS standard topic 支援 email subscription，適合通知團隊信箱。",
+    "題目只要求 email notification，不需要 FIFO queue 或 SQS。"
+   ],
+   "flow": "Glue job FAILED → EventBridge rule → SNS standard topic → team email"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 241,
+  "answer": "C",
+  "q_zh": "多條關鍵 Glue 管線，失敗時需通知利害關係人。最少營運負擔？",
+  "q_en": "A company uses AWS Glue jobs to implement several data pipelines. The pipelines are critical to the company. The company needs to implement a monitoring mechanism that will alert stakeholders if the pipelines fail. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "EventBridge→CW 指標→警示→SNS"
+  },
+  "answer_en": {
+   "C": "Create an Amazon EventBridge rule to match AWS Glue job failure events. Define an Amazon CloudWatch metric based on the EventBridge rule. Set up a CloudWatch alarm based on the metric to send notifications to an Amazon Simple Notification Service (Amazon SNS) topic."
+  },
+  "notion": {
+   "keypoint": "多個關鍵 Glue pipelines 需要統一失敗告警時，可用 EventBridge 捕捉 Glue failure events → CloudWatch metric/alarm → SNS。",
+   "why": [],
+   "flow": "Glue job failure event → EventBridge rule → CloudWatch metric/alarm → SNS notification"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 242,
+  "answer": "A",
+  "q_zh": "Glue Spark 作業失敗（已啟用日誌與監控），要查看作業內各 stage 的指標，該去哪看？",
+  "q_en": "A company uses AWS Glue Apache Spark jobs to handle extract, transform, and load (ETL) workloads. The company has enabled logging and monitoring for all AWS Glue jobs. One of the AWS Glue jobs begins to fail. A data engineer investigates the error and wants to examine metrics for all individual stages within the job. How can the data engineer access the stage metrics?",
+  "answer_zh": {
+   "A": "Spark UI 查看 job 與 stage"
+  },
+  "answer_en": {
+   "A": "Examine the AWS Glue job and stage details in the Spark UI."
+  },
+  "notion": {
+   "keypoint": "要看 Glue Apache Spark job 中每個 stage 的 metrics，使用 Spark UI 查看 stage/task/executor 細節。",
+   "why": [
+    "Spark UI 可直接查看 stages、tasks、execution time、shuffle read/write、input/output records 等細節。",
+    "題目要 examine metrics for all individual stages within the job，這正是 Spark UI 的用途。",
+    "CloudWatch metrics 通常是聚合指標，不如 Spark UI 能細到 stage/task 層級。"
+   ],
+   "flow": "Glue Spark job failure → Spark UI → stages/tasks/executors metrics → identify bottleneck"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 243,
+  "answer": "B",
+  "q_zh": "Athena 表依日期分區、含5年每日資料，查詢慢。要提升效能並自動化分區管理？",
+  "q_en": "A data engineer notices slow query performance on a highly partitioned table that is in Amazon Athena. The table contains daily data for the previous 5 years, partitioned by date. The data engineer wants to improve query performance and to automate partition management. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "Athena 分區投影，設5年日期範圍"
+  },
+  "answer_en": {
+   "B": "Use partition projection in Athena. Configure the table properties by using a date range from 5 years ago to the present."
+  },
+  "notion": {
+   "keypoint": "Athena 高分區表查詢慢且需自動化分區管理，用 partition projection 讓 Athena 依規則推算分區，避免頻繁查 Glue Data Catalog partitions。",
+   "why": [
+    "題目是 daily partition、5 年資料，分區數量高，查詢時取 partitions metadata 可能拖慢效能。",
+    "Partition projection 可在 Athena table properties 中定義分區規則與日期範圍，查詢時動態推算分區。",
+    "不需要每天用 Lambda 手動建立 partitions，也降低 Glue Catalog partition lookup 負擔。",
+    "用 5 年前到現在的日期範圍符合題目資料範圍。"
+   ],
+   "flow": "Daily partitions for 5 years → Athena partition projection with date range → no catalog partition lookup bottleneck"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 244,
+  "answer": "BC",
+  "q_zh": "以 Iceberg 建 100TB 資料湖，要在 Glue Spark 作業中使用 Iceberg？（選2）",
+  "q_en": "A data engineer is using an Apache Iceberg framework to build a data lake that contains 100 ТВ of data. The data engineer wants to run AWS Glue Apache Spark jobs that use the Iceberg framework. What combination of steps will meet these requirements? (Choose two.)",
+  "answer_zh": {
+   "B": "--extra-jars 指定版本+設 formats",
+   "C": "--datalake-formats 設為 iceberg"
+  },
+  "answer_en": {
+   "B": "Specify the path to a specific version of Iceberg by using the -extra-jars job parameter. Set Iceberg as a value for the datalake-formats job parameter.",
+   "C": "Set Iceberg as a value for the --datalake-formats job parameter."
+  },
+  "notion": {
+   "keypoint": "Glue Spark job 使用 Iceberg 時，要設定 --datalake-formats=iceberg；若需特定 Iceberg 版本，再用 --extra-jars 指定 JAR。",
+   "why": [
+    "AWS Glue 支援透過 --datalake-formats 啟用 Iceberg/Hudi/Delta 等 data lake framework。",
+    "--datalake-formats=iceberg 是讓 Glue job 載入 Iceberg 支援的關鍵設定。",
+    "如果要指定特定版本 Iceberg，可用 --extra-jars 加入對應 Iceberg JAR。",
+    "題目問 Choose two，B 和 C 都包含 Iceberg job 所需的關鍵啟用方式。"
+   ],
+   "flow": "Glue Spark job → --datalake-formats=iceberg → optional --extra-jars specific Iceberg version → Iceberg tables"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 245,
+  "answer": "A",
+  "q_zh": "Glue Spark 作業對兩個同樣大的 DataFrame 做 sort-merge join，報錯 No space left on device，如何解決？",
+  "q_en": "A data engineer is configuring an AWS Glue Apache Spark extract, transform, and load (ETL) job. The job contains a sort-merge join of two large and equally sized DataFrames. The job is failing with the following error: No space left on device. Which solution will resolve the error?",
+  "answer_zh": {
+   "A": "使用 Glue Spark shuffle manager"
+  },
+  "answer_en": {
+   "A": "Use the AWS Glue Spark shuffle manager."
+  },
+  "notion": {
+   "keypoint": "Glue Spark 大型 sort-merge join 發生 No space left on device，使用 AWS Glue Spark shuffle manager 將 shuffle spill 搬到外部儲存以避免本機磁碟不足。",
+   "why": [
+    "Sort-merge join 兩個大型且同等大小 DataFrames 會產生大量 shuffle。",
+    "No space left on device 通常代表 executor 本機磁碟被 shuffle spill 撐爆。",
+    "AWS Glue Spark shuffle manager 可將 shuffle files offload 到 Amazon S3，降低本機磁碟壓力。",
+    "這比把 join 改成 broadcast 或 DynamicFrame join 更符合大型等量 DataFrames 的場景。"
+   ],
+   "flow": "Large sort-merge join → heavy shuffle spill → Glue Spark shuffle manager → avoid local disk full"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 246,
+  "answer": "A",
+  "q_zh": "交易需多層依序驗證，每筆須24小時內處理或拒絕，總執行<24小時。最低營運成本？",
+  "q_en": "A company needs to implement a workflow to process transactions. Each transaction goes through multiple levels of validation. Each validation level depends on the preceding validation level. The workflow must either process or reject each transaction within 24-hours. The workflow must run for less than 24 hours total. Which solution will meet these requirements with the LEAST operational cost?",
+  "answer_zh": {
+   "A": "Step Functions 標準+Callback"
+  },
+  "answer_en": {
+   "A": "Create a standard workflow in AWS Step Functions. Implement a Wait for Callback pattern to wait for the validation steps to finish."
+  },
+  "notion": {
+   "keypoint": "多層驗證流程需等待外部驗證結果且總流程可跑接近 24 小時，用 Step Functions Standard workflow + Wait for Callback pattern。",
+   "why": [
+    "題目要求每筆交易經過多個 validation levels，且每一層依賴前一層結果，這是典型 workflow orchestration。",
+    "整體流程必須在 24 小時內完成或拒絕，Standard workflow 支援長時間執行，比 Express 更適合等待型流程。",
+    "Wait for Callback pattern 可把 task token 交給外部驗證流程，等驗證完成後再 callback 繼續下一步。",
+    "不需要自建 Lambda + EventBridge 狀態管理，也不需要 MWAA，營運成本較低。"
+   ],
+   "flow": "Transaction → Step Functions Standard → validation task token → callback result → next validation / reject"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 247,
+  "answer": "A",
+  "q_zh": "大量 Glue 作業同時啟動於同 VPC 同一子網，偶報「子網沒有足夠可用位址」。可能根因？",
+  "q_en": "A data engineer configures a large number of AWS Glue jobs that all start up around the same time. All the jobs run for less than 1 hour in the same subnet of the same VPC. All the AWS Glue jobs run on a G1.X worker type. Some of the jobs occasionally fail with the following error: \"The specified subnet does not have enough free addresses to satisfy the request\". What is the likely root cause of the error?",
+  "answer_zh": {
+   "A": "子網的 IP 位址不足"
+  },
+  "answer_en": {
+   "A": "There are not enough IP addresses in the subnet."
+  },
+  "notion": {
+   "keypoint": "Glue jobs 在 VPC subnet 執行會建立 ENI，需要 subnet 可用 IP；大量 jobs 同時啟動時，subnet IP 不足會導致啟動失敗。",
+   "why": [
+    "題目錯誤明確說 The specified subnet does not have enough free addresses to satisfy the request。",
+    "Glue job 連到 VPC 資源時會在指定 subnet 建立 elastic network interface，需要可用 private IP。",
+    "多個 G.1X jobs 在同一小時、同一 subnet 啟動，會同時消耗 subnet IP。",
+    "問題是指定 subnet 的 free IP 不足，不是 worker type、IAM 權限或整個 VPC 的 IP 一定不足。"
+   ],
+   "flow": "Many Glue jobs start → create ENIs in same subnet → subnet free IP exhausted → job failures"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 248,
+  "answer": "C",
+  "q_zh": "EMR（EC2）每晚以 cluster mode 跑 Spark 出錯，錯誤在 driver stderr 日誌。去哪找？",
+  "q_en": "A company runs an Apache Spark application every night in an Amazon EMR cluster. The company uses Amazon EC2 instances to supply compute capacity for the EMR cluster. The company deployed the Spark application in cluster mode. An error occurs in the Spark application. A log for the error is stored in the application's Spark driver standard error logs. A data engineer needs to investigate the error. Where can the data engineer find this error log?",
+  "answer_zh": {
+   "C": "EMR 主控台看存於 S3 的 step 日誌"
+  },
+  "answer_en": {
+   "C": "The engineer can connect to the Amazon EMR console to see the Amazon EMR step logs that are archived in Amazon S3."
+  },
+  "notion": {
+   "keypoint": "EMR Spark step 的 driver stderr / step logs 可在 EMR console 查看，並從設定的 S3 archived logs 取得。",
+   "why": [
+    "題目說 Spark driver standard error logs 已儲存錯誤，且應用程式以 client mode 部署。",
+    "EMR 可將 step logs / application logs 歸檔到 S3，EMR console 可連到這些 archived logs。",
+    "這比只看 live YARN ResourceManager 或 SSH 到 primary node 更符合「error log stored」與持久可查。"
+   ],
+   "flow": "Spark error → EMR step logs → archived to S3 → view through EMR console"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 249,
+  "answer": "C",
+  "q_zh": "每日500GB CSV（已註冊 Glue Catalog）轉 Parquet，需15GiB記憶體長時間並行處理，前兩程序完成後才跑第三個。最少營運負擔？",
+  "q_en": "A company processes 500 GB of audience and advertising data daily, storing CSV files in Amazon S3 with schemas registered in AWS Glue Data Catalog. They need to convert these files to Apache Parquet format and store them in an S3 bucket. The solution requires a long-running workflow with 15 GiB memory capacity to process the data concurrently, followed by a correlation process that begins only after the first two processes complete. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "Glue workflow 前兩平行再接第三"
+  },
+  "answer_en": {
+   "C": "Use AWS Glue workflows to run the first two processes in parallel. Ensure that the third process starts after the first two processes have finished."
+  },
+  "notion": {
+   "keypoint": "Glue 中多步驟長時間 ETL 且有相依性時，用 AWS Glue workflows 編排：前兩個 process parallel，完成後再跑第三個 correlation process。",
+   "why": [
+    "題目要求長時間 workflow、15 GiB memory、前兩個流程 concurrent，第三個流程必須等前兩個完成後才開始。",
+    "AWS Glue jobs 可處理 500 GB CSV 轉 Parquet，Glue workflows 可管理 job 間依賴與並行關係。",
+    "比 MWAA、EMR + SQS、Step Functions + Lambda 更少服務組合與維運，符合 least operational overhead。",
+    "既有資料在 S3 且 schema 在 Glue Data Catalog，Glue workflow 是最直接的 AWS Glue 原生編排方式。"
+   ],
+   "flow": "Glue workflow → Process 1 + Process 2 in parallel → both complete → Process 3 correlation"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 250,
+  "answer": "B",
+  "q_zh": "KDS（增強扇出）在帳號A，帳號B 的 Lambda 要處理資料，B 已建有權限的執行角色。還需做什麼？",
+  "q_en": "A company uses an organization in AWS Organizations to manage multiple AWS accounts. The company uses an enhanced fanout data stream in Amazon Kinesis Data Streams to receive streaming data from multiple producers. The company runs the data stream in an account named Account A. The company wants to use an AWS Lambda function in an account named Account В to process the data from the data stream. The company creates a Lambda execution role in Account В that has permissions to access data from the data stream in Account A. What additional step must the company take to meet this requirement?",
+  "answer_zh": {
+   "B": "KDS 加資源型政策允許該角色"
+  },
+  "answer_en": {
+   "B": "Add a resource-based policy to the data stream to allow read access for the cross-account Lambda execution role."
+  },
+  "notion": {
+   "keypoint": "Lambda 在 Account B 要讀 Account A 的 Kinesis Data Stream，除了 Lambda execution role 權限外，還要在 data stream 加 resource-based policy 信任跨帳號角色。",
+   "why": [
+    "Lambda execution role 在 Account B 已經有讀取 stream 的 identity-based permissions，但跨帳號還需要 Account A 的資源端授權。",
+    "Kinesis Data Streams 可用 resource-based policy 授權跨帳號 principal 讀取 stream。",
+    "正確授權對象是 Account B 的 Lambda execution role，讓該角色可讀 Account A 的 data stream。",
+    "SCP 不是用來授予單一資源跨帳號存取的工具。"
+   ],
+   "flow": "Account B Lambda role permission + Account A KDS resource policy → Lambda reads cross-account stream"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 251,
+  "answer": "C",
+  "q_zh": "Athena 查 S3，Glue 表需年/月/日分區，且需每天建立分區以因應 schema 變更？",
+  "q_en": "A company needs to use Amazon Athena to analyze data that is in an Amazon S3 bucket. A data engineer needs to configure AWS Glue table partitions for year, month, and day. The data engineer needs to create the partitions every day to adjust to schema changes in the data. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "Glue 表設定分區投影屬性"
+  },
+  "answer_en": {
+   "C": "Set partition projection properties for the AWS Glue table."
+  },
+  "notion": {
+   "keypoint": "Athena 查日期型分區資料，若要避免每天手動建立 partitions，可在 Glue/Athena table 設定 partition projection，讓 Athena 依規則推算分區。",
+   "why": [
+    "題目要求資料依 year、month、day 分區，且 partitions 需要每天建立。",
+    "Partition projection 可在 table properties 中定義日期範圍與分區規則，Athena 查詢時直接推算 partition location。",
+    "不需要每天跑 Lambda 或 crawler 建新 partition，降低維運。",
+    "Schema 仍可透過 Glue table metadata 管理；分區枚舉則交給 projection。"
+   ],
+   "flow": "S3 year/month/day paths → Glue table partition projection properties → Athena query computes partitions"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 252,
+  "answer": "B",
+  "q_zh": "飯店每日檔案由地端程式送至全託管擷取服務，以 Athena 查詢，需防誤刪。最少營運負擔？",
+  "q_en": "A hotel management company receives daily data files from each of its hotels. The company wants to upload its data to AWS. The company plans to use Amazon Athena to access the files. The company needs to protect the files from accidental deletion. The company will develop an application on its on- premises servers to automatically forward the files to a fully managed AWS ingestion service. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Kinesis Agent→Firehose→S3 版控"
+  },
+  "answer_en": {
+   "B": "Use the Amazon Kinesis Agent on the on-premises servers to send data to Amazon Data Firehose. Store the data in an Amazon S3 bucket that has versioning enabled."
+  },
+  "notion": {
+   "keypoint": "On-prem 伺服器檔案要低維運送到 AWS 並供 Athena 查詢，用 Kinesis Agent → Data Firehose → S3，再用 S3 versioning 防誤刪。",
+   "why": [
+    "Kinesis Agent 可安裝在 on-prem servers，自動監控並傳送檔案/日誌資料。",
+    "Data Firehose 是 fully managed ingestion service，可將資料交付到 S3。",
+    "Athena 可直接查 S3 中的資料。",
+    "S3 versioning 可保留物件版本，降低 accidental deletion 或覆寫造成資料遺失的風險。"
+   ],
+   "flow": "On-prem hotel servers → Kinesis Agent → Data Firehose → S3 versioning → Athena"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 253,
+  "answer": "BD",
+  "q_zh": "EMR Spark 處理串流資料存 S3，以 Athena 分析，要最佳化格式使查詢時間最短？（選2）",
+  "q_en": "A company wants to use Apache Spark jobs that run on an Amazon EMR cluster to process streaming data. The Spark jobs will transform and store the data in an Amazon S3 bucket. The company will use Amazon Athena to perform analysis. The company needs to optimize the data format for analytical queries. Which solutions will meet these requirements with the SHORTEST query times? (Choose two.)",
+  "answer_zh": {
+   "B": "ORC 格式+Glue Catalog 追 schema",
+   "D": "Parquet+Glue Catalog 追 schema"
+  },
+  "answer_en": {
+   "B": "Use ORC format. Use AWS Glue Data Catalog to track schema changes.",
+   "D": "Use Apache Parquet format. Use AWS Glue Data Catalog to track schema changes."
+  },
+  "notion": {
+   "keypoint": "Athena 查 S3 分析資料要縮短查詢時間，優先使用 ORC 或 Parquet 這類 columnar format，並用 Glue Data Catalog 追蹤 schema。",
+   "why": [
+    "ORC 與 Parquet 都是欄式儲存格式，支援壓縮與欄位裁剪，能減少 Athena 掃描資料量。",
+    "查詢只需要部分欄位時，欄式格式通常比 Avro/row-based 格式更快。",
+    "Glue Data Catalog 可管理 table metadata 與 schema changes，讓 Athena 查詢資料時有一致 schema。",
+    "題目要求 shortest query times，因此選兩個最佳分析格式：ORC、Parquet。"
+   ],
+   "flow": "EMR Spark output → ORC/Parquet on S3 → Glue Data Catalog schema → Athena fast queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 254,
+  "answer": "B",
+  "q_zh": "S3 大型 CSV 每日追加，含5年銷售資料，Athena 需查特定期間資料。最具成本效益？",
+  "q_en": "A company adds new data to a large CSV file in an Amazon S3 bucket every day. The file contains company sales data from the previous 5 years. The file currently includes more than 5,000 rows. The CSV file structure is shown below with sample data: The company needs to use Amazon Athena to run queries on the CSV file to fetch data from a specific time period. Which solution will meet this requirement MOST cost-effectively?",
+  "answer_zh": {
+   "B": "依 SALE_DATE 以前綴每日分區"
+  },
+  "answer_en": {
+   "B": "Use prefixes to partition the data in the S3 bucket. Use the SALE_DATE column to create a partition for each day. Catalog the data in AWS Glue and ensure that the partitions are added. Update the Athena queries to use the new partitions."
+  },
+  "notion": {
+   "keypoint": "Athena 查大型 CSV 且常依時間區間篩選時，應依 SALE_DATE 在 S3 建 daily partitions，並讓查詢使用 partition filters。",
+   "why": [
+    "題目資料已累積 5 年且每日新增，查詢需求是 specific time period。",
+    "以 SALE_DATE 建每日分區，Athena 可透過 partition pruning 只掃描相關日期資料。",
+    "Glue Catalog 記錄 partitions，Athena queries 加上日期條件即可降低掃描量與成本。",
+    "這比轉 JSON、改用 Hadoop/Presto、搬到 RDS 都更符合 S3 + Athena 的低成本模式。"
+   ],
+   "flow": "S3 sales CSV → partition by SALE_DATE/day → Glue Catalog partitions → Athena WHERE sale_date range"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 255,
+  "answer": "A",
+  "q_zh": "需實作資料目錄方案，追蹤 Redshift 資料表的 schema 變更？",
+  "q_en": "A data engineer must implement a data cataloging solution to track schema changes in an Amazon Redshift table. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "Glue crawler 每日 JDBC 更新 Catalog"
+  },
+  "answer_en": {
+   "A": "Schedule an AWS Glue crawler to run every day on the table by using the Java Database Connectivity (JDBC) driver. Configure the crawler to update an AWS Glue Data Catalog."
+  },
+  "notion": {
+   "keypoint": "要追蹤 Redshift table schema changes 並建立資料目錄，用 AWS Glue crawler + JDBC connection 定期爬取並更新 Glue Data Catalog。",
+   "why": [
+    "Glue crawler 可透過 JDBC 連到 Redshift，擷取 table metadata。",
+    "排程每日執行可追蹤 schema changes。",
+    "Glue Data Catalog 是 AWS 原生 metadata catalog，適合保存與更新資料表 schema。",
+    "比 DataSync、SCT、Hive metastore + EventBridge 更貼近「cataloging solution」需求。"
+   ],
+   "flow": "Redshift table → Glue crawler via JDBC daily → Glue Data Catalog updated schema"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 256,
+  "answer": "A",
+  "q_zh": "偵測跨多個 S3 bucket 資料湖中專有格式的 PII。最少營運負擔？",
+  "q_en": "A data engineer is building a solution to detect sensitive information that is stored in a data lake across multiple Amazon S3 buckets. The solution must detect personally identifiable information (PII) that is in a proprietary data format. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "Glue Detect PII 轉換+自訂模式"
+  },
+  "answer_en": {
+   "A": "Use the AWS Glue Detect PII transform with specific patterns."
+  },
+  "notion": {
+   "keypoint": "要在資料湖中偵測專有格式資料內的 PII，最低維運用 AWS Glue Detect PII transform，並設定 specific patterns。",
+   "why": [
+    "Glue Detect PII transform 是 Glue Studio / Glue ETL 中用來偵測個人識別資訊的內建轉換。",
+    "題目說資料是 proprietary data format，需要偵測特定格式中的 PII；specific patterns 可用來配合自訂格式。",
+    "比自寫 Lambda regex 或 Athena SQL pattern matching 更少維運。",
+    "Amazon Macie 適合掃描 S3 中常見格式與敏感資料，但 proprietary format + pipeline transform 場景下 Glue Detect PII 更貼題。"
+   ],
+   "flow": "S3 data lake → Glue Detect PII transform + specific patterns → identify PII"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 257,
+  "answer": "A",
+  "q_zh": "DynamoDB 表每日須移除超過指定年限的項目。最少設定工作？",
+  "q_en": "A data engineer is building a new data pipeline that stores metadata in an Amazon DynamoDB table. The data engineer must ensure that all items that are older than a specified age are removed from the DynamoDB table daily. Which solution will meet this requirement with the LEAST configuration effort?",
+  "answer_zh": {
+   "A": "啟用 TTL，程式設定 TTL 屬性"
+  },
+  "answer_en": {
+   "A": "Enable DynamoDB TTL on the DynamoDB table. Adjust the application source code to set the TTL attribute appropriately."
+  },
+  "notion": {
+   "keypoint": "DynamoDB 要自動刪除超過指定年限的 items，用 DynamoDB TTL，由應用程式寫入過期時間屬性。",
+   "why": [
+    "DynamoDB TTL 是原生生命週期刪除功能，可依 item 上的 epoch timestamp 屬性自動過期刪除。",
+    "只需啟用 TTL 並讓應用程式設定 TTL attribute，設定量最少。",
+    "不需要每日 EventBridge + Lambda 掃表刪除，也不用 DynamoDB Streams 觸發刪除邏輯。"
+   ],
+   "flow": "Application writes item + ttl_epoch → DynamoDB TTL → expired items removed automatically"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 258,
+  "answer": "C",
+  "q_zh": "DynamoDB 數十億筆，PK=RideID、SK=TripStartTime。要讓司機依 RideStatus 查自己的行程且不掃全表？",
+  "q_en": "A ride-sharing company stores records for all rides in an Amazon DynamoDB table. The table includes the following columns and types of values: The table currently contains billions of items. The table is partitioned by RideID and uses TripStartTime as the sort key. The company wants to use the data to build a personal interface to give drivers the ability to view the rides that each driver has completed, based on RideStatus. The solution must access the necessary data without scanning the entire table. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "GSI：PK=DriverID、SK=RideStatus"
+  },
+  "answer_en": {
+   "C": "Create a global secondary index (GSI) that uses DriverID as the partition key and RideStatus as the sort key."
+  },
+  "notion": {
+   "keypoint": "DynamoDB 原表 key 是 RideID + TripStartTime，但查詢模式要依 DriverID + RideStatus 查 completed rides，應建立 GSI。",
+   "why": [
+    "DynamoDB 查詢必須對齊 key design；原表 partition key 是 RideID，無法有效依 DriverID 查詢。",
+    "需求是司機看到自己完成的 rides，access pattern 是 DriverID = ? 且 RideStatus = Completed。",
+    "建立 GSI，partition key 用 DriverID、sort key 用 RideStatus，可直接 Query index，不需掃描全表。",
+    "LSI 必須與 base table 使用相同 partition key，因此不能用 DriverID 當新的 partition key。"
+   ],
+   "flow": "Query pattern: DriverID + RideStatus → GSI PK=DriverID SK=RideStatus → completed rides without full scan"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 259,
+  "answer": "A",
+  "q_zh": "S3 事件觸發的 Lambda（128MB 記憶體、15秒逾時）CPU 常近100%而變慢，要提升效能並縮短總執行時間？",
+  "q_en": "A company stores information about its subscribers in an Amazon S3 bucket. The company runs an analysis every time a subscriber ends their subscription. The company uses AWS Lambda functions to respond to events from the S3 bucket by performing analyses. The Lambda functions clean data from the S3 bucket and initiate an AWS Glue workflow. The Lambda functions have 128 MB of memory and 512 MB of ephemeral storage. The Lambda functions have a timeout of 15 seconds. All three functions successfully finish running. However, CPU usage is often near 100%, which causes slow performance. The company wants to improve the performance of the functions and reduce the total runtime of the pipeline. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "記憶體提高到 512MB"
+  },
+  "answer_en": {
+   "A": "Increase the memory of the Lambda functions to 512 MB."
+  },
+  "notion": {
+   "keypoint": "Lambda CPU 使用率接近 100% 且效能慢時，增加 memory setting 也會同步增加 CPU 配額，能提升效能。",
+   "why": [
+    "Lambda CPU 與 memory 成比例配置；提高 memory 會取得更多 CPU。",
+    "題目說三個 Lambda 都成功完成，但 CPU 常接近 100%，造成效能慢，代表瓶頸是 compute/CPU。",
+    "將 memory 從 128 MB 增加到 512 MB 可提升 CPU，通常可降低執行時間。",
+    "增加 timeout 只會讓函數更久不超時，不會改善 CPU 瓶頸。"
+   ],
+   "flow": "Lambda CPU near 100% → increase memory → more CPU allocated → faster runtime"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 260,
+  "answer": "D",
+  "q_zh": "KDS→Glue ETL 偵測異常後通知 SNS，高流量時通知延遲且 diskSpaceUsed_MB 很高。最少工作量？",
+  "q_en": "A company uses a data stream in Amazon Kinesis Data Streams to collect transactional data from multiple sources. The company uses an AWS Glue extract, transform, and load (ETL) pipeline to look for outliers in the data from the stream. When the workflow detects an outlier, it sends a notification to an Amazon Simple Notification Service (Amazon SNS) topic. The SNS topic initiates a second workflow to retrieve logs for the outliers and stores the logs in an Amazon S3 bucket. The company experiences delays in the notifications to the SNS topic during periods when the data stream is processing a high volume of data. When the company examines Amazon CloudWatch logs, the company notices a high value for the glue.driver.BlockManager.disk.diskSpaceUsed_MB metric when the traffic is high. The company must resolve this issue. Which solution will meet this requirement with the LEAST operational effort?",
+  "answer_zh": {
+   "D": "啟用 Glue ETL auto scaling"
+  },
+  "answer_en": {
+   "D": "Enable auto scaling for the AWS Glue ETL jobs."
+  },
+  "notion": {
+   "keypoint": "Glue ETL 在流量高峰時處理延遲且 diskSpaceUsed_MB 高，最低維運啟用 AWS Glue auto scaling 讓 worker 隨負載調整。",
+   "why": [
+    "題目觀察到資料流量高時 Glue driver/worker disk 使用量高，SNS 通知延遲，表示現有 Glue job 資源在高峰不足。",
+    "Glue auto scaling 可根據 workload 自動增減 worker，提升高峰處理能力且減少手動調參。",
+    "相比手動增加 DPU 或改 EMR，auto scaling 更符合 least operational effort。",
+    "Step Functions 是編排工具，不會解決 Glue job 資源不足與磁碟壓力。"
+   ],
+   "flow": "High Kinesis volume → Glue diskSpaceUsed_MB high / SNS delayed → Glue auto scaling → more workers during peak"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 261,
+  "answer": "BE",
+  "q_zh": "Redshift 查詢改為 join S1（100億筆）與 S2（9億筆）後變慢，如何提升效能？（選2）",
+  "q_en": "A company has a data processing pipeline that runs multiple SQL queries in sequence against an Amazon Redshift cluster. The company merges with a second company. The original company modifies a query that aggregates sales revenue data to join sales tables from both companies. The sales table for the first company is named Table S1. The sales table for the second company is named Table S2. Table S1 contains 10 billion records. Table S2 contains 900 million records. The query becomes slow after the modification. A data engineer must improve the query performance. Which solutions will meet these requirements? (Choose two.)",
+  "answer_zh": {
+   "B": "兩表 KEY 分布，用高基數欄 join",
+   "E": "用 Redshift Advisor 檢視建議"
+  },
+  "answer_en": {
+   "B": "Use the KEY distribution style for both sales tables. Select a high cardinality column to use for the join.",
+   "E": "Use Amazon Redshift Advisor to review and select optimizations to implement."
+  },
+  "notion": {
+   "keypoint": "Redshift 大表 join 變慢時，對 join key 使用 KEY distribution 並選高基數欄位可減少資料重分佈；同時用 Redshift Advisor 找最佳化建議。",
+   "why": [
+    "Table S1 有 10 billion rows，Table S2 有 900 million rows，兩張都是大表；join 若資料分散不佳會產生大量 data redistribution。",
+    "對兩張 sales tables 使用相同 join column 的 KEY distribution，可讓相同 key 的資料 co-locate，減少 network redistribution。",
+    "KEY distribution 欄位應選高基數欄位，避免資料傾斜。",
+    "Redshift Advisor 可分析 workload 並提供 distribution、sort key、compression、statistics 等最佳化建議。"
+   ],
+   "flow": "Large Redshift tables join → KEY distribution on high-cardinality join column → co-located joins + Advisor recommendations"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 262,
+  "answer": "BD",
+  "q_zh": "Glue 讀寫即時串流的 Iceberg 表（Parquet），查詢效能變慢，如何改善？（選2）",
+  "q_en": "A gaming company uses AWS Glue to perform read and write operations on Apache Iceberg tables for real-time streaming data. The data in the Iceberg tables is in Apache Parquet format. The company is experiencing slow query performance. Which solutions will improve query performance? (Choose two.)",
+  "answer_zh": {
+   "B": "Catalog 自動壓縮 Iceberg 表",
+   "D": "Catalog 啟用 copy-on-write"
+  },
+  "answer_en": {
+   "B": "Use AWS Glue Data Catalog to automatically compact the Iceberg tables.",
+   "D": "Use AWS Glue Data Catalog to enable copy-on-write for the Iceberg tables."
+  },
+  "notion": {
+   "keypoint": "Iceberg 表查詢慢常見於小檔過多與更新檔案碎片；用 automatic compaction 合併小檔，並啟用 copy-on-write 改善查詢讀取效率。",
+   "why": [
+    "Real-time streaming 寫入 Iceberg 容易產生大量小檔，查詢時要讀很多 file metadata 與小檔，效能變慢。",
+    "Automatic compaction 可合併小檔，降低掃描與 metadata overhead。",
+    "Copy-on-write 在寫入更新時重寫資料檔，使查詢讀取時不必合併 base files + delete files，讀取效能較好。",
+    "兩者都直接針對 Iceberg query performance。"
+   ],
+   "flow": "Streaming writes → many small Iceberg files → Glue compaction + copy-on-write → faster queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 263,
+  "answer": "A",
+  "q_zh": "現用 EMR Spark+Glue 做 ETL 寫入 S3，要改全託管無伺服器、續用 Spark，並以最少人工自動編排多個作業？",
+  "q_en": "A data engineer at a company is optimizing extract, transform, and load (ETL) workflows. The current architecture uses Amazon EMR and Apache Spark for large-scale transformations and AWS Glue for other ETL tasks. The workflows load processed data into an Amazon S3 based data lake. The company wants to move to a fully managed serverless solution that can orchestrate multiple ETL jobs and automate execution. The new solution must continue to use Spark to process data. The company needs to orchestrate and automate the ETL workflows with minimal manual intervention. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "全遷到 Glue，用 Glue workflows"
+  },
+  "answer_en": {
+   "A": "Migrate all ETL jobs to AWS Glue. Use AWS Glue workflows to orchestrate the pipeline."
+  },
+  "notion": {
+   "keypoint": "要把 EMR/Spark ETL 遷到全託管 serverless 並保留 Spark 處理，用 AWS Glue jobs + Glue workflows 編排多個 ETL jobs。",
+   "why": [
+    "AWS Glue 是 serverless ETL 服務，支援 Spark-based ETL，不需管理 EMR cluster。",
+    "Glue workflows 可編排多個 Glue jobs、自動化執行順序與相依性。",
+    "目標是 minimal manual intervention 且繼續使用 Spark 處理資料，Glue 最符合。",
+    "Step Functions / EventBridge 可編排，但仍需要額外 glue/EMR execution 管理；MWAA 不是 serverless ETL compute。"
+   ],
+   "flow": "EMR Spark ETL → AWS Glue Spark jobs → Glue workflows orchestrate → S3 data lake"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 264,
+  "answer": "A",
+  "q_zh": "法規要求資料僅限所在區域存取；以 AD+自訂身分代理呼叫 AssumeRole 取臨時憑證。最少管理負擔的區域限制？",
+  "q_en": "A company that operates globally must follow regulations that require data from an AWS Region to be accessible only within that Region. A data engineer is creating a data pipeline that will create resources in the Region where the data engineer works. The data pipeline should have access to data only from the Region where the data engineer works. The pipeline uses Active Directory as an identity and authentication system. The pipeline uses a custom identity broker application to verify that employees are signed in to Active Directory and to obtain temporary credentials by using the AssumeRole API operation. Which solution will meet the locality requirements with the LEAST administrative effort?",
+  "answer_zh": {
+   "A": "單一角色+各區政策作 session policy"
+  },
+  "answer_en": {
+   "A": "Create an IAM role that has permissions to create resources. Create a policy for each Region that ensures users can create resources only in that Region. Pass the policy as the session policy when employees obtain the temporary credentials."
+  },
+  "notion": {
+   "keypoint": "同一 pipeline 依使用者所在地限制只能在特定 Region 建資源，可用 AssumeRole + session policy 動態下發 Region 限制。",
+   "why": [
+    "使用者透過自訂 identity broker 與 Active Directory 驗證，並用 AssumeRole 取得 temporary credentials。",
+    "Session policy 可在 AssumeRole 時進一步限制臨時憑證權限，適合依使用者所在 Region 動態套用。",
+    "建立共用 IAM role，再依 Region 傳入對應 session policy，管理量比為每個 Region/群組建立多個角色或群組更低。",
+    "Policy 可限制 aws:RequestedRegion 或特定 Region 的資源建立行為。"
+   ],
+   "flow": "AD login → identity broker → AssumeRole + Region session policy → temporary credentials limited to local Region"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 265,
+  "answer": "D",
+  "q_zh": "每日自動將 S3 資料載入 Redshift，敏感資料須遮蔽、使用者不可見明文。最少營運負擔？",
+  "q_en": "A company needs a solution to automatically ingest data from an Amazon S3 bucket to an Amazon Redshift table every day. The company must obfuscate sensitive data in Amazon Redshift. Users must not be able to view the sensitive data as plaintext. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "D": "Glue 載入，Redshift 動態遮罩"
+  },
+  "answer_en": {
+   "D": "Configure an AWS Glue job to load the data into Amazon Redshift. Use Amazon Redshift to detect the sensitive data, create masking policies, and apply dynamic masking."
+  },
+  "notion": {
+   "keypoint": "資料進 Redshift 後要避免使用者看到敏感欄位明文，使用 Redshift dynamic data masking 建立 masking policies，Glue 負責載入。",
+   "why": [
+    "題目要求每日從 S3 自動 ingest 到 Redshift，可用 Glue job 載入 Redshift。",
+    "使用者不得看到 sensitive data as plaintext，Redshift dynamic data masking 可依角色/權限動態遮罩敏感資料。",
+    "Redshift 可搭配敏感資料偵測並建立/套用 masking policies，避免資料重複或 ETL 階段自寫遮罩邏輯。",
+    "這比用 Macie/Macie + Glue 或 Glue 自寫 detect/obfuscate 更少整合維運，且資料使用端在 Redshift 控制最直接。"
+   ],
+   "flow": "S3 daily data → Glue load → Redshift sensitive data detection → masking policies → dynamic masking for users"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 266,
+  "answer": "C",
+  "q_zh": "需低延遲即時彙總、過濾大量串流資料，並存入 S3 供分析。最具營運效率？",
+  "q_en": "A company needs to aggregate and filter a large amount of streaming data in real-time with low latency. The company needs to store the data in Amazon S3 for analysis. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "answer_zh": {
+   "C": "KDS+Managed Flink 處理寫 S3"
+  },
+  "answer_en": {
+   "C": "Use Amazon Kinesis Data Streams and Amazon Managed Service for Apache Flink to perform complex processing and to integrate with Amazon S3."
+  },
+  "notion": {
+   "keypoint": "大量串流資料需要低延遲、即時 aggregate/filter 這類複雜處理時，用 Kinesis Data Streams + Amazon Managed Service for Apache Flink，再輸出到 S3。",
+   "why": [
+    "題目要求 real-time、low latency，且要 aggregate/filter large amount of streaming data。",
+    "Apache Flink 適合有狀態串流處理、視窗聚合、即時過濾與複雜事件處理。",
+    "Kinesis Data Streams 作為串流來源，Managed Service for Apache Flink 負責處理並可與 S3 整合輸出。",
+    "比 Lambda 自寫轉換或 Firehose 內建轉換更適合「大量 + 複雜 + 低延遲」的串流分析。"
+   ],
+   "flow": "Streaming data → Kinesis Data Streams → Managed Service for Apache Flink aggregate/filter → S3"
+  },
+  "disputed": ""
+ }
+]

@@ -134,3 +134,31 @@ python gen_html_v4.py
 python gen_short_zh.py prep    # 修正答案、切批次到 _work/
 python gen_short_zh.py build   # 合併 _work/out_*.json → short_zh.json、Short_ZH.html
 ```
+
+## 答案速讀版（只看正確答案）
+
+> 新增日期：2026-10-09
+
+`Answer_ZH.html`：342 題全部直接顯示答案，不用作答，適合零碎時間快速複習。
+
+- 每題只列題目與**正確答案**（綠框），不顯示其他選項
+- 一小段說明（360px 手機 5 行內）：為什麼選這個答案
+- 流程圖：2～5 格的架構／判斷路徑，橘框為關鍵；手機上放不下一行時自動改直式
+- 依主題（14 章）或依題號排序、篩選章節／複選／爭議題／題號範圍、關鍵字搜尋
+- 記住排序、篩選和上次看到的題目，下次開啟自動捲回原處
+- 爭議題標「⚠ 爭議」並附社群看法；說明與流程圖以 Notion 筆記為依據濃縮
+
+| 檔案 | 說明 |
+|------|------|
+| `Answer_ZH.html` | 答案速讀版（單一檔案） |
+| `answer_zh.json` | 速讀版資料（題目、正確答案、說明、流程圖） |
+| `gen_answer_zh.py` | 產生腳本：`prep` 切批次、`check` 檢查單批、`build` 檢查長度並產生 HTML |
+| `gen_answer_zh.md` | 產生腳本的 Mermaid 圖表 |
+| `_work/ans_in_*.json`、`_work/ans_out_*.json` | 批次輸入（題目、答案、Notion 解析）與改寫結果（說明、流程圖） |
+
+```powershell
+python gen_answer_zh.py prep    # 從 short_zh.json、questions.json、Q*.html 切批次到 _work/
+python gen_answer_zh.py build   # 合併 _work/ans_out_*.json → answer_zh.json、Answer_ZH.html
+```
+
+不需要 PDF；Notion 解析取自完整版 `Q*.html`。

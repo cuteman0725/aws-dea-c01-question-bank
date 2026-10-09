@@ -1,0 +1,829 @@
+[
+ {
+  "number": 1,
+  "answer": "D",
+  "q_zh": "Glue job 讀 S3 時出現 S3 VPC 閘道端點錯誤，Glue 連線與 IAM 角色已設好，如何修正？",
+  "q_en": "A data engineer is configuring an AWS Glue job to read data from an Amazon S3 bucket. The data engineer has set up the necessary AWS Glue connection details and an associated IAM role. However, when the data engineer attempts to run the AWS Glue job, the data engineer receives an error message that indicates that there are problems with the Amazon S3 VPC gateway endpoint. The data engineer must resolve the error and connect the AWS Glue job to the S3 bucket. Which solution will meet this requirement?",
+  "answer_zh": {
+   "D": "確認 VPC 路由表含 S3 閘道端點路由"
+  },
+  "answer_en": {
+   "D": "Verify that the VPC's route table includes inbound and outbound routes for the Amazon S3 VPC gateway endpoint."
+  },
+  "notion": {
+   "keypoint": "Glue job 在 VPC 內讀 S3，如果錯誤指向 S3 VPC gateway endpoint，優先檢查相關 subnet 的 route table 是否有 S3 prefix list / gateway endpoint route。",
+   "why": [
+    "S3 Gateway Endpoint 是透過 VPC route table 生效，不是靠 security group inbound rule。",
+    "Glue job 若在 VPC subnet 中執行，必須能透過該 subnet 關聯的 route table 走到 S3 endpoint。",
+    "若 route table 沒有指向 S3 prefix list 的 gateway endpoint route，Glue 就可能無法私下連到 S3 bucket。"
+   ],
+   "flow": "Glue job subnet → route table has S3 prefix-list route → S3 gateway endpoint → S3 bucket"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 2,
+  "answer": "B",
+  "q_zh": "S3 客戶資料中心，分析師只能存取同國家客戶的資料，最少營運工作量？",
+  "q_en": "A retail company has a customer data hub in an Amazon S3 bucket. Employees from many countries use the data hub to support company-wide analytics. A governance team must ensure that the company's data analysts can access data only for customers who are within the same country as the analysts. Which solution will meet these requirements with the LEAST operational effort?",
+  "answer_zh": {
+   "B": "S3 註冊 Lake Formation+列級安全"
+  },
+  "answer_en": {
+   "B": "Register the S3 bucket as a data lake location in AWS Lake Formation. Use the Lake Formation row-level security features to enforce the company's access policies."
+  },
+  "notion": {
+   "keypoint": "S3 data lake 要讓不同國家的分析師只看自己國家的客戶資料，用 Lake Formation register location + row-level security / data filters。",
+   "why": [
+    "Lake Formation 是 S3 data lake 權限治理的集中式服務。",
+    "Row-level security / data filters 可依 country 欄位限制不同 analyst role 只能看對應國家的 rows。",
+    "比拆多張表、搬到多 Region 或每國建 Redshift view/IAM role 更低維運。"
+   ],
+   "flow": "S3 customer hub → Lake Formation registered location → country row filters → analysts see only same-country customers"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 3,
+  "answer": "A",
+  "q_zh": "推薦系統要整合第三方資料集，希望最少工作量與時間，最低營運負擔？",
+  "q_en": "A media company wants to improve a system that recommends media content to customer based on user behavior and preferences. To improve the recommendation system, the company needs to incorporate insights from third- party datasets into the company's existing analytics platform. The company wants to minimize the effort and time required to incorporate third-party datasets. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "API 從 AWS Data Exchange 取資料"
+  },
+  "answer_en": {
+   "A": "Use API calls to access and integrate third-party datasets from AWS Data Exchange."
+  },
+  "notion": {
+   "keypoint": "要最少時間與工作量整合第三方資料集，用 AWS Data Exchange 取得/訂閱第三方 datasets，再透過 API 整合到分析平台。",
+   "why": [
+    "AWS Data Exchange 是 AWS 官方第三方資料集 marketplace / repository，設計目的就是探索、訂閱與存取第三方 datasets。",
+    "用 API calls 存取資料集可降低自建連接器、爬取或資料交付流程。",
+    "題目強調 least operational overhead 與最小 effort/time，Data Exchange 最貼題。"
+   ],
+   "flow": "AWS Data Exchange datasets → API access/subscription → existing analytics platform"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 4,
+  "answer": "BE",
+  "q_zh": "建 data mesh，需集中治理、資料分析與存取控制，已用 Glue 做目錄與 ETL，選哪兩項？（選2）",
+  "q_en": "A financial company wants to implement a data mesh. The data mesh must support centralized data governance, data analysis, and data access control. The company has decided to use AWS Glue for data catalogs and extract, transform, and load (ETL) operations. Which combination of AWS services will implement a data mesh? (Choose two.)",
+  "answer_zh": {
+   "B": "S3 存資料，Athena 分析",
+   "E": "Lake Formation 做集中治理與權限"
+  },
+  "answer_en": {
+   "B": "Use Amazon S3 for data storage. Use Amazon Athena for data analysis.",
+   "E": "Use AWS Lake Formation for centralized data governance and access control."
+  },
+  "notion": {
+   "keypoint": "Data mesh 常見底座是 S3 data lake 儲存 + Athena serverless 分析 + Lake Formation 集中治理與權限控管。",
+   "why": [
+    "S3 適合作為 data lake / data mesh 的共享儲存底座。",
+    "Athena 可直接查 S3 中的資料，提供 serverless SQL analytics。",
+    "Lake Formation 提供集中資料治理、catalog 權限與細粒度 access control。",
+    "題目已決定使用 Glue 做 catalog/ETL，因此 S3 + Athena + Lake Formation 最符合 data mesh 架構。"
+   ],
+   "flow": "Data domains → S3 data lake → Glue Catalog/ETL → Athena analysis → Lake Formation governance/access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 5,
+  "answer": "B",
+  "q_zh": "多個 Lambda 共用自訂 Python 腳本，改腳本就要逐一更新函式，如何減少手動？",
+  "q_en": "A data engineer maintains custom Python scripts that perform a data formatting process that many AWS Lambda functions use. When the data engineer needs to modify the Python scripts, the data engineer must manually update all the Lambda functions. The data engineer requires a less manual way to update the Lambda functions. Which solution will meet this requirement?",
+  "answer_zh": {
+   "B": "腳本打包成 Lambda layer 掛到各函式"
+  },
+  "answer_en": {
+   "B": "Package the custom Python scripts into Lambda layers. Apply the Lambda layers to the Lambda functions."
+  },
+  "notion": {
+   "keypoint": "多個 Lambda function 共用 Python scripts / dependencies，要集中更新並減少手動改每支 function，用 Lambda Layers。",
+   "why": [
+    "Lambda Layers 可封裝共用程式碼與 dependencies，供多個 Lambda functions 引用。",
+    "當共用 scripts 更新時，只要發布新 layer version，再讓 functions 使用新版 layer，能降低重複修改與不一致。",
+    "適合資料格式化這類多個 Lambda 共用邏輯。"
+   ],
+   "flow": "Shared Python scripts → package as Lambda Layer version → attach layer to functions → centralized updates"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 6,
+  "answer": "B",
+  "q_zh": "Glue ETL 管線需爬取 SQL Server 表、ETL 到 S3 並編排管線，最具成本效益？",
+  "q_en": "A company created an extract, transform, and load (ETL) data pipeline in AWS Glue. A data engineer must crawl a table that is in Microsoft SQL Server. The data engineer needs to extract, transform, and load the output of the crawl to an Amazon S3 bucket. The data engineer also must orchestrate the data pipeline. Which AWS service or feature will meet these requirements MOST cost- effectively?",
+  "answer_zh": {
+   "B": "Glue workflows"
+  },
+  "answer_en": {
+   "B": "AWS Glue workflows"
+  },
+  "notion": {
+   "keypoint": "整條流程都在 AWS Glue 裡：crawler 掃 Microsoft SQL Server、Glue job 做 ETL、輸出到 S3，最省成本的編排方式是 AWS Glue workflows。",
+   "why": [
+    "Glue workflows 可把 Glue crawlers、jobs、triggers 串成同一個 ETL pipeline。",
+    "題目已經使用 Glue 建 ETL pipeline，且只需要編排 Glue 內部元件，不需要額外用 Step Functions 或 MWAA。",
+    "成本與維運上，Glue workflows 比 MWAA 輕，也比自建外部 orchestration 更貼題。"
+   ],
+   "flow": "Glue crawler → Glue ETL job → S3 output → Glue workflows orchestrate pipeline"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 7,
+  "answer": "B",
+  "q_zh": "Web 交易 App 要直接對 Redshift 財務資料即時查詢，最低營運負擔？",
+  "q_en": "A financial services company stores financial data in Amazon Redshift. A data engineer wants to run real-time queries on the financial data to support a web- based trading application. The data engineer wants to run the queries from within the trading application. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "使用 Redshift Data API"
+  },
+  "answer_en": {
+   "B": "Use the Amazon Redshift Data API."
+  },
+  "notion": {
+   "keypoint": "應用程式要從 trading application 對 Redshift 跑 SQL，最低維運用 Amazon Redshift Data API，避免管理 JDBC/ODBC/WebSocket 連線。",
+   "why": [
+    "Redshift Data API 是 HTTPS API，可讓應用程式執行 SQL，不必維護長連線或驅動程式。",
+    "適合 web-based / trading application 直接呼叫查詢 Redshift 中的資料。",
+    "題目問 least operational overhead，Data API 比自行維護 WebSocket 或 JDBC 連線更省事。"
+   ],
+   "flow": "Trading app → Redshift Data API HTTPS call → SQL on Redshift → query result"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 8,
+  "answer": "B",
+  "q_zh": "同一帳號內多種 Athena 用途，需依使用者/團隊/App 隔離查詢與查詢歷史的權限？",
+  "q_en": "A company uses Amazon Athena for one-time queries against data that is in Amazon S3. The company has several use cases. The company must implement permission controls to separate query processes and access to query history among users, teams, and applications that are in the same AWS account. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "每用途一個 workgroup+標籤 IAM"
+  },
+  "answer_en": {
+   "B": "Create an Athena workgroup for each use case. Apply tags to the workgroup. Create an IAM policy that uses the tags to apply appropriate permissions to the workgroup."
+  },
+  "notion": {
+   "keypoint": "Athena 要依 use case 隔離 query process、query history 與權限，用 Athena workgroups + tags + IAM policy。",
+   "why": [
+    "Athena workgroup 可隔離查詢執行設定、查詢歷史、成本/用量控管。",
+    "每個 use case 建一個 workgroup，可讓團隊/應用程式各自管理查詢範圍。",
+    "透過 tag-based IAM policy，可用同一套規則依 tags 套用權限，降低維護成本。"
+   ],
+   "flow": "Use case/team/app → Athena workgroup + tags → IAM tag policy → isolated queries/history/permissions"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 9,
+  "answer": "A",
+  "q_zh": "每天跑一組 Glue job，不要求特定時間開始或完成，最具成本效益？",
+  "q_en": "A data engineer needs to schedule a workflow that runs a set of AWS Glue jobs every day. The data engineer does not require the Glue jobs to run or finish at a specific time. Which solution will run the Glue jobs in the MOST cost-effective way?",
+  "answer_zh": {
+   "A": "Glue job 選 FLEX 執行類別"
+  },
+  "answer_en": {
+   "A": "Choose the FLEX execution class in the Glue job properties."
+  },
+  "notion": {
+   "keypoint": "Glue jobs 若不是時間敏感、沒有必須準時完成的 SLA，選 FLEX execution class 可用較低成本執行。",
+   "why": [
+    "FLEX 適合非緊急、可容忍啟動/執行時間變動的 Glue workloads。",
+    "題目明確說不要求 jobs 準時開始或在特定時間完成，正中 FLEX 使用情境。",
+    "相比 STANDARD，FLEX 可降低 Glue job 成本。"
+   ],
+   "flow": "Non-time-sensitive daily Glue jobs → FLEX execution class → lower cost"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 10,
+  "answer": "A",
+  "q_zh": "只有上傳 .csv 到 S3 時才觸發 Lambda 轉 Parquet，最低營運負擔？",
+  "q_en": "A data engineer needs to create an AWS Lambda function that converts the format of data from .csv to Apache Parquet. The Lambda function must run only if a user uploads a .csv file to an Amazon S3 bucket. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "ObjectCreated:*+後綴.csv→Lambda"
+  },
+  "answer_en": {
+   "A": "Create an S3 event notification that has an event type of s3:ObjectCreated:*. Use a filter rule to generate notifications only when the suffix includes .csv. Set the Amazon Resource Name (ARN) of the Lambda function as the destination for the event notification."
+  },
+  "notion": {
+   "keypoint": "S3 bucket 有新 .csv 檔才觸發 Lambda，最簡單是 S3 Event Notification + suffix filter .csv + Lambda destination。",
+   "why": [
+    "s3:ObjectCreated:* 可涵蓋上傳/建立物件事件。",
+    "suffix filter .csv 可避免非 CSV 檔案也觸發 Lambda。",
+    "直接把 Lambda ARN 設為 event destination，無需 SNS 中介，維運最低。"
+   ],
+   "flow": "User uploads .csv to S3 → S3 ObjectCreated event + suffix .csv filter → Lambda → Parquet"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 11,
+  "answer": "C",
+  "q_zh": "Athena 查詢未壓縮 .csv，多數查詢只選特定欄位，哪個做法最能加速？",
+  "q_en": "A data engineer needs Amazon Athena queries to finish faster. The data engineer notices that all the files the Athena queries use are currently stored in uncompressed .csv format. The data engineer also notices that users perform most queries by selecting a specific column. Which solution will MOST speed up the Athena query performance?",
+  "answer_zh": {
+   "C": "改 Parquet+Snappy 壓縮"
+  },
+  "answer_en": {
+   "C": "Change the data format from .csv to Apache Parquet. Apply Snappy compression."
+  },
+  "notion": {
+   "keypoint": "Athena 查 S3 檔案若常只查特定欄位，最佳化方向是 改成欄式格式 Parquet + Snappy 壓縮，減少掃描資料量。",
+   "why": [
+    "CSV 是 row-based 且未壓縮，Athena 常需要掃描大量資料。",
+    "Parquet 是 columnar format，查特定欄位時可做 column pruning，掃描量大幅下降。",
+    "Snappy 是 Parquet 常用壓縮方式，兼顧壓縮率與解壓速度。"
+   ],
+   "flow": "Uncompressed CSV on S3 → Convert to Parquet → Snappy compression → Athena scans fewer columns → faster queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 12,
+  "answer": "A",
+  "q_zh": "感測器資料經 KDS→Firehose→S3，需在工廠大螢幕顯示即時營運效率，最低延遲？",
+  "q_en": "A manufacturing company collects sensor data from its factory floor to monitor and enhance operational efficiency. The company uses Amazon Kinesis Data Streams to publish the data that the sensors collect to a data stream. Then Amazon Kinesis Data Firehose writes the data to an Amazon S3 bucket. The company needs to display a real-time view of operational efficiency on a large screen in the manufacturing facility. Which solution will meet these requirements with the LOWEST latency?",
+  "answer_zh": {
+   "A": "Flink→連接器寫 Timestream→Grafana"
+  },
+  "answer_en": {
+   "A": "Use Amazon Managed Service for Apache Flink (previously known as Amazon Kinesis Data Analytics) to process the sensor data. Use a connector for Apache Flink to write data to an Amazon Timestream database. Use the Timestream database as a source to create a Grafana dashboard."
+  },
+  "notion": {
+   "keypoint": "Kinesis 串流感測器資料要最低延遲即時看板，用 Managed Service for Apache Flink 做 streaming processing → Timestream → Grafana。",
+   "why": [
+    "Managed Service for Apache Flink 適合對 Kinesis Data Streams 做即時串流處理。",
+    "Timestream 適合時序感測器資料，Grafana 適合即時監控儀表板。",
+    "題目要求 lowest latency；不應等 Firehose 落 S3 後再由 Glue/QuickSight 批次或近即時讀取。"
+   ],
+   "flow": "Sensors → Kinesis Data Streams → Managed Service for Apache Flink → Timestream → Grafana dashboard"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 13,
+  "answer": "B",
+  "q_zh": "Glue crawler 爬 S3 的每日 .csv，需讓資料每天可在 Glue Data Catalog 存取？",
+  "q_en": "A company stores daily records of the financial performance of investment portfolios in .csv format in an Amazon S3 bucket. A data engineer uses AWS Glue crawlers to crawl the S3 data. The data engineer must make the S3 data accessible daily in the AWS Glue Data Catalog. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "GlueServiceRole，每日排程，輸出 DB"
+  },
+  "answer_en": {
+   "B": "Create an IAM role that includes the AWSGlueServiceRole policy. Associate the role with the crawler. Specify the S3 bucket path of the source data as the crawler's data store. Create a daily schedule to run the crawler. Specify a database name for the output."
+  },
+  "notion": {
+   "keypoint": "Glue crawler 要每日爬 S3 並讓資料進 Data Catalog：給 crawler AWSGlueServiceRole IAM role、指定 S3 data store path、設定 daily schedule、指定 Data Catalog database。",
+   "why": [
+    "Crawler 需要 IAM role 才能讀 S3、寫入 Glue Data Catalog。",
+    "Crawler 的資料來源要設成 S3 bucket path。",
+    "題目要求 daily accessible，因此要設定 crawler 每日排程。",
+    "Output 要指定 database name，讓資料表出現在 Glue Data Catalog 中。"
+   ],
+   "flow": "IAM role AWSGlueServiceRole → Glue crawler → S3 path → daily schedule → Glue Data Catalog database/table"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 14,
+  "answer": "B",
+  "q_zh": "Redshift 每日載入後，要觸發 Lambda 把各表載入狀態寫入 DynamoDB，如何呼叫 Lambda？",
+  "q_en": "A company loads transaction data for each day into Amazon Redshift tables at the end of each day. The company wants to have the ability to track which tables have been loaded and which tables still need to be loaded. A data engineer wants to store the load statuses of Redshift tables in an Amazon DynamoDB table. The data engineer creates an AWS Lambda function to publish the details of the load statuses to DynamoDB. How should the data engineer invoke the Lambda function to write load statuses to the DynamoDB table?",
+  "answer_zh": {
+   "B": "Data API 發事件→EventBridge→Lambda"
+  },
+  "answer_en": {
+   "B": "Use the Amazon Redshift Data API to publish an event to Amazon EventBridge. Configure an EventBridge rule to invoke the Lambda function."
+  },
+  "notion": {
+   "keypoint": "Redshift load 狀態要事件化觸發 Lambda 寫 DynamoDB，用 Redshift Data API 發事件到 EventBridge，再由 EventBridge rule invoke Lambda。",
+   "why": [
+    "Redshift Data API 可搭配事件/監控，把查詢或載入狀態事件送到 EventBridge。",
+    "EventBridge 是事件路由服務，適合用 rule 將事件導向 Lambda。",
+    "Lambda 再把載入狀態寫入 DynamoDB，形成低耦合事件驅動流程。"
+   ],
+   "flow": "Redshift load status → Redshift Data API event → EventBridge rule → Lambda → DynamoDB status table"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 15,
+  "answer": "A",
+  "q_zh": "地端 5TB 多格式檔案安全傳到 S3，每天約 5% 變動，需自動排程定期同步，最具營運效率？",
+  "q_en": "A data engineer needs to securely transfer 5 TB of data from an on-premises data center to an Amazon S3 bucket. Approximately 5% of the data changes every day. Updates to the data need to be regularly proliferated to the S3 bucket. The data includes files that are in multiple formats. The data engineer needs to automate the transfer process and must schedule the process to run periodically. Which AWS service should the data engineer use to transfer the data in the MOST operationally efficient way?",
+  "answer_zh": {
+   "A": "AWS DataSync"
+  },
+  "answer_en": {
+   "A": "AWS DataSync"
+  },
+  "notion": {
+   "keypoint": "大量檔案從 on-prem 定期「增量」同步到 S3，用 DataSync 最省維運（排程＋增量＋驗證＋加速）。",
+   "why": [
+    "5TB + 每天 5% 變更：重點是增量同步，不是每天全量搬。",
+    "要自動化＆排程：DataSync 支援 task scheduling（定時執行）。",
+    "多種檔案格式：DataSync 對檔案類型不挑，主打檔案搬運/同步。"
+   ],
+   "flow": "On‑prem NAS/FS → DataSync Agent → DataSync Task（schedule + incremental）→ S3 Bucket"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 16,
+  "answer": "B",
+  "q_zh": "每月把地端 SQL Server 交易資料遷到 RDS，成本上升，需具成本效益且停機最少？",
+  "q_en": "A company uses an on-premises Microsoft SQL Server database to store financial transaction data. The company migrates the transaction data from the on-premises database to AWS at the end of each month. The company has noticed that the cost to migrate data from the on-premises database to an Amazon RDS for SQL Server database has increased recently. The company requires a cost-effective solution to migrate the data to AWS. The solution must cause minimal downtown for the applications that access the database. Which AWS service should the company use to meet these requirements?",
+  "answer_zh": {
+   "B": "AWS DMS"
+  },
+  "answer_en": {
+   "B": "AWS Database Migration Service (AWS DMS)"
+  },
+  "notion": {
+   "keypoint": "要「低停機」把 on-prem SQL Server 搬到 AWS（例如 RDS for SQL Server），用 DMS 做 full load + CDC 持續複寫，最後再短停機 cutover。",
+   "why": [
+    "題目關鍵字是 minimal downtime：DMS 可以先全量搬，再用 CDC 把後續交易變更追上，切換時才需要短暫停機。",
+    "成本效益：DMS 是托管搬遷/複寫服務，維運成本通常比自建流程低。"
+   ],
+   "flow": "On‑prem SQL Server → DMS Replication Instance（full load + CDC）→ RDS for SQL Server"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 17,
+  "answer": "AD",
+  "q_zh": "Glue ETL 處理 RDS 與 MongoDB 資料並載入 Redshift，每小時更新，最低營運負擔？（選2）",
+  "q_en": "A data engineer is building a data pipeline on AWS by using AWS Glue extract, transform, and load (ETL) jobs. The data engineer needs to process data from Amazon RDS and MongoDB, perform transformations, and load the transformed data into Amazon Redshift for analytics. The data updates must occur every hour. Which combination of tasks will meet these requirements with the LEAST operational overhead? (Choose two.)",
+  "answer_zh": {
+   "A": "Glue trigger 每小時執行 ETL",
+   "D": "Glue connection 連來源與 Redshift"
+  },
+  "answer_en": {
+   "A": "Configure AWS Glue triggers to run the ETL jobs every hour.",
+   "D": "Use AWS Glue connections to establish connectivity between the data sources and Amazon Redshift."
+  },
+  "notion": {
+   "keypoint": "要「最低維運」的定時 ETL：用 Glue Trigger 排程；要讓 Glue 穩定連 RDS/MongoDB/Redshift：用 Glue Connections 管連線/網路設定。",
+   "why": [
+    "題目目標是 least operational overhead（少自己養排程器/少自己寫 plumbing）。",
+    "每小時一次：Glue Trigger 就是內建排程（不用 Lambda/自建 cron）。",
+    "資料源是 RDS + MongoDB：Glue Connection 會把 VPC/subnet/SG/憑證等連線資訊包起來，ETL job 直接引用，維運最少。"
+   ],
+   "flow": "Glue Trigger（hourly）→ Glue Job（via Connections 連 RDS/MongoDB）→ Transform → Load → Redshift"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 18,
+  "answer": "B",
+  "q_zh": "RA3 節點的 Redshift 叢集要擴充讀寫容量，如何開啟 concurrency scaling？",
+  "q_en": "A company uses an Amazon Redshift cluster that runs on RA3 nodes. The company wants to scale read and write capacity to meet demand. A data engineer needs to identify a solution that will turn on concurrency scaling. Which solution will meet this requirement?",
+  "answer_zh": {
+   "B": "在叢集 WLM 佇列層級開啟"
+  },
+  "answer_en": {
+   "B": "Turn on concurrency scaling at the workload management (WLM) queue level in the Redshift cluster."
+  },
+  "notion": {
+   "keypoint": "Redshift（RA3 / provisioned）要開 Concurrency Scaling，是在 WLM queue 上啟用，不是在 cluster 建立時或 daily quota 那種地方。",
+   "why": [
+    "題目說是 Redshift cluster（RA3 nodes）：這是傳統 provisioned 叢集。",
+    "Concurrency Scaling 的開關是跟 WLM（工作負載管理）queue 綁定：哪個 queue 壓力大，就在那個 queue 開。"
+   ],
+   "flow": "WLM queue 壓力 ↑ → Concurrency Scaling 自動加臨時 capacity → queue 併發處理"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 19,
+  "answer": "AB",
+  "q_zh": "每天編排一系列 Athena 查詢，每個可能跑超過 15 分鐘，最具成本效益？（選2）",
+  "q_en": "A data engineer must orchestrate a series of Amazon Athena queries that will run every day. Each query can run for more than 15 minutes. Which combination of steps will meet these requirements MOST cost- effectively? (Choose two.)",
+  "answer_zh": {
+   "A": "Lambda 呼叫 start_query_execution",
+   "B": "Step Functions Wait 狀態輪詢完成"
+  },
+  "answer_en": {
+   "A": "Use an AWS Lambda function and the Athena Boto3 client start_query_execution API call to invoke the Athena queries programmatically.",
+   "B": "Create an AWS Step Functions workflow and add two states. Add the first state before the Lambda function. Configure the second state as a Wait state to periodically check whether the Athena query has finished using the Athena Boto3 get_query_execution API call. Configure the workflow to invoke the next query when the current query has finished running."
+  },
+  "notion": {
+   "keypoint": "Athena 要跑「一串查詢」且單段可能 \\>15 分：Lambda 負責 start_query_execution，Step Functions 負責等/輪詢/串接，最省維運也最省錢。",
+   "why": [
+    "Lambda 本身有執行時間上限（不適合卡著等 15+ 分鐘）。",
+    "Step Functions 便宜地處理「等待 + 狀態機」：用 Wait state 週期性查 Athena query status（get_query_execution），跑完再觸發下一段。",
+    "不用養 MWAA/Airflow 那種大機器，符合 cost-effective。"
+   ],
+   "flow": "Step Functions：Lambda(start_query_execution) → Wait → Lambda(get_query_execution) loop → 下一段 query"
+  },
+  "disputed": "社群對是否需 Step Functions 有分歧"
+ },
+ {
+  "number": 20,
+  "answer": "B",
+  "q_zh": "地端用 Pig、Oozie、Spark、HBase、Flink 秒級處理 PB 資料，遷 AWS 需維持效能並降營運負擔，選哪個？",
+  "q_en": "A company is migrating on-premises workloads to AWS. The company wants to reduce overall operational overhead. The company also wants to explore serverless options. The company's current workloads use Apache Pig, Apache Oozie, Apache Spark, Apache Hbase, and Apache Flink. The on-premises workloads process petabytes of data in seconds. The company must maintain similar or better performance after the migration to AWS. Which extract, transform, and load (ETL) service will meet these requirements?",
+  "answer_zh": {
+   "B": "Amazon EMR"
+  },
+  "answer_en": {
+   "B": "Amazon EMR"
+  },
+  "notion": {
+   "keypoint": "搬整套 Hadoop 生態（含 Spark/Hive/HBase/Oozie）上 AWS、又要少維運，首選 EMR（托管 Hadoop/Spark）；Glue 偏 Serverless ETL，不是完整 Hadoop 平台。",
+   "why": [
+    "題幹明確點名 Pig、Oozie、Spark、HBase、Hive：這是一整個 Hadoop 生態系的工作負載。",
+    "要「rehost / migrate」且維持或更好效能：EMR 直接提供這些元件的托管部署與彈性擴展，營運負擔最低。"
+   ],
+   "flow": "On‑prem Hadoop（Pig/Oozie/Spark/HBase/Hive）→ EMR Cluster（同元件托管）→ 後續再逐步雲端化/優化"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 21,
+  "answer": "B",
+  "q_zh": "資料集含 PII，匯入 S3 資料湖時需剖析並模糊化 PII，最低營運工作量？",
+  "q_en": "A data engineer must use AWS services to ingest a dataset into an Amazon S3 data lake. The data engineer profiles the dataset and discovers that the dataset contains personally identifiable information (PII). The data engineer must implement a solution to profile the dataset and obfuscate the PII. Which solution will meet this requirement with the LEAST operational effort?",
+  "answer_zh": {
+   "B": "Glue Detect PII 遮蔽+Step Functions"
+  },
+  "answer_en": {
+   "B": "Use the Detect PII transform in AWS Glue Studio to identify the PII. Obfuscate the PII. Use an AWS Step Functions state machine to orchestrate a data pipeline to ingest the data into the S3 data lake."
+  },
+  "notion": {
+   "keypoint": "官方考點是用 AWS Glue Studio Detect PII transform 偵測/遮蔽 PII，再用 Step Functions 編排匯入 S3 data lake；但社群對是否需要 Glue Data Quality / Step Functions 有爭議。",
+   "why": [],
+   "flow": "Dataset → Glue Studio Detect PII transform → obfuscate PII → Step Functions orchestrates ingestion → S3 data lake"
+  },
+  "disputed": "社群對是否需 Glue Data Quality/Step Functions 有爭議"
+ },
+ {
+  "number": 22,
+  "answer": "B",
+  "q_zh": "多個 ETL 流程用 Glue 與 EMR 寫入 S3 資料湖，需自動編排且最低營運負擔？",
+  "q_en": "A company maintains multiple extract, transform, and load (ETL) workflows that ingest data from the company's operational databases into an Amazon S3 based data lake. The ETL workflows use AWS Glue and Amazon EMR to process data. The company wants to improve the existing architecture to provide automated orchestration and to require minimal manual effort. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Step Functions tasks"
+  },
+  "answer_en": {
+   "B": "AWS Step Functions tasks"
+  },
+  "notion": {
+   "keypoint": "要協調多個 AWS 服務（Glue + EMR）的 ETL workflow，並降低手動介入，用 AWS Step Functions tasks 編排各步驟。",
+   "why": [
+    "Step Functions 可用 task states 協調不同 AWS 服務的工作，例如啟動 Glue job、EMR step/job，並追蹤狀態。",
+    "適合跨服務 ETL workflow orchestration，能處理依賴、重試、錯誤處理與流程狀態。",
+    "題目同時提到 Glue 與 EMR，代表不是只在 Glue 內部編排；Step Functions 更適合跨服務協調。"
+   ],
+   "flow": "Step Functions workflow → Glue task → EMR task → state tracking / retries / error handling"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 23,
+  "answer": "C",
+  "q_zh": "S3 Standard 資料：前6個月每天多次存取，6個月~2年每月1-2次，2年後每年1-2次；需維持高可用，最省成本？",
+  "q_en": "A company currently stores all of its data in Amazon S3 by using the S3 Standard storage class. A data engineer examined data access patterns to identify trends. During the first 6 months, most data files are accessed several times each day. Between 6 months and 2 years, most data files are accessed once or twice each month. After 2 years, data files are accessed only once or twice each year. The data engineer needs to use an S3 Lifecycle policy to develop new data storage rules. The new storage solution must continue to provide high availability. Which solution will meet these requirements in the MOST cost-effective way?",
+  "answer_zh": {
+   "C": "6M→Standard-IA，2Y→Deep Archive"
+  },
+  "answer_en": {
+   "C": "Transition objects to S3 Standard-Infrequent Access (S3 Standard-IA) after 6 months. Transfer objects to S3 Glacier Deep Archive after 2 years."
+  },
+  "notion": {
+   "keypoint": "存取頻率隨時間下降：先用 Standard-IA 扛「仍要高可用、偶爾讀」；到 2 年後幾乎不讀，就進 Deep Archive 最省。",
+   "why": [],
+   "flow": "S3 Standard（0–6m） → Standard-IA（6m–2y） → Glacier Deep Archive（2y+）"
+  },
+  "disputed": "社群多選 B"
+ },
+ {
+  "number": 24,
+  "answer": "A",
+  "q_zh": "業務 BI 叢集需每週 join ETL Redshift 叢集資料，不可干擾關鍵分析，且最少用 ETL 叢集運算？",
+  "q_en": "A company maintains an Amazon Redshift provisioned cluster that the company uses for extract, transform, and load (ETL) operations to support critical analysis tasks. A sales team within the company maintains a Redshift cluster that the sales team uses for business intelligence (BI) tasks. The sales team recently requested access to the data that is in the ETL Redshift cluster so the team can perform weekly summary analysis tasks. The sales team needs to join data from the ETL cluster with data that is in the sales team's BI cluster. The company needs a solution that will share the ETL cluster data with the sales team without interrupting the critical analysis tasks. The solution must minimize usage of the computing resources of the ETL cluster. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "data sharing，BI 叢集為 consumer"
+  },
+  "answer_en": {
+   "A": "Set up the sales team BI cluster as a consumer of the ETL cluster by using Redshift data sharing."
+  },
+  "notion": {
+   "keypoint": "同帳號/跨叢集要共享 Redshift 資料、又不想複製一份、也不想讓 BI 查詢吃掉 ETL 叢集資源：用 Redshift Data Sharing（producer/consumer）。",
+   "why": [
+    "Sales team 想每週做 summary，要 join ETL cluster 的資料 + 自己 BI cluster 的資料。",
+    "需求是「share data without interrupting critical ETL analysis」＋「minimize usage of computing resources of the ETL cluster」：",
+    "Data sharing是「共享同一份資料」的概念，不用 unload/copy，不用維護 ETL→BI 的同步管線。",
+    "Consumer（Sales BI）查詢時，用的是 consumer 端的 compute（避免把 ETL producer 的資源吃爆），符合題意的「不要影響 ETL cluster」。"
+   ],
+   "flow": ""
+  },
+  "disputed": ""
+ },
+ {
+  "number": 25,
+  "answer": "C",
+  "q_zh": "一次性分析需 join DynamoDB、RDS、Redshift、S3 的資料，最具成本效益？",
+  "q_en": "A data engineer needs to join data from multiple sources to perform a one-time analysis job. The data is stored in Amazon DynamoDB, Amazon RDS, Amazon Redshift, and Amazon S3. Which solution will meet this requirement MOST cost-effectively?",
+  "answer_zh": {
+   "C": "Athena Federated Query 直接 join"
+  },
+  "answer_en": {
+   "C": "Use Amazon Athena Federated Query to join the data from all data sources."
+  },
+  "notion": {
+   "keypoint": "一次性分析要 join 多個資料源，不想搬資料、不想開 cluster：用 Athena Federated Query 直接跨來源查（付費按查詢/掃描量）。",
+   "why": [
+    "題幹是 one-time analysis：代表你不想為了這次任務去建/養 EMR 或做長期 ETL。",
+    "Athena 可以直接查 S3；再透過 Federated Query connectors 把 DynamoDB、RDS、甚至 Redshift 這些來源一起拉進同一個查詢/Join（考題角度：省建置/省維運）。",
+    "成本面：serverless、用多少付多少，最符合 *MOST cost-effective*。"
+   ],
+   "flow": "Athena（SQL） + Federated Connectors → DynamoDB/RDS/Redshift/S3 → Join → 結果"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 26,
+  "answer": "BD",
+  "q_zh": "長期運行的 EMR Spark 叢集，需高可靠、維持效能且最具成本效益，選哪兩項？（選2）",
+  "q_en": "A company is planning to use a provisioned Amazon EMR cluster that runs Apache Spark jobs to perform big data analysis. The company requires high reliability. A big data team must follow best practices for running cost- optimized and long-running workloads on Amazon EMR. The team must find a solution that will maintain the company's current level of performance. Which combination of resources will meet these requirements MOST cost- effectively? (Choose two.)",
+  "answer_zh": {
+   "B": "用 S3 作持久資料儲存",
+   "D": "core/task 節點用 Graviton"
+  },
+  "answer_en": {
+   "B": "Use Amazon S3 as a persistent data store.",
+   "D": "Use Graviton instances for core nodes and task nodes."
+  },
+  "notion": {
+   "keypoint": "EMR 長跑最佳實務：資料放 S3（持久、便宜、可擴）；要省錢又維持效能：用 Graviton（ARM）實例跑 core/task。",
+   "why": [
+    "題幹說是 long-running workloads + high reliability：資料不能綁在叢集生命週期上。",
+    "S3 當 persistent store：叢集壞了/重建了，資料還在；也符合 cost-optimized（不用長期養 HDFS）。",
+    "Graviton：同等級通常更便宜（CP 值高），題幹要求「維持現有效能」，因此選它來降成本。"
+   ],
+   "flow": ""
+  },
+  "disputed": ""
+ },
+ {
+  "number": 27,
+  "answer": "C",
+  "q_zh": "KDS 每秒數 GB 串流要進 Redshift，需近即時供現有 BI 工具使用，最低營運負擔？",
+  "q_en": "A company wants to implement real-time analytics capabilities. The company wants to use Amazon Kinesis Data Streams and Amazon Redshift to ingest and process streaming data at the rate of several gigabytes per second. The company wants to derive near real-time insights by using existing business intelligence (BI) and analytics tools. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "外部 schema 對應 KDS，MV 自動刷新"
+  },
+  "answer_en": {
+   "C": "Create an external schema in Amazon Redshift to map the data from Kinesis Data Streams to an Amazon Redshift object. Create a materialized view to read data from the stream. Set the materialized view to auto refresh."
+  },
+  "notion": {
+   "keypoint": "Kinesis Data Streams 資料要進 Redshift 做近即時 BI/analytics，官方考點是 Redshift streaming ingestion：external schema + materialized view + auto refresh。",
+   "why": [],
+   "flow": "Kinesis Data Streams → Redshift external schema → materialized view auto refresh → BI/analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 28,
+  "answer": "AB",
+  "q_zh": "QS 儀表板變慢，主因是 Glue job 執行太久；資料存單一 S3 bucket 且每日新增，如何改善 Glue 效能？（選2）",
+  "q_en": "A company uses an Amazon QuickSight dashboard to monitor usage of one of the company's applications. The company uses AWS Glue jobs to process data for the dashboard. The company stores the data in a single Amazon S3 bucket. The company adds new data every day. A data engineer discovers that dashboard queries are becoming slower over time. The data engineer determines that the root cause of the slowing queries is long-running AWS Glue jobs. Which actions should the data engineer take to improve the performance of the AWS Glue jobs? (Choose two.)",
+  "answer_zh": {
+   "A": "S3 資料依年/月/日分區",
+   "B": "提升 Glue worker type 規格"
+  },
+  "answer_en": {
+   "A": "Partition the data that is in the S3 bucket. Organize the data by year, month, and day.",
+   "B": "Increase the AWS Glue instance size by scaling up the worker type."
+  },
+  "notion": {
+   "keypoint": "QuickSight 查詢變慢根因是 Glue jobs 長跑時，改善方式是 S3 依日期分區減少掃描量，並 放大 Glue worker type 提升 ETL 處理能力。",
+   "why": [
+    "資料每天新增但仍放在單一 S3 object，查詢與 ETL 都可能掃描大量不必要資料。",
+    "依 year/month/day 分區可讓 Glue/查詢只處理相關日期分區，降低掃描量並改善效能。",
+    "Glue job 長時間執行代表運算資源可能不足；調大 worker type 可提供更多 CPU/記憶體，加速處理。"
+   ],
+   "flow": "S3 single growing CSV → partition by year/month/day + scale Glue worker type → faster Glue processing → faster dashboard queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 29,
+  "answer": "C",
+  "q_zh": "Step Functions 要平行處理大量資料檔，對每個檔案套用相同轉換，用哪種 state？",
+  "q_en": "A data engineer needs to use AWS Step Functions to design an orchestration workflow. The workflow must parallel process a large collection of data files and apply a specific transformation to each file. Which Step Functions state should the data engineer use to meet these requirements?",
+  "answer_zh": {
+   "C": "Map state"
+  },
+  "answer_en": {
+   "C": "Map state"
+  },
+  "notion": {
+   "keypoint": "Step Functions 要「對一大包 items（檔案清單）逐一處理、且可並行」＝用 Map state（對每個 item 跑同一段 workflow）。",
+   "why": [
+    "題目是 large collection of data files + apply a specific transformation to each file：這就是「迭代 items」的典型語意。",
+    "Map state 內建把 list 拆成多個迭代，並可設定並行度（考試角度：就是它）。"
+   ],
+   "flow": "Input（file list）→ Map（for each file）→ Transform task → Output"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 30,
+  "answer": "B",
+  "q_zh": "舊系統資料遷入 S3 資料湖，含重複資料需識別並移除，最低營運負擔？",
+  "q_en": "A company is migrating a legacy application to an Amazon S3 based data lake. A data engineer reviewed data that is associated with the legacy application. The data engineer found that the legacy data contained some duplicate information. The data engineer must identify and remove duplicate information from the legacy application data. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Glue ETL 用 FindMatches ML 轉換"
+  },
+  "answer_en": {
+   "B": "Write an AWS Glue extract, transform, and load (ETL) job. Use the FindMatches machine learning (ML) transform to transform the data to perform data deduplication."
+  },
+  "notion": {
+   "keypoint": "要「最低維運」的去重：用 Glue FindMatches（托管 ML 去重）比自己寫 Python dedupe 流程省事。",
+   "why": [
+    "題幹是 identify and remove duplicate information，而且要 LEAST operational overhead：重點不是你會不會寫 drop_duplicates()，而是「不要自己養規則/程式/維運」。",
+    "Glue FindMatches 提供托管式「找相似紀錄/疑似重複」的能力，屬於考試常見的低維運答案。"
+   ],
+   "flow": "Legacy data → Glue ETL → FindMatches（dedupe）→ S3 data lake（deduped）"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 31,
+  "answer": "BC",
+  "q_zh": "用 Redshift Spectrum 查詢 S3 資料湖，哪些做法查詢最快？（選2）",
+  "q_en": "A company is building an analytics solution. The solution uses Amazon S3 for data lake storage and Amazon Redshift for a data warehouse. The company wants to use Amazon Redshift Spectrum to query the data that is in Amazon S3. Which actions will provide the FASTEST queries? (Choose two.)",
+  "answer_zh": {
+   "B": "使用欄式儲存格式",
+   "C": "依最常用查詢條件分區"
+  },
+  "answer_en": {
+   "B": "Use a columnar storage file format.",
+   "C": "Partition the data based on the most common query predicates."
+  },
+  "notion": {
+   "keypoint": "Spectrum 要快：欄式格式（少掃欄）＋Partition（少掃檔/少掃分區），兩個一起上，查詢最明顯變快。",
+   "why": [
+    "欄式格式：只讀你 select 的欄位、壓縮率更好 → 掃描量下降。",
+    "Partition：用常見 where 條件（日期/region…）切分 → Spectrum 直接跳過不相關 partition（partition pruning）。"
+   ],
+   "flow": "S3（Parquet + Partitioned）→ Spectrum scan（pruning + column projection）→ 查詢更快"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 32,
+  "answer": "CD",
+  "q_zh": "預設設定的 Lambda 需私有連線到私有子網中的 RDS，不走公網，最低營運負擔？（選2）",
+  "q_en": "A company uses Amazon RDS to store transactional data. The company runs an RDS DB instance in a private subnet. A developer wrote an AWS Lambda function with default settings to insert, update, or delete data in the DB instance. The developer needs to give the Lambda function the ability to connect to the DB instance privately without using the public internet. Which combination of steps will meet this requirement with the LEAST operational overhead? (Choose two.)",
+  "answer_zh": {
+   "C": "Lambda 設在 DB 相同子網執行",
+   "D": "兩者同 SG，自我參照規則開 DB 埠"
+  },
+  "answer_en": {
+   "C": "Configure the Lambda function to run in the same subnet that the DB instance uses.",
+   "D": "Attach the same security group to the Lambda function and the DB instance. Include a self- referencing rule that allows access through the database port."
+  },
+  "notion": {
+   "keypoint": "Lambda 要私下打 RDS：Lambda 進 VPC（同 subnet 路徑）＋用 SG 控制誰能打 DB port（同 SG 自我參照最省事）。",
+   "why": [],
+   "flow": "Lambda（VPC/subnet + SG）→ VPC 內路由 → RDS（同 SG + self-ref inbound）→ private connect"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 33,
+  "answer": "B",
+  "q_zh": "API Gateway 偶爾呼叫 Python 腳本並需回傳結果，最低營運負擔？",
+  "q_en": "A company has a frontend ReactJS website that uses Amazon API Gateway to invoke REST APIs. The APIs perform the functionality of the website. A data engineer needs to write a Python script that can be occasionally invoked through API Gateway. The code must return results to API Gateway. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Lambda Python 函式+佈建並行"
+  },
+  "answer_en": {
+   "B": "Create an AWS Lambda Python function with provisioned concurrency."
+  },
+  "notion": {
+   "keypoint": "偶爾被 API Gateway 打到、又要穩定低延遲：Lambda + Provisioned Concurrency（避免冷啟動），維運最低。",
+   "why": [
+    "API Gateway ↔ Lambda 是標準 serverless API pattern。",
+    "題目點「occasionally invoked」但又要回結果：冷啟動風險大 → Provisioned Concurrency 直接把環境熱著。"
+   ],
+   "flow": "React → API Gateway → Lambda（provisioned concurrency）→ response"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 34,
+  "answer": "D",
+  "q_zh": "生產帳號 CW Logs 的安全日誌需經 KDS 送到安全帳號，如何設定？",
+  "q_en": "A company has a production AWS account that runs company workloads. The company's security team created a security AWS account to store and analyze security logs from the production AWS account. The security logs in the production AWS account are stored in Amazon CloudWatch Logs. The company needs to use Amazon Kinesis Data Streams to deliver the security logs to the security AWS account. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "KDS 在安全帳號，訂閱篩選器在生產帳號"
+  },
+  "answer_en": {
+   "D": "Create a destination data stream in the security AWS account. Create an IAM role and a trust policy to grant CloudWatch Logs the permission to put data into the stream. Create a subscription filter in the production AWS account."
+  },
+  "notion": {
+   "keypoint": "跨帳號集中安全日誌：目的端（Security）放 Kinesis stream；來源端（Prod）用 subscription filter 把 CloudWatch Logs 推過去（靠 cross-account IAM）。",
+   "why": [
+    "Security account 是「集中分析」的地方：stream 放那邊，資料落點一致。",
+    "CloudWatch Logs 用 subscription filter 串到 Kinesis；跨帳號靠 IAM trust/permissions 讓 Logs service 能 put 到 Security 的 stream。"
+   ],
+   "flow": "Prod CloudWatch Logs → subscription filter → Security Kinesis stream → 後續分析"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 35,
+  "answer": "C",
+  "q_zh": "S3 交易型資料湖有小檔也有數十 TB 檔，來源每天送完整 JSON 快照，需做 CDC 擷取變更，最具成本效益？",
+  "q_en": "A company uses Amazon S3 to store semi-structured data in a transactional data lake. Some of the data files are small, but other data files are tens of terabytes. A data engineer must perform a change data capture (CDC) operation to identify changed data from the data source. The data source sends a full snapshot as a JSON file every day and ingests the changed data into the data lake. Which solution will capture the changed data MOST cost-effectively?",
+  "answer_zh": {
+   "C": "開源湖格式(Iceberg)做 MERGE"
+  },
+  "answer_en": {
+   "C": "Use an open source data lake format to merge the data source with the S3 data lake to insert the new data and update the existing data."
+  },
+  "notion": {
+   "keypoint": "每天丟全量 snapshot、又要做 CDC（找變更＋upsert）：用 Iceberg/Hudi/Delta 的 merge/upsert 取代自己寫 diff/ETL，成本與維運最划算。",
+   "why": [
+    "題幹的痛點是：檔案有大有小、來源每天給 full snapshot JSON，你要「抓變更」其實就是做 比較 + upsert。",
+    "Data lake table format 天生支援 ACID-ish table 管理、檔案規劃、以及 merge/upsert 的語意（考試角度：最省事也最省錢）。"
+   ],
+   "flow": "Daily JSON snapshot → Iceberg/Hudi/Delta table → MERGE/UPSERT → S3 data lake（updated）"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 36,
+  "answer": "AC",
+  "q_zh": "Athena 用 Glue Data Catalog，S3 分區過多造成查詢規劃瓶頸，如何縮短規劃時間？（選2）",
+  "q_en": "A data engineer runs Amazon Athena queries on data that is in an Amazon S3 bucket. The Athena queries use AWS Glue Data Catalog as a metadata table. The data engineer notices that the Athena query plans are experiencing a performance bottleneck. The data engineer determines that the cause of the performance bottleneck is the large number of partitions that are in the S3 bucket. The data engineer must resolve the performance bottleneck and reduce Athena query planning time. Which solutions will meet these requirements? (Choose two.)",
+  "answer_zh": {
+   "A": "建 Glue partition index+分區過濾",
+   "C": "Athena partition projection"
+  },
+  "answer_en": {
+   "A": "Create an AWS Glue partition index. Enable partition filtering.",
+   "C": "Use Athena partition projection based on the S3 bucket prefix."
+  },
+  "notion": {
+   "keypoint": "Athena partition 太多會卡在「找分區/規劃」：用 Glue partition index 加速 metadata lookup，再用 partition projection 直接用規則推導分區、少掃 catalog。",
+   "why": [
+    "規劃慢不是查詢慢，是「partition metadata 爆炸」。",
+    "Partition index：讓 Glue 對分區查找更快（搭配 partition filtering）。",
+    "Partition projection：不必把所有分區都登錄進 catalog，Athena 依 S3 prefix/規則推算要掃哪些分區（planning time 直接下降）。"
+   ],
+   "flow": "Athena →（partition projection + Glue partition index）→ 更快 planning → query"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 37,
+  "answer": "D",
+  "q_zh": "即時串流需做最長 30 分鐘的時間視窗聚合分析，需高容錯，最低營運負擔？",
+  "q_en": "A data engineer must manage the ingestion of real-time streaming data into AWS. The data engineer wants to perform real-time analytics on the incoming streaming data by using time-based aggregations over a window of up to 30 minutes. The data engineer needs a solution that is highly fault tolerant. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "D": "Flink 多種聚合做 30 分鐘時間視窗"
+  },
+  "answer_en": {
+   "D": "Use Amazon Managed Service for Apache Flink (previously known as Amazon Kinesis Data Analytics) to analyze the data by using multiple types of aggregations to perform time-based analytics over a window of up to 30 minutes."
+  },
+  "notion": {
+   "keypoint": "串流要做 window aggregation（最多 30 分鐘） + 高容錯：用 Managed Flink 最對題、維運最低（比 Lambda 自己搞狀態/去重/窗口穩）。",
+   "why": [
+    "30 分鐘 window 本質是 stateful streaming（要存狀態、處理遲到資料/重放、checkpoint）。",
+    "Flink 是為這件事生的；managed 版把集群/容錯/縮放都包起來，符合 least ops。"
+   ],
+   "flow": "Stream ingest → Managed Flink（window agg + state + checkpoint）→ near real-time output"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 38,
+  "answer": "C",
+  "q_zh": "EBS gp2 升級為 gp3，遷移中不可讓 EC2 中斷導致資料遺失，最低營運負擔？",
+  "q_en": "A company is planning to upgrade its Amazon Elastic Block Store (Amazon EBS) General Purpose SSD storage from gp2 to gp3. The company wants to prevent any interruptions in its Amazon EC2 instances that will cause data loss during the migration to the upgraded storage. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "直接修改現有 volume 類型為 gp3"
+  },
+  "answer_en": {
+   "C": "Change the volume type of the existing gp2 volumes to gp3. Enter new values for volume size, IOPS, and throughput."
+  },
+  "notion": {
+   "keypoint": "EBS 升級 gp2→gp3 最低維運：直接 ModifyVolume 走 in-place 變更（不中斷/不搬資料）。",
+   "why": [
+    "gp3 支援獨立設定 IOPS/throughput；直接修改 volume type 省掉 snapshot/搬移/切換的風險與工序。"
+   ],
+   "flow": "EC2 attach gp2 volume → ModifyVolume（gp3 + new params）→ 原地升級完成"
+  },
+  "disputed": ""
+ }
+]

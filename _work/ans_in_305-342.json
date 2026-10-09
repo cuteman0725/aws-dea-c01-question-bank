@@ -1,0 +1,861 @@
+[
+ {
+  "number": 305,
+  "answer": "D",
+  "q_zh": "日誌表需持續寫入，供其他應用以 API 可靠查特定記錄；每秒>4,000 寫入、6,500 讀取。哪個方案？",
+  "q_en": "A data engineer is designing a log table for an application that requires continuous ingestion. The application must provide dependable API-based access to specific records from other applications. The application must handle more than 4,000 concurrent write operations and 6,500 read operations every second. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "DynamoDB 佈建容量＋API 讀寫"
+  },
+  "answer_en": {
+   "D": "Create an Amazon DynamoDB table that has provisioned capacity to meet the application's capacity needs. Use the DynamoDB table to perform all read and write operations by using DynamoDB APIs."
+  },
+  "notion": {
+   "keypoint": "需要高併發持續寫入、API-based 讀寫特定 records、低延遲查詢，用 DynamoDB，並設定足夠 provisioned capacity。",
+   "why": [
+    "DynamoDB 適合高吞吐 key-value / NoSQL workload，提供可預期低延遲 API-based reads/writes。",
+    "Provisioned capacity 可明確配置以滿足每秒 4,000+ writes 與 6,500 reads 的需求。",
+    "應用程式可直接用 DynamoDB APIs 依 key 存取特定 records。",
+    "Redshift 是分析型資料倉儲，不適合做高併發 OLTP/log API read/write table。"
+   ],
+   "flow": "Application logs → DynamoDB table provisioned RCU/WCU → DynamoDB APIs → high-concurrency reads/writes"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 306,
+  "answer": "B",
+  "q_zh": "大量 IoT 資料需無限期保留，在 Redshift 分析。最具成本效益？",
+  "q_en": "A company needs to store and analyze a large amount of IoT sensor data. The company needs to retain the data indefinitely. The company analyzes the data in an Amazon Redshift cluster. Which solution will meet these requirements MOST cost-effectively?",
+  "answer_zh": {
+   "B": "S3 存 Parquet＋Redshift Spectrum"
+  },
+  "answer_en": {
+   "B": "Store the data in an Amazon S3 bucket in Apache Parquet format. Configure query access through Amazon Redshift Spectrum."
+  },
+  "notion": {
+   "keypoint": "大量資料要無限期保留且用 Redshift 分析，成本最佳是把資料放 S3 Parquet，透過 Redshift Spectrum 查詢，不把所有資料載入 Redshift cluster。",
+   "why": [
+    "S3 適合低成本、長期且幾乎無限擴充的資料保存。",
+    "Parquet 是欄式格式，可降低掃描量並提升分析效能。",
+    "Redshift Spectrum 可讓 Redshift 直接查 S3 外部資料，避免把無限期保留的大量 IoT 資料全部載入 Redshift cluster。",
+    "Auto-copy 到 Redshift cluster 會增加儲存成本，不適合 indefinite retention 的大量資料。"
+   ],
+   "flow": "IoT data → S3 Parquet long-term storage → Redshift Spectrum external query → Redshift analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 307,
+  "answer": "C",
+  "q_zh": "S3 資料湖含多部門資料，每天匯入百萬筆；各部門只能存取所需子集，最小權限。最少營運工作？",
+  "q_en": "A company has an Amazon S3 based data lake. The data lake contains datasets that belong to multiple departments. The data lake ingests millions of customer records each day. A data engineer needs to design an access and storage solution that allows departments to access only the subset of the company's dataset that each department requires. The solution must follow the principle of least privilege. Which solution will meet these requirements with the LEAST operational effort?",
+  "answer_zh": {
+   "C": "Lake Formation＋LF-Tags(TBAC)"
+  },
+  "answer_en": {
+   "C": "Set up AWS Lake Formation. Assign LF-Tags to AWS Glue Data Catalog resources. Enable Lake Formation tag-based access control (LF-TBAC)."
+  },
+  "notion": {
+   "keypoint": "資料湖多部門只看各自資料 subset 且要最小權限，使用 AWS Lake Formation LF-TBAC 以 LF-Tags 做標籤式權限控管。",
+   "why": [
+    "Lake Formation 是 S3 data lake 的集中式權限治理服務。",
+    "LF-Tags 可標記 Glue Data Catalog resources，依部門、資料域、敏感度等維度授權。",
+    "LF-TBAC 讓權限可依標籤套用，資料集每天大量新增時比逐一路徑/IAM policy 管理更低維運。",
+    "符合 least privilege，讓各部門只能存取被授權的 dataset subset。"
+   ],
+   "flow": "S3 data lake + Glue Catalog → LF-Tags by department/domain → Lake Formation LF-TBAC → least-privilege access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 308,
+  "answer": "C",
+  "q_zh": "地端 MySQL 存病歷，每 30 天輪換憑證，不想每次輪換都改程式碼。最低營運負擔？",
+  "q_en": "A healthcare company stores patient records in an on-premises MySQL database. The company creates an application to access the MySQL database. The company must enforce security protocols to protect the patient records. The company currently rotates database credentials every 30 days to minimize the risk of unauthorized access. The company wants a solution that does require the company to modify the application code for each credential rotation. Which solution will meet this requirement with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "Secrets Manager 自動輪換＋API 取"
+  },
+  "answer_en": {
+   "C": "Use AWS Secrets Manager to automatically rotate credentials. Allow the application to retrieve the credentials by using API calls."
+  },
+  "notion": {
+   "keypoint": "資料庫憑證需定期自動輪換，且應用程式不想每次輪換都改 code，用 AWS Secrets Manager automatic rotation，app 透過 API 動態取 secret。",
+   "why": [
+    "Secrets Manager 可儲存資料庫憑證並設定自動輪換。",
+    "應用程式透過 Secrets Manager API 取得最新憑證，不需要每 30 天把新密碼寫死或重新部署。",
+    "相比自建 Lambda rotation、S3 lifecycle 或 KMS key rotation，Secrets Manager 是管理 database secrets 的原生服務。"
+   ],
+   "flow": "Secrets Manager stores DB secret → automatic rotation every 30 days → app retrieves latest credentials via API"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 309,
+  "answer": "D",
+  "q_zh": "擷取多個 Aurora MySQL 更新，近即時供分析；需無伺服器、維護最少。最低營運負擔？",
+  "q_en": "A retail company needs to implement a solution to capture data updates from multiple Amazon Aurora MySQL databases. The company needs to make the updates available for analytics in near real time. The solution must be serverless and require minimal maintenance. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "D": "Aurora zero-ETL→Redshift SL"
+  },
+  "answer_en": {
+   "D": "Use Aurora zero-ETL integrations with Amazon Redshift Serverless for each database to load Aurora MySQL changes in Amazon Redshift Serverless."
+  },
+  "notion": {
+   "keypoint": "Aurora MySQL 資料變更要近即時進 Redshift Serverless 且最低維運，用 Aurora zero-ETL integration with Amazon Redshift。",
+   "why": [
+    "Aurora zero-ETL integration 可將 Aurora 資料近即時複寫到 Amazon Redshift，用於分析。",
+    "不需要自建 DMS task、Debezium/MSK Connect、schema conversion 或資料載入 pipeline。",
+    "Redshift Serverless 降低資料倉儲容量管理負擔。",
+    "適合多個 Aurora MySQL database 的分析整合需求。"
+   ],
+   "flow": "Aurora MySQL DBs → Aurora zero-ETL integrations → Redshift Serverless → near-real-time analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 310,
+  "answer": "A",
+  "q_zh": "Athena 聯結兩表，要選正確聯結順序以優化效能。哪個做法？",
+  "q_en": "A data engineer is writing a query to join two tables in Amazon Athena. The data engineer needs to choose the correct join order for the tables to optimize query performance. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "小表放左、大表放右"
+  },
+  "answer_en": {
+   "A": "Specify the smaller table on the left side of the join and the larger table on the right side of the join."
+  },
+  "notion": {
+   "keypoint": "本題官方答案要求 smaller LEFT / larger RIGHT；但實務上 Athena/Presto 常見建議通常是把較小表放在 RIGHT/build side，因此建議標記為爭議題。",
+   "why": [
+    "題目問 Athena join order 的效能最佳化，官方給 A。",
+    "若依官方答案：小表放左、大表放右。",
+    "但 Athena/Presto 的常見原理是右表常作 build side，通常希望較小表在右側以降低記憶體壓力。",
+    "因此此題背誦時以官方答案 A 為準，同時記得實務文件/社群可能不同。"
+   ],
+   "flow": "Exam official: smaller table LEFT + larger table RIGHT → selected answer A；Real-world note: verify Athena build-side guidance"
+  },
+  "disputed": "官方：小表左大表右；AWS 文件建議大表左小表右"
+ },
+ {
+  "number": 311,
+  "answer": "BC",
+  "q_zh": "Redshift 報表用 30 表，來源 Aurora MySQL 有 100 表；每小時全量刷新造成延遲。最低營運負擔？（選2）",
+  "q_en": "A company generates reports from 30 tables in an Amazon Redshift data warehouse. The data source is an operational Amazon Aurora MySQL database that contains 100 tables. Currently, the company refreshes all data from Aurora to Amazon Redshift every hour, which causes delays in report generation. Which combination of steps will meet these requirements with the LEAST operational overhead? (Choose two.)",
+  "answer_zh": {
+   "B": "Redshift 建立使用整合的 DB",
+   "C": "Aurora 建 zero-ETL 只選所需表"
+  },
+  "answer_en": {
+   "B": "Create a database in Amazon Redshift that uses the integration.",
+   "C": "Create a zero-ETL integration in Amazon Aurora. Select only the required tables."
+  },
+  "notion": {
+   "keypoint": "Aurora MySQL 到 Redshift 的低維運近即時分析，用 Aurora zero-ETL integration，並只同步報表需要的 tables；Redshift 端建立使用該 integration 的 database。",
+   "why": [
+    "目前每小時 full load 全部 100 tables 到 Redshift，造成報表延遲。",
+    "Zero-ETL integration 可將 Aurora 資料近即時複寫到 Redshift，減少批次搬運與維運。",
+    "題目只用 30 tables 產報表，選取 required tables 可減少不必要資料同步。",
+    "Redshift 端需建立使用該 integration 的 database，讓報表查詢整合後的資料。"
+   ],
+   "flow": "Aurora MySQL required 30 tables → zero-ETL integration → Redshift database using integration → faster reports"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 312,
+  "answer": "A",
+  "q_zh": "每小時自動檢查 RDS、DynamoDB、OpenSearch 新資料並處理，單次≤10MB；成本與營運最佳、錯誤處理穩健。哪個方案？",
+  "q_en": "A data engineer needs a fully automated solution to check for new data in multiple databases and process data that the solution finds. The solution must run every hour. The solution must be compatible with Amazon RDS, Amazon DynamoDB, and Amazon OpenSearch Service. The solution must be able to process up to 10 MB of data at one time. The solution must be optimized for costs and operational overhead. The solution must have robust error handling capabilities. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "EventBridge→Step Functions＋Lambda"
+  },
+  "answer_en": {
+   "A": "Use Amazon EventBridge to invoke AWS Step Functions every hour to deploy an AWS Lambda function to check for data. Configure Step Functions steps to process data that the Lambda function finds. Implement error handling in each state."
+  },
+  "notion": {
+   "keypoint": "多來源每小時自動檢查新資料並處理、要 robust error handling，用 EventBridge 排程 → Step Functions 編排 → Lambda 檢查/處理。",
+   "why": [
+    "EventBridge 可每小時觸發 workflow。",
+    "Lambda 可存取 RDS、DynamoDB、OpenSearch 等多種資料來源並檢查新資料。",
+    "Step Functions 可編排多步驟處理、重試、錯誤捕捉與狀態管理。",
+    "Lambda 單次 payload/event 處理可符合題目最多 10 MB 的資料處理限制。"
+   ],
+   "flow": "EventBridge hourly → Step Functions workflow → Lambda checks sources → states process data + retries/catches"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 313,
+  "answer": "A",
+  "q_zh": "Glue job 排程將 Redshift 供應商資料寫入 S3，已設好私有網路連線。下一步？",
+  "q_en": "A company uses an Amazon Redshift cluster to manage data, including vendor sales data. The company wants to store a copy of the vendor data in an Amazon S3 bucket. A data engineer sets up an AWS Glue job to upload the data to the S3 bucket data on a schedule. The data engineer set up a network connection to allow private traffic between Amazon Redshift and Amazon S3. What is the next step required to meet this requirement?",
+  "answer_zh": {
+   "A": "建可寫 S3 的 IAM 角色掛 Redshift"
+  },
+  "answer_en": {
+   "A": "Create an IAM role that has permission to write to the S3 bucket. Associate the IAM role with the Amazon Redshift cluster."
+  },
+  "notion": {
+   "keypoint": "Redshift 要把資料寫到 S3，需建立可寫 S3 bucket 的 IAM role，並將 role 關聯到 Redshift cluster。",
+   "why": [
+    "Redshift 存取 S3 進行 UNLOAD/COPY 等操作時，需要具有 S3 權限的 IAM role。",
+    "將 IAM role attach/associate 到 Redshift cluster，Redshift 才能以該角色寫入目標 S3 bucket。",
+    "題目已設定網路連線讓 Redshift 與 S3 之間私有流量可用；下一步是補足 Redshift 對 S3 的授權。"
+   ],
+   "flow": "Create S3 write IAM role → associate role with Redshift cluster → Redshift/Glue workflow writes copy to S3"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 314,
+  "answer": "A",
+  "q_zh": "S3 中 100MB Parquet 資料，需在資料準備前先做剖析(profile)。最具營運效率？",
+  "q_en": "A company stores a 100 MB dataset in an Amazon S3 bucket as an Apache Parquet file. A data engineer needs to profile the data before performing data preparation steps on the data. Which solution will meet this requirement in the MOST operationally efficient way?",
+  "answer_zh": {
+   "A": "Glue DataBrew 建 profile job"
+  },
+  "answer_en": {
+   "A": "Create a profile job on the dataset in AWS Glue DataBrew. Review the profile job results."
+  },
+  "notion": {
+   "keypoint": "資料準備前要快速 profile S3 dataset，最省營運用 AWS Glue DataBrew profile job 檢視資料輪廓結果。",
+   "why": [
+    "DataBrew profile job 可自動產生欄位統計、分佈、缺失值、異常等資料輪廓資訊。",
+    "100 MB Parquet dataset 很適合用 DataBrew 直接 profile，不需要架構串流或資料倉儲查詢。",
+    "這比 Flink、Redshift Spectrum、QuickSight topic 更貼近「資料準備前 profile data」需求。"
+   ],
+   "flow": "S3 Parquet dataset → DataBrew profile job → review data profile → data prep decisions"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 315,
+  "answer": "C",
+  "q_zh": "零售點擊流即時分析載入 Redshift，每秒數百 MB。分析查詢延遲最低？",
+  "q_en": "A company needs to implement real-time analytics for a retail shopping platform. The company wants to capture clickstream data, process the data, and load the data into Amazon Redshift for analysis. The solution must handle hundreds of megabytes of data every second. Which solution will meet these requirements with the LEAST query latency for analytics?",
+  "answer_zh": {
+   "C": "KDS＋Redshift 串流擷取到 MV"
+  },
+  "answer_en": {
+   "C": "Use Amazon Kinesis Data Streams to capture the data. Use Amazon Redshift streaming ingestion to load data directly into materialized views."
+  },
+  "notion": {
+   "keypoint": "Clickstream 即時分析且要最低 Redshift 查詢延遲，用 Kinesis Data Streams + Redshift streaming ingestion 到 materialized views。",
+   "why": [
+    "Kinesis Data Streams 適合高吞吐 clickstream 擷取。",
+    "Redshift streaming ingestion 可直接從 Kinesis 載入資料到 materialized views，降低從 S3 COPY 或批次 ETL 的延遲。",
+    "Materialized views 讓 Redshift 查詢可直接讀取已維護的串流資料視圖，符合 lowest query latency。"
+   ],
+   "flow": "Clickstream → Kinesis Data Streams → Redshift streaming ingestion → materialized views → low-latency analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 316,
+  "answer": "B",
+  "q_zh": "即時交易管線依錯誤類型（安全/驗證/系統）立即通知不同團隊，不得延遲。最低營運負擔？",
+  "q_en": "A company has a data pipeline that processes transaction data in real time. The company needs a notification system that alerts different teams based on the type of processing error without any delay. For security-related errors, the system must immediately notify the security team. For data validation errors, the system must notify the data quality team. For system errors, the system must notify the operations team. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "EventBridge 規則分類→各 SNS 主題"
+  },
+  "answer_en": {
+   "B": "Configure Amazon EventBridge rules with distinct event patterns for each error type. Route each error type to a dedicated Amazon Simple Notification Service (Amazon SNS) topic for team-specific alerts."
+  },
+  "notion": {
+   "keypoint": "不同錯誤類型要即時通知不同團隊，用 EventBridge event patterns 分流，再送到各自的 SNS topic。",
+   "why": [
+    "EventBridge 可根據事件內容與 pattern 做規則匹配，適合依 error type 分流。",
+    "每種錯誤類型可對應不同 SNS topic，讓 Security / Data Quality / Operations 團隊立即收到各自通知。",
+    "這是事件導向、近即時、低維運的通知架構。",
+    "相比 Lambda 自行判斷或 SQS polling，EventBridge + SNS 更直接且延遲低。"
+   ],
+   "flow": "Pipeline error event → EventBridge rules by error type → dedicated SNS topics → team-specific alerts"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 317,
+  "answer": "C",
+  "q_zh": "需可擴展、全託管、事件驅動編排複雜 ETL（Glue、EMR→Redshift、S3），支援相依管理、自動重試、監控。哪個方案？",
+  "q_en": "A global ecommerce company processes customer transactions, inventory updates, and user activity logs across multiple AWS services. The company needs a scalable, fully managed, and event-driven orchestration solution to coordinate complex extract, transform, and load (ETL) workflows. The solution must use AWS Glue and Amazon EMR to process data. The data will be stored in Amazon Redshift and Amazon S3. The solution must support dependency management, automated retries, and data pipeline monitoring. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "MWAA 以 Airflow DAG 管理 ETL"
+  },
+  "answer_en": {
+   "C": "Use Apache Airflow on Amazon Managed Workflows for Apache Airflow (Amazon MWAA) to create Directed Acyclic Graphs (DAGs) to manage ETL workflows."
+  },
+  "notion": {
+   "keypoint": "複雜 ETL 工作流要管理相依性、自動重試與監控，且會協調 Glue/EMR，用 Amazon MWAA（Apache Airflow DAG）。",
+   "why": [
+    "Airflow DAG 適合表達複雜 ETL workflow 的 task dependencies。",
+    "Amazon MWAA 是全託管 Airflow，可降低自建 Airflow 的維運。",
+    "Airflow 原生支援 retries、task monitoring、排程與 dependency management。",
+    "可協調 Glue jobs、EMR steps 與其他 AWS 服務。"
+   ],
+   "flow": "Complex ETL tasks → MWAA Airflow DAG → Glue/EMR orchestration + dependencies/retries/monitoring"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 318,
+  "answer": "B",
+  "q_zh": "Redshift＋QuickSight 報表，部分分析師不會 SQL，想用自然語言建儀表板與報表。最低營運工作？",
+  "q_en": "A global company currently uses Amazon Redshift to store data and Amazon Quick Suite (previously known as Amazon QuickSight) to generate reports. A team of business analysts have varying levels of technical expertise. Some analysts lack SQL knowledge. All the analysts need to create new reports frequently. The company wants to use natural program language queries to create dashboards and reports more efficiently. Which solution will meet these requirements with the LEAST operational effort?",
+  "answer_zh": {
+   "B": "QS 啟用 Amazon Q 產生報表"
+  },
+  "answer_en": {
+   "B": "Enable Amazon Q in Quick Suite. Generate Quick Suite dashboards and reports."
+  },
+  "notion": {
+   "keypoint": "分析師不熟 SQL 但要用自然語言快速建立 QuickSight dashboard/report，啟用 Amazon Q in QuickSight。",
+   "why": [
+    "Amazon Q in QuickSight 支援用自然語言提問、產生視覺化、建立 dashboard 與報表。",
+    "適合不同技術程度的 business analysts，不需要每個人都會 SQL。",
+    "已有 Redshift + QuickSight 架構，啟用 Amazon Q 是最少營運負擔的增強方式。"
+   ],
+   "flow": "Redshift data → QuickSight → Amazon Q natural language → dashboards/reports"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 319,
+  "answer": "D",
+  "q_zh": "SageMaker Unified Studio：各業務單位隔離管理資產/專案/中繼資料，核准後可跨單位共享，需集中驗證與身分對應。哪個方案？",
+  "q_en": "A company is setting up a new Amazon SageMaker Unified Studio domain. Each of the company's business units needs isolated control over its own assets, projects, and metadata. Specific datasets must be shareable with other business units upon approval. The company also requires centralized user authentication and identity mapping. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "domain unit＋IdC＋存取申請核准"
+  },
+  "answer_en": {
+   "D": "Configure each business unit as a separate domain unit to manage permissions on assets, projects, and metadata. Configure AWS IAM Identity Center for centralized authentication. Map user profiles to their respective domain units. Enable cross-business unit sharing through access requests. Instruct domain unit owners to approve or deny the requests."
+  },
+  "notion": {
+   "keypoint": "SageMaker Unified Studio 中各 BU 要隔離管理資產與權限、又能經核准共享，用 domain units + IAM Identity Center + access requests。",
+   "why": [
+    "Domain unit 可代表業務單位，讓各 BU 管理自己的 assets、projects、metadata 與權限。",
+    "IAM Identity Center 提供集中式使用者驗證與 identity mapping。",
+    "User profiles 映射到各自 domain units，可落實隔離與 ownership。",
+    "跨 BU 分享透過 access request，由 domain unit owner approve/deny，符合需經核准共享的需求。"
+   ],
+   "flow": "Business units → separate domain units → IAM Identity Center mapping → access requests → owner approve/deny sharing"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 320,
+  "answer": "C",
+  "q_zh": "集中資料集供多個跨帳號下游團隊（各自 RA3 Redshift）存取，需立即存取且維持 Redshift 效能。哪個方案？",
+  "q_en": "A data engineer at a large company needs to create centralized datasets that are optimized for Amazon Redshift performance. The company has multiple downstream teams that use their own AWS accounts and dedicated Amazon Redshift clusters with RA3 nodes. All downstream teams need access to the centralized datasets. Which solution will provide immediate access to the datasets and maintain the current Amazon Redshift performance?",
+  "answer_zh": {
+   "C": "Redshift data sharing 生產/消費"
+  },
+  "answer_en": {
+   "C": "Set up Amazon Redshift data sharing between the Amazon Redshift producer clusters and the consumer clusters to provide access to the centralized datasets."
+  },
+  "notion": {
+   "keypoint": "多個 AWS accounts 的 Redshift RA3 consumer clusters 要即時存取 centralized Redshift datasets，用 Amazon Redshift data sharing。",
+   "why": [
+    "Redshift data sharing 可在 producer cluster 與 consumer clusters 間分享資料，不需要複製資料。",
+    "Consumer teams 可在自己的 Redshift clusters 中即時查詢共享資料。",
+    "避免 UNLOAD/COPY、S3 外部表或 DataSync 帶來的資料延遲與複製成本。",
+    "能維持目前 Redshift performance，因為下游可用自己的 compute 查共享資料。"
+   ],
+   "flow": "Producer Redshift centralized datasets → Redshift data sharing → consumer Redshift clusters/accounts → immediate access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 321,
+  "answer": "B",
+  "q_zh": "三區域交易資料近即時同步，傳輸加密、保順序一致、跨區 DR，延遲<500ms。最低營運工作？",
+  "q_en": "A global finance company needs to implement near real-time cross-Region synchronization of trading data between trading centers in the us-east-1 Region, the eu-west-2 Region, and the ap-northeast-1 Region. The company must ensure that data is encrypted in transit. The solution must ensure data ordering and consistency and must support cross-Region disaster recovery. The solution must provide data latency of less than 500 milliseconds. Which solution will meet these requirements with the LEAST operational effort?",
+  "answer_zh": {
+   "B": "MSK Replicator 三區互連＋TLS"
+  },
+  "answer_en": {
+   "B": "Use Amazon Managed Streaming for Apache Kafka (Amazon MSK) Replicator to establish fully interconnected replication relationships between MSK clusters in the three AWS Regions. Enable TLS encryption and IAM authentication. Set up cross-Region backup configurations."
+  },
+  "notion": {
+   "keypoint": "跨 Region Kafka/MSK 交易資料近即時同步且要低維運，用 Amazon MSK Replicator；搭配 TLS encryption + IAM authentication 與跨區備援。",
+   "why": [
+    "MSK Replicator 是全託管跨叢集/跨 Region 複寫服務，適合 MSK clusters 之間低維運同步資料。",
+    "交易資料要求 ordering、consistency 與低延遲，Kafka/MSK 複寫比自建 connector 或 Firehose 搬資料更貼合。",
+    "TLS encryption 可保護傳輸中資料；IAM authentication 可集中控管存取。",
+    "跨 Region backup/replication 可支援 disaster recovery。"
+   ],
+   "flow": "MSK clusters in 3 Regions → MSK Replicator fully interconnected replication → TLS + IAM → cross-Region DR"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 322,
+  "answer": "C",
+  "q_zh": "需近即時搜尋分析，每秒 1,000 請求低延遲；各資料團隊可自行擁有並調整成本/效能。哪個方案？",
+  "q_en": "A company’s application needs to search and analyze data in near real time. The application must handle up to 1,000 requests each second with low query latency. The company wants a solution that individual data teams can own and configure to meet each team's cost and performance optimization requirements. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "OpenSearch 索引，各隊一叢集"
+  },
+  "answer_en": {
+   "C": "Use Amazon OpenSearch Service clusters with indexing to query the data. Assign each data team a separate cluster to configure for storage and queries."
+  },
+  "notion": {
+   "keypoint": "近即時搜尋/分析且高 QPS 低延遲，用 Amazon OpenSearch Service；各 team 要自主管成本與效能時，分配 separate clusters。",
+   "why": [
+    "OpenSearch 適合索引型搜尋與近即時分析，可支援低延遲查詢。",
+    "每個 data team 使用獨立 cluster，可自行調整儲存、節點、索引與查詢設定，符合各自成本/效能需求。",
+    "1000 requests/sec 與 low query latency 更符合 OpenSearch than Athena/S3。"
+   ],
+   "flow": "Data ingested → OpenSearch indexing → separate team clusters → low-latency near-real-time search/analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 323,
+  "answer": "A",
+  "q_zh": "Redshift 表 orders.complete_orders_history 有 100 欄，要查全部欄位但排除 companyId、unique_system_id。哪個 SQL？",
+  "q_en": "A company uses Amazon Redshift for its data warehouse. A data engineer must query a table named orders.complete_orders_history, which contains 100 columns. The query must return all columns except columns named companyId and unique_system_id. Which Amazon Redshift SQL statement will meet this requirement?",
+  "answer_zh": {
+   "A": "SELECT * EXCLUDE 兩欄 FROM 表"
+  },
+  "answer_en": {
+   "A": ""
+  },
+  "notion": {
+   "keypoint": "Redshift 要查所有欄位但排除指定欄位，用 SELECT \\* EXCLUDE column1, column2。",
+   "why": [
+    "SELECT * EXCLUDE 是 Redshift 支援的語法，可在查詢所有欄位時排除指定欄位。",
+    "題目要求回傳 100 欄中除了 company_id 和 unique_system_id 之外的所有欄位，正好使用 EXCLUDE。"
+   ],
+   "flow": "Need all columns except 2 → Redshift `SELECT * EXCLUDE company_id, unique_system_id`"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 324,
+  "answer": "A",
+  "q_zh": "S3 存敏感交易資料，需防止意外刪除。哪個方案？",
+  "q_en": "A company stores sensitive transaction data in an Amazon S3 bucket. A data engineer must implement controls to prevent accidental deletions. Which solution will meet this requirement?",
+  "answer_zh": {
+   "A": "啟用版本控制＋MFA Delete"
+  },
+  "answer_en": {
+   "A": "Enable versioning on the S3 bucket and configure MFA delete."
+  },
+  "notion": {
+   "keypoint": "S3 敏感資料要防止意外刪除，用 S3 Versioning 保留版本，並啟用 MFA Delete 增加刪除保護。",
+   "why": [
+    "Versioning 可保留物件舊版本，即使目前版本被刪除，也可復原先前版本。",
+    "MFA Delete 要求刪除物件版本或變更 versioning 狀態時提供 MFA，降低誤刪/未授權刪除風險。",
+    "這是針對 accidental deletion 的直接控制。"
+   ],
+   "flow": "S3 sensitive data → enable versioning → MFA Delete required for destructive actions → accidental deletion protection"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 325,
+  "answer": "C",
+  "q_zh": "Redshift Email 欄含 null 與非 email 值；需 Glue Data Quality 規則在有效 email 比例<90% 時失敗。哪個？",
+  "q_en": "A company stores historical customer data in an Amazon Redshift table. A column named Email contains null entries and values that are not email addresses. The quality of the Email column is critical for multiple downstream processes. A data engineer must create an AWS Glue Data Quality rule that fails when the percentage of valid email addresses in the Email column is less than 90%. Which component of an AWS Glue Data Quality rule will meet these requirements?",
+  "answer_zh": {
+   "C": "ColumnValues matches，門檻>0.9"
+  },
+  "answer_en": {
+   "C": "ColumnValues \"Email\" matches \"[%@%.%]\" with a threshold set to > 0.9"
+  },
+  "notion": {
+   "keypoint": "檢查某欄位值是否符合格式且有效比例需超過門檻，用 Glue Data Quality ColumnValues ... matches ... with threshold \\> 0.9。",
+   "why": [
+    "需求是 Email 欄中有效 email address 的百分比不得低於 90%。",
+    "ColumnValues 可對欄位每個值套用 matches pattern。",
+    "threshold > 0.9 表示符合條件的列比例要超過 90%，低於就 fail。"
+   ],
+   "flow": "Email column → ColumnValues matches email pattern → threshold \\> 0.9 → fail if valid emails \\< 90%"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 326,
+  "answer": "B",
+  "q_zh": "Glue job 存取 S3，需依分類只能存取特定前綴，且限營業時間 9–17 點。自訂 IAM 政策需含哪些元素？",
+  "q_en": "A company is building data processing pipelines by using AWS Glue. The pipelines access data stored in Amazon S3. The company has organized the data into folders with prefixes that represent different classification levels. The company needs to restrict AWS Glue jobs to access only specific prefixes based on the data classification. The company must also restrict access to business hours (9 AM to 5 PM). Which elements must the company include in a custom IAM policy to meet these requirements?",
+  "answer_zh": {
+   "B": "Resource 前綴＋aws:CurrentTime Date"
+  },
+  "answer_en": {
+   "B": "A Resource element with S3 object Amazon Resource Name (ARN) patterns that use wildcards for each prefix and a Condition element that uses the aws:CurrentTime condition key with DateGreaterThan and DateLessThan operators"
+  },
+  "notion": {
+   "keypoint": "IAM policy 要限制 Glue 只能存取特定 S3 prefixes 且只在營業時間允許，用 S3 object ARN wildcard Resource 搭配 aws:CurrentTime + DateGreaterThan/DateLessThan。",
+   "why": [
+    "S3 object 層級存取可在 Resource 用 bucket/prefix ARN pattern 與 wildcard 限制，例如只允許特定 classification prefixes。",
+    "aws:CurrentTime 條件鍵可依請求時間控管存取。",
+    "DateGreaterThan 與 DateLessThan 可定義 9 AM–5 PM 的允許時間窗。",
+    "這符合「只允許特定 prefix 且只在 business hours」兩個限制。"
+   ],
+   "flow": "Glue role policy → Resource `arn:aws:s3:::bucket/prefix*` → Condition aws:CurrentTime between 9 and 5 → allowed access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 327,
+  "answer": "D",
+  "q_zh": "RDS MySQL 日誌供稽核，須追蹤每位修改資料或變更 DB 執行個體的使用者。哪個方案？",
+  "q_en": "A company needs to collect logs for an Amazon RDS for MySQL database and make the logs available for audits. The logs must track each user that modifies data in the database or makes changes to the database instance. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "RDS 原生稽核日誌＋CW＋CloudTrail"
+  },
+  "answer_en": {
+   "D": "Enable and configure native Amazon RDS database audit logging. Enable Amazon CloudWatch Logs. Configure metric filters and alarms. Configure AWS CloudTrail audit logging."
+  },
+  "notion": {
+   "keypoint": "RDS MySQL 要審計「誰改資料」與「誰改 DB instance」，用 RDS database audit logging + CloudWatch Logs 收資料庫活動，並用 CloudTrail 追蹤控制平面/API 變更。",
+   "why": [
+    "RDS MySQL audit logging 可記錄資料庫層級活動，例如連線、查詢與資料變更行為。",
+    "CloudWatch Logs 可集中保存與查詢 audit logs，並可搭配 metric filters / alarms 監控可疑活動。",
+    "CloudTrail 記錄 AWS API/控制平面行為，可追蹤誰修改 RDS instance 設定。",
+    "題目同時要求追蹤修改資料與修改 DB instance 的使用者，因此需要 database audit + CloudTrail。"
+   ],
+   "flow": "RDS MySQL audit logs → CloudWatch Logs + metric filters/alarms；RDS API/instance changes → CloudTrail"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 328,
+  "answer": "B",
+  "q_zh": "S3 每日百萬筆交易 CSV，需平行驗證後更新 DB，失敗>15% 就停止全部。最低營運負擔？",
+  "q_en": "A company processes a CSV file that contains millions of transaction records every day. The file is stored in Amazon S3. Each transaction must be validated before updating a database. The company needs a solution that will process the data in parallel. The solution must use error handling that stops the entire process if more than 15% of the records fail validation. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Step Functions 分散式 Map 容忍15%"
+  },
+  "answer_en": {
+   "B": "Use AWS Step Functions Distributed Map state with the ToleratedFailurePercentage field set to 15%."
+  },
+  "notion": {
+   "keypoint": "大量檔案/records 要平行處理，且容忍一定失敗比例後停止，用 Step Functions Distributed Map + ToleratedFailurePercentage。",
+   "why": [
+    "Distributed Map 適合大規模平行處理 S3 檔案或大量 items。",
+    "ToleratedFailurePercentage 可設定可容忍失敗比例，超過 15% 時讓整個 Map Run 失敗/停止。",
+    "Step Functions 提供內建錯誤處理、重試與狀態追蹤，比自建 Batch/EMR/Lambda 統計失敗率更低維運。"
+   ],
+   "flow": "Daily CSV in S3 → Step Functions Distributed Map parallel validation → toleratedFailurePercentage=15 → stop if exceeded"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 329,
+  "answer": "D",
+  "q_zh": "一次性報告需聯結 DynamoDB、RDS、Redshift、S3 資料，避免不必要搬移並縮短查詢時間。哪個方案？",
+  "q_en": "A company needs to generate a one-time performance report by joining data that is stored in Amazon DynamoDB. Amazon RDS. Amazon Redshift. and Amazon S3. The company wants to avoid unnecessary data movement and to minimize query execution time. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "Athena Federated Query 跨源聯結"
+  },
+  "answer_en": {
+   "D": "Use Amazon Athena Federated Query to perform one-time joins and analysis across DynamoDB, Amazon RDS, Amazon Redshift, and Amazon S3."
+  },
+  "notion": {
+   "keypoint": "一次性跨多資料來源 join/analysis 且要避免搬資料，用 Amazon Athena Federated Query。",
+   "why": [
+    "Athena Federated Query 可透過 data source connectors 查詢 DynamoDB、RDS、Redshift、S3 等多來源資料。",
+    "題目是 one-time performance report，不值得建立長期 ETL、DMS 或集中資料湖流程。",
+    "Federated Query 可直接跨來源查詢與 join，減少不必要資料搬移並降低準備時間。"
+   ],
+   "flow": "DynamoDB + RDS + Redshift + S3 → Athena Federated Query connectors → one-time joins/report"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 330,
+  "answer": "AB",
+  "q_zh": "無伺服器多步驟 ETL：S3 資料湖→Glue ETL→Redshift，需編排工作流程。哪些方案？（選2）",
+  "q_en": "A data engineer is building a serverless. multi-step extract, transform, and load (ETL) pipeline. The pipeline extracts data from an Amazon S3 data lake and transforms the data by using AWS Glue ETL jobs. The pipeline then loads the results into an Amazon Redshift database. The data engineer needs to orchestrate the serverless ETL workflow. Which solutions will meet these requirements? (Choose two.)",
+  "answer_zh": {
+   "A": "Step Functions 協調 Glue＋重試",
+   "B": "Glue workflows 建相依與觸發圖"
+  },
+  "answer_en": {
+   "A": "Implement the workflow by using AWS Step Functions. Configure Step Functions to coordinate the AWS Glue ETL jobs and handle error conditions with automatic retries.",
+   "B": "Use AWS Glue workflows to create a graph of the ETL tasks that visually represents the dependencies between jobs and the job triggers."
+  },
+  "notion": {
+   "keypoint": "Serverless ETL 多步驟協調可用 Step Functions 做跨服務編排/錯誤重試，也可用 Glue workflows 視覺化管理 Glue jobs 相依與 triggers。",
+   "why": [
+    "Step Functions 適合 serverless workflow orchestration，可協調 Glue ETL jobs，並提供 retries/error handling。",
+    "Glue workflows 是 Glue 原生 ETL 編排，可視覺化 Glue jobs 與 triggers 的依賴關係。",
+    "題目要求協調此無伺服器 ETL workflow，且答案為可滿足需求的兩種解法。"
+   ],
+   "flow": "S3 data → Glue ETL jobs → Redshift；orchestrate with Step Functions retries OR Glue workflows dependency graph"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 331,
+  "answer": "C",
+  "q_zh": "S3 原始影片處理後保留 90 天以備重處理，之後可刪除。原始檔最具成本效益的 Lifecycle？",
+  "q_en": "A media company uploads large video files to Amazon S3 for processing. After processing, the company needs to keep the original files for 90 days in case the files require reprocessing. After 90 days, the company can delete the files to reduce storage costs. The company stores the processed videos in a different S3 bucket. Which S3 Lifecycle configuration will meet these requirements for the original files MOST cost-effectively?",
+  "answer_zh": {
+   "C": "Standard 90 天後 Lifecycle 到期刪"
+  },
+  "answer_en": {
+   "C": "Store the files in S3 Standard for 90 days. Implement S3 Lifecycle management to expire the files."
+  },
+  "notion": {
+   "keypoint": "原始檔 90 天內可能重新處理、90 天後可刪除，最成本有效是 S3 Standard 保留 90 天 + Lifecycle expiration。",
+   "why": [
+    "前 90 天可能需要 reprocessing，S3 Standard 提供即時存取與高吞吐，適合大型影片重新處理。",
+    "90 天後公司可刪除原始檔，直接用 lifecycle expiration 刪除最省成本。",
+    "不需要轉 Glacier，因為資料到期後不是長期保存而是可刪除。"
+   ],
+   "flow": "Original videos → S3 Standard for 90 days for reprocessing → Lifecycle expiration after 90 days"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 332,
+  "answer": "B",
+  "q_zh": "大學 App 分析多語論文，回饋需精準引用教科書章節並用學生所選語言。最低營運負擔？",
+  "q_en": "A university is developing an educational application that analyzes student essays. The application provides personalized feedback with accurate citations to the university's textbooks. The application needs to process essays in multiple languages. Application responses must include direct references to specific sections in the course materials and must be in the student’s selected language. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Bedrock Knowledge Bases＋多語模型"
+  },
+  "answer_en": {
+   "B": "Create a knowledge base in Amazon Bedrock Knowledge Bases with the university’s textbooks. Configure a multilingual model to generate responses with source citations."
+  },
+  "notion": {
+   "keypoint": "要用教材內容產生具來源引用的多語言個人化回饋，最低維運用 Amazon Bedrock Knowledge Bases + multilingual model。",
+   "why": [
+    "Bedrock Knowledge Bases 提供託管式 RAG，可把教材作為知識來源並產生帶引用的回答。",
+    "可設定多語言模型，讓回覆使用學生選定語言。",
+    "Source citations 可直接引用教材中的段落/section，符合題目要求 direct references。",
+    "比自建向量資料庫、Comprehend+Kendra+Lambda 或 SageMaker 自訓 LLM 維運更低。"
+   ],
+   "flow": "University textbooks → Bedrock Knowledge Base → multilingual model → personalized feedback with citations"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 333,
+  "answer": "B",
+  "q_zh": "限制 S3 存取並用 AWS 託管金鑰加密；需管理 Lambda 用的 DB 憑證並自動輪換。哪個方案？",
+  "q_en": "A company needs a solution that restricts access to Amazon S3 data and encrypts the data by using AWS managed keys. The solution must manage database credentials that an AWS Lambda function uses and must rotate the credentials automatically. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "IAM＋SSE-KMS＋Secrets Manager 輪換"
+  },
+  "answer_en": {
+   "B": "Use IAM policies to control access. Use server-side encryption with AWS KMS keys (SSE- KMS) to encrypt the data. Configure AWS Secrets Manager to store and automatically rotate the credentials by using a Lambda function."
+  },
+  "notion": {
+   "keypoint": "S3 存取控制用 IAM policies，資料加密用 SSE-KMS，Lambda 用的資料庫憑證用 Secrets Manager automatic rotation。",
+   "why": [
+    "IAM policies 可限制誰能存取 S3 data。",
+    "SSE-KMS 使用 KMS keys 做 server-side encryption，符合使用 AWS managed keys/集中金鑰管理的加密需求。",
+    "Secrets Manager 是管理 database credentials 與自動輪換的原生服務，可透過 Lambda rotation function 輪換憑證。",
+    "Lambda 可從 Secrets Manager 取得最新 credentials，避免硬編碼或手動輪換。"
+   ],
+   "flow": "IAM controls S3 access → S3 SSE-KMS encrypts data → Secrets Manager stores DB credentials → Lambda rotation"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 334,
+  "answer": "D",
+  "q_zh": "半結構化交易資料存無伺服器 DB，少寫多讀，需毫秒內取回。最低營運負擔？",
+  "q_en": "A company needs to store semi-structured transactional data for an application in a database. The database must be serverless. The application writes the data infrequently, but it reads the data frequently. The application must retrieve the data within milliseconds. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "D": "DynamoDB＋DAX 快取"
+  },
+  "answer_en": {
+   "D": "Store the data in an Amazon DynamoDB table. Configure a DynamoDB Accelerator cache."
+  },
+  "notion": {
+   "keypoint": "Serverless、半結構化、毫秒級高頻讀取資料，用 DynamoDB；讀多且需要更低延遲時加 DynamoDB Accelerator（DAX） cache。",
+   "why": [
+    "DynamoDB 是 serverless NoSQL database，適合半結構化 transactional data。",
+    "題目寫入不頻繁但讀取頻繁，DAX 可作為 DynamoDB 的 in-memory cache，降低讀取延遲到微秒/毫秒級。",
+    "DynamoDB + DAX 營運負擔低，符合 least operational overhead。"
+   ],
+   "flow": "Semi-structured transactions → DynamoDB table → DAX cache → frequent millisecond reads"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 335,
+  "answer": "D",
+  "q_zh": "Redshift 分析查詢與更新維度表的 ETL 同時跑，造成表鎖、逾時與死結。哪個方案能修正？",
+  "q_en": "A company runs concurrent analytical queries on Amazon Redshift tables multiple times each day. The queries require consistent data views three times each day. The company runs extract, transform, and load (ETL) operations that update dimension tables while the queries run. The company has noticed that the queries cause table-level locks during the ETL operations. The company’s current solution experiences query timeouts and deadlocks during peak processing hours, which affects analytical reporting and on-demand analysis. Which solution will fix this issue?",
+  "answer_zh": {
+   "D": "ETL/分析分叢集＋data sharing"
+  },
+  "answer_en": {
+   "D": "Deploy separate Amazon Redshift clusters for ETL and analytics workloads. Use cross- database queries and data sharing to maintain data consistency."
+  },
+  "notion": {
+   "keypoint": "Redshift ETL 與 analytics workload 互相鎖表造成 timeout/deadlock 時，用 separate Redshift clusters 隔離工作負載，並用 cross-database queries / data sharing 保持資料一致。",
+   "why": [
+    "ETL 更新 dimension tables 時會產生 locks，與長時間分析查詢互相影響。",
+    "將 ETL 與 analytics 分到不同 Redshift clusters 可隔離資源與鎖競爭，降低 deadlock/timeout。",
+    "Redshift data sharing / cross-database queries 可讓分析端讀取一致資料，同時不直接干擾 ETL 寫入。"
+   ],
+   "flow": "ETL cluster updates tables → data sharing/cross-database access → analytics cluster queries → isolated workloads"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 336,
+  "answer": "C",
+  "q_zh": "S3 資料湖每天數百萬筆感測資料，每天依感測器類別做複雜查詢。查詢最快？",
+  "q_en": "A company aggregates high-frequency sensor telemetry into an Amazon S3 data lake. Each sensor stream emits structured records every hour. The records include metadata such as sensor category, unit ID, operational state, event timestamp, and site location. The data scales up to millions of records each day. The company runs complex queries each day to uncover performance insights specific to sensor categories. Which solution will meet these requirements with the FASTEST query execution time?",
+  "answer_zh": {
+   "C": "Parquet，依類別分區，依日期排序"
+  },
+  "answer_en": {
+   "C": "Persist the data in Parquet format. Partition the data by sensor category. Sort the data by date"
+  },
+  "notion": {
+   "keypoint": "S3 大量分析資料要最快查詢特定 sensor category，用 Parquet 欄式格式、依 sensor category 分區，並依 date 排序。",
+   "why": [
+    "Parquet 欄式儲存可減少掃描欄位與資料量，適合分析查詢。",
+    "查詢常針對特定 sensor categories，依 sensor category 分區可讓 query pruning 只掃相關分區。",
+    "依 date 排序可改善時間範圍查詢與資料跳讀效率。"
+   ],
+   "flow": "Sensor telemetry → Parquet → partition by sensor category → sort by date → fastest category queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 337,
+  "answer": "D",
+  "q_zh": "Redshift orders 表需刪除過時記錄並從 staging 表插入最新資料，下游需即時最新。哪個方案？",
+  "q_en": "A company uses Amazon Redshift to store order transactions from the current day. The company has an orders table that contains the previous order data. The company also has a staging table that contains new or updated order records. The company needs to remove stale records from the orders table and insert the most recent data in the orders table from the staging table. Several downstream applications need the orders table to display up-to-date information. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "Redshift 預存程序刪除後插入"
+  },
+  "answer_en": {
+   "D": "Write an Amazon Redshift stored procedure that deletes the stale records from the orders table and inserts new records from the staging table."
+  },
+  "notion": {
+   "keypoint": "Redshift 中 staging table 已有新增/更新 records，要更新目標 orders 表，用 Redshift stored procedure 在資料庫內執行 delete stale + insert new。",
+   "why": [
+    "資料已在 Redshift 的 orders table 與 staging table 中，最有效是把處理邏輯留在 Redshift 內執行。",
+    "Stored procedure 可封裝多步驟 SQL：刪除 stale records，再插入 staging 中最新 records。",
+    "下游應用需要 orders 表保持最新，stored procedure 可作為一致的更新流程。"
+   ],
+   "flow": "Staging table new/updated orders → Redshift stored procedure → delete stale from orders + insert latest → up-to-date orders"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 338,
+  "answer": "B",
+  "q_zh": "Firehose 將 CW Logs 送到 S3 供稽核，只送相關日誌且轉成相容格式，需穩定效能。哪個方案？",
+  "q_en": "A company is developing a log streaming pipeline that uses Amazon Data Firehose. The pipeline streams Amazon CloudWatch Logs data to an Amazon S3 bucket. The company's analytics team needs to use the data in audits. The pipeline must deliver only the relevant logs to the S3 bucket in a compatible format for the team's analysis. Which solution will meet these requirements and maintain reliable performance?",
+  "answer_zh": {
+   "B": "訂閱篩選目的地為 Firehose＋Lambda"
+  },
+  "answer_en": {
+   "B": "Create a subscription filter in the CloudWatch Logs log group that uses the Firehose delivery stream as the destination. Create an AWS Lambda function that converts the log files to the desired format. Configure Firehose to invoke the Lambda function."
+  },
+  "notion": {
+   "keypoint": "CloudWatch Logs 只要把相關 logs 送到 S3 且轉成分析相容格式，用 CloudWatch Logs subscription filter → Firehose → Lambda transform → S3。",
+   "why": [
+    "Subscription filter 可在 CloudWatch Logs log group 中篩選符合條件的 log events，只把 relevant logs 傳出去。",
+    "Firehose 可作為 subscription filter destination，並可靠地把資料交付到 S3。",
+    "Firehose 支援 Lambda data transformation，可在寫入 S3 前把 logs 轉成 analytics team 需要的格式。",
+    "這比 S3 bucket rules 或手動 tag/filter 更符合「只傳相關 logs + 格式轉換 + reliable performance」。"
+   ],
+   "flow": "CloudWatch Logs → subscription filter relevant events → Firehose → Lambda transform → S3 compatible logs"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 339,
+  "answer": "A",
+  "q_zh": "網站與 App 即時分析，以最低延遲擷取百萬事件，需可擴展、耐久不遺失。最具成本效益？",
+  "q_en": "A media company wants to build a real-time analytics pipeline to process customer activity events across the company's website and mobile app. The company wants to build a solution to ingest millions of events with minimum latency. The solution must be scalable and durable enough so that no data is lost. Which solution will meet these requirements in the MOST cost-effective way?",
+  "answer_zh": {
+   "A": "KDS＋Lambda 處理＋Redshift"
+  },
+  "answer_en": {
+   "A": "Set up an Amazon Kinesis Data Streams pipeline to ingest data, process the data by using AWS Lambda functions, and store the results in Amazon Redshift for analytics."
+  },
+  "notion": {
+   "keypoint": "即時活動事件要可擴展、耐久、低延遲處理並進 Redshift 分析，用 Kinesis Data Streams → Lambda processing → Redshift。",
+   "why": [
+    "Kinesis Data Streams 適合高吞吐、低延遲、可擴展且 durable 的事件串流擷取。",
+    "Lambda 可即時消費/處理串流事件，不需管理伺服器。",
+    "Redshift 適合儲存處理後結果並支援分析查詢。",
+    "相比 Glue 每 10 分鐘批次、S3 event per file 或 MSK 自管 consumer，Kinesis + Lambda 更符合最低延遲與成本效益。"
+   ],
+   "flow": "Website/mobile events → Kinesis Data Streams → Lambda processing → Redshift analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 340,
+  "answer": "C",
+  "q_zh": "Athena 常對 S3 大資料集跑相同參數的重複複雜查詢，需優化效能與成本。哪個方案？",
+  "q_en": "A company stores a large dataset in an Amazon S3 bucket. A data engineer frequently runs complex queries on the dataset by using Amazon Athena. The data engineer needs to optimize query performance and optimize costs for queries that are run multiple times with the same parameters. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "Workgroup 啟用查詢結果重用"
+  },
+  "answer_en": {
+   "C": "Configure query result reuse settings in the Athena workgroup."
+  },
+  "notion": {
+   "keypoint": "Athena 相同查詢/相同參數重複執行時，用 query result reuse 重用先前結果，降低掃描成本並縮短查詢時間。",
+   "why": [
+    "Query result reuse 可在指定時間內對相同查詢回傳已快取的先前結果。",
+    "重複查詢不必再次掃描 S3 dataset，可降低 Athena 掃描成本。",
+    "對同參數多次執行的查詢，能提升回應速度並減少不必要運算。"
+   ],
+   "flow": "Repeated Athena query with same parameters → workgroup query result reuse → cached result → lower cost/faster response"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 341,
+  "answer": "A",
+  "q_zh": "每天以依賴自訂函式庫的複雜 PySpark 轉換 S3 點擊流後存 Redshift，需高擴展。最低營運負擔？",
+  "q_en": "A company stores raw clickstream data in an Amazon S3 bucket. The company needs a solution to process the data every day by using complex PySpark transformations that rely on custom internal libraries. After the data is transformed, the company must store the data in Amazon Redshift for analytics. The solution must be highly scalable to handle large data workloads. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "Glue Studio PySpark＋連線含函式庫"
+  },
+  "answer_en": {
+   "A": "Use AWS Glue Studio to build and schedule PySpark jobs. Configure an AWS Glue data connection that includes the custom libraries."
+  },
+  "notion": {
+   "keypoint": "要用 PySpark 每日處理 S3 clickstream、使用自訂 libraries 並輸出到 Redshift，最低維運用 AWS Glue Studio PySpark jobs 排程與管理。",
+   "why": [
+    "AWS Glue 是 serverless ETL，支援 PySpark，適合處理大型資料工作負載。",
+    "Glue Studio 可視覺化建立、排程與監控 Glue jobs，降低營運負擔。",
+    "Glue jobs 可設定自訂 Python/JAR libraries，支援內部轉換邏輯。",
+    "可從 S3 讀取 raw clickstream，轉換後寫入 Redshift。"
+   ],
+   "flow": "S3 raw clickstream → Glue Studio scheduled PySpark job + custom libraries → Redshift analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 342,
+  "answer": "C",
+  "q_zh": "Lambda（受管執行環境）寫 CW Logs，需應用日誌只顯示 ERROR、系統日誌只顯示 WARN。哪個方案？",
+  "q_en": "An application uses an AWS Lambda function that is configured with managed runtimes. The Lambda function successfully writes logs to the default Amazon CloudWatch Logs log group. A data engineer wants to modify the logging behavior to show only ERROR level logs for application logs and WARN level logs for system logs. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "Lambda 改用 JSON 日誌格式"
+  },
+  "answer_en": {
+   "C": "Configure the Lambda function to use the JSON log format."
+  },
+  "notion": {
+   "keypoint": "Lambda 要分別控制 application logs 與 system logs 的 log level，需使用 JSON log format 啟用進階 logging controls。",
+   "why": [
+    "Lambda managed runtime 預設會把 logs 寫到 CloudWatch Logs。",
+    "Lambda advanced logging controls 可分別設定 application log level 與 system log level。",
+    "這些 log-level controls 需要 JSON structured log format 才能有效套用。",
+    "因此設定 JSON log format 後，可讓 app logs 只顯示 ERROR，system logs 只顯示 WARN。"
+   ],
+   "flow": "Lambda logs → configure JSON log format → advanced logging controls → app=ERROR / system=WARN"
+  },
+  "disputed": ""
+ }
+]

@@ -1,0 +1,864 @@
+[
+ {
+  "number": 267,
+  "answer": "B",
+  "q_zh": "ML 訓練資料存於 S3，需套用資料品質規則，最少營運負擔？",
+  "q_en": "A company is developing machine learning (ML) models. A data engineer needs to apply data quality rules to training data. The company stores the training data in an Amazon S3 bucket. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "DataBrew 規則集+Profile job+EB"
+  },
+  "answer_en": {
+   "B": "Create an AWS Glue DataBrew project for the data in the S3 bucket. Create a ruleset for the data quality rules. Create a profile job to run the data quality rules. Use Amazon EventBridge to run the profile job when data is added to the S3 bucket."
+  },
+  "notion": {
+   "keypoint": "S3 訓練資料要低維運套用 data quality rules，可用 AWS Glue DataBrew ruleset + profile job，並由 EventBridge 在新資料加入時觸發。",
+   "why": [
+    "DataBrew 提供視覺化資料準備與 data quality rules / ruleset，適合不自寫程式檢查訓練資料品質。",
+    "Profile job 可執行資料剖析與品質規則檢查。",
+    "EventBridge 可在新資料加入 S3 時觸發 profile job，自動化資料品質檢查。",
+    "比 Lambda 自寫檢查、EMR + Python 套件或 Step Functions + Lambda 更少程式與營運負擔。"
+   ],
+   "flow": "S3 training data added → EventBridge → DataBrew profile job → ruleset checks data quality"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 268,
+  "answer": "A",
+  "q_zh": "用 Glue Data Catalog 查 S3 銷售資料，發現部分記錄遺失或過時，最可能原因？",
+  "q_en": "A data engineer needs to analyze time-sensitive sales data. The company stores the data in an Amazon S3 bucket. The data engineer uses AWS Glue Data Catalog to access the data. When the data engineer performs the analysis, the data engineer notices that some records are missing or out of date. What is the likely cause of these issues?",
+  "answer_zh": {
+   "A": "Catalog 未同步最新 S3 分割區"
+  },
+  "answer_en": {
+   "A": "AWS Glue Data Catalog is not up to date with the latest S3 partition changes."
+  },
+  "notion": {
+   "keypoint": "Athena/Glue Catalog 查 S3 分區資料時若資料遺漏或過期，常見原因是 Glue Data Catalog partition metadata 沒有同步最新 S3 partitions。",
+   "why": [
+    "資料存在 S3，並透過 Glue Data Catalog 存取；若新分區未加入 catalog，查詢就看不到最新 records。",
+    "若分區 metadata 指向舊路徑或未更新，分析結果可能 missing 或 out of date。",
+    "題目描述的是時間敏感資料分析時發現 records missing/out of date，最符合 catalog 未同步分區變更。"
+   ],
+   "flow": "New S3 partitions → Glue Data Catalog not updated → query misses latest/out-of-date records"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 269,
+  "answer": "A",
+  "q_zh": "POS 交易在 RDS MySQL，歷史在 Redshift，需每日合併報表、近即時，且傳輸成本與維護最低？",
+  "q_en": "A retail company stores point-of-sale transaction data in an Amazon RDS for MySQL database. The company maintains historical sales analytics in Amazon Redshift. The company needs to create daily reports that combine the current day's transactions with historical sales patterns for trend analysis. The company requires a solution that provides near real-time insights while minimizing data transfer costs and maintenance overhead. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "DMS 持續複寫到 Redshift 再查"
+  },
+  "answer_en": {
+   "A": "Configure AWS Database Migration Service (AWS DMS) to continuously replicate data from RDS for MySQL to Amazon Redshift. Use Redshift queries to create consolidated reports."
+  },
+  "notion": {
+   "keypoint": "RDS MySQL 交易資料要近即時進 Redshift 與歷史資料合併報表，用 AWS DMS continuous replication / CDC → Redshift。",
+   "why": [
+    "題目要 daily reports 且 near real-time insights，需要當日交易資料持續同步到分析倉儲。",
+    "AWS DMS 支援從 RDS MySQL 持續複寫/CDC 到 Redshift，避免每小時批次 ETL 或 S3 匯出匯入。",
+    "Redshift 中即可把 current transactions 與 historical sales patterns 做 consolidated reports。",
+    "相比 federated query，DMS 將資料放入 Redshift，降低跨來源查詢延遲與資料傳輸開銷。"
+   ],
+   "flow": "RDS MySQL transactions → DMS CDC → Redshift → join with historical data → near real-time reports"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 270,
+  "answer": "C",
+  "q_zh": "資料分析師需在進階轉換前準備、標準化資料湖資料，不能寫新程式碼，最少工作量？",
+  "q_en": "A company is creating a new data pipeline to populate a data lake. A data analyst needs to prepare and standardize the data before a data engineering team can perform advanced data transformations. The data analyst needs a solution to process the data that does not require writing new code. Which solution will meet these requirements with the LEAST operational effort?",
+  "answer_zh": {
+   "C": "Glue Studio 資料準備 recipe 轉換"
+  },
+  "answer_en": {
+   "C": "Use AWS Glue Studio with data preparation recipe transformations. Ensure that the data engineers add additional transformations to complete the pipeline."
+  },
+  "notion": {
+   "keypoint": "資料分析師需無程式碼準備/標準化資料，再交給資料工程師擴充 pipeline，用 AWS Glue Studio data preparation recipe transformations。",
+   "why": [
+    "題目要求 data analyst 不寫新 code 即可處理資料，這符合 Glue Studio 的視覺化 data preparation recipe。",
+    "Data preparation recipes 可進行清理、標準化與轉換規則設定。",
+    "資料工程師可在 Glue pipeline 中補上後續進階 transformations。",
+    "比 Python/Pandas notebook 或 SageMaker Canvas/Data Wrangler 更貼近 Glue pipeline 與 data lake ETL。"
+   ],
+   "flow": "Analyst uses Glue Studio recipe transforms → standardized data prep → engineers add advanced transforms → data lake pipeline"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 271,
+  "answer": "C",
+  "q_zh": "RDS Oracle 全表需供未來分析，customer_complaints 表須近即時經 REST API 處理，最具成本效益？",
+  "q_en": "A company uses an Amazon RDS for Oracle database to store data for an ecommerce application. The company needs a solution to make the data in all tables available for future analytics. The solution must process data from a table named customer_complaints in near real time by using a REST API. Which solution will meet these requirements MOST cost-effectively?",
+  "answer_zh": {
+   "C": "DMS→KDS(該表)+DMS→S3+Lambda"
+  },
+  "answer_en": {
+   "C": "Set up one AWS Database Migration Service (AWS DMS) task to stream the customer_complaints table data to Amazon Kinesis Data Streams. Set up a second AWS DMS task to send data to an Amazon S3 bucket. Configure an AWS Lambda function to process Kinesis data and to call the REST API."
+  },
+  "notion": {
+   "keypoint": "RDS Oracle 單表資料要近即時觸發 REST API 並留存分析資料，用 AWS DMS → Kinesis Data Streams + Lambda API call，另用 DMS → S3 保存。",
+   "why": [
+    "DMS 可從 Oracle 做 ongoing replication / CDC，將 customer_complaints 近即時串流到 Kinesis。",
+    "Lambda 消費 Kinesis records 後呼叫 REST API，符合 near real time processing。",
+    "第二個 DMS task 將資料送到 S3，供 future analytics 使用。",
+    "比複製整個資料庫到 PostgreSQL/Redshift 或建立 read replica 後處理更直接、成本較低。"
+   ],
+   "flow": "RDS Oracle customer_complaints → DMS CDC → Kinesis → Lambda → REST API；DMS → S3 analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 272,
+  "answer": "D",
+  "q_zh": "Redshift 複雜轉換查詢要跑數小時，要盡可能縮短查詢時間？",
+  "q_en": "A company maintains a central Amazon Redshift data warehouse that aggregates daily transactional data from Amazon RDS for PostgreSQL and Amazon Aurora MySQL. A data engineer notices that some complex transformation queries take hours to finish. The data engineer wants to optimize query performance to reduce query execution time as much as possible. Which solution will meet this requirement?",
+  "answer_zh": {
+   "D": "對常用查詢建物化檢視(MV)"
+  },
+  "answer_en": {
+   "D": "Use materialized views in Amazon Redshift for frequently queried data patterns."
+  },
+  "notion": {
+   "keypoint": "Redshift 常見複雜 transformation/query pattern 很慢時，用 materialized views 預先計算並保存結果，加速重複查詢。",
+   "why": [
+    "題目是 daily transactional data 匯總後做複雜 transformation，且查詢耗時數小時。",
+    "Materialized view 可預先計算常用 join/aggregation/transformation 結果，查詢時直接讀取已物化資料。",
+    "對 frequently queried data patterns 特別有效，可大幅縮短查詢時間。"
+   ],
+   "flow": "Frequent complex Redshift query → materialized view precompute → query reads MV → shorter runtime"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 273,
+  "answer": "B",
+  "q_zh": "S3 資料湖需轉換清理後，讓多個夥伴在上班時間跑 SQL，最具成本效益？",
+  "q_en": "A company uses an Amazon S3 bucket to integrate multiple data sources into a central data lake. The company needs to perform multiple transformations and data cleaning processes on the data to make the data accessible to business partners. The company needs a solution that will give multiple business partners the ability to run SQL queries on the central data lake during normal business hours. Which solution will meet these requirements MOST cost-effectively?",
+  "answer_zh": {
+   "B": "下班後 Glue Flex→Redshift Serverless"
+  },
+  "answer_en": {
+   "B": "Use an AWS Glue Flex Job after normal business hours to process the previous day's data, apply all necessary transformations. and load the prepared data into Amazon Redshift Serverless."
+  },
+  "notion": {
+   "keypoint": "非急迫批次 ETL 可用 AWS Glue Flex Jobs 降成本；上班時間讓多方 SQL 查詢準備好的資料，用 Redshift Serverless。",
+   "why": [
+    "資料前一天批次處理，且可在 normal business hours 之前完成，不需要即時處理。",
+    "Glue Flex Jobs 適合非 time-sensitive batch ETL，成本低於標準 Glue job。",
+    "Redshift Serverless 讓 business partners 可用 SQL 查詢 prepared data，不需管理 cluster。",
+    "比 provisioned EMR / provisioned Redshift cluster 更少維運且成本彈性更好。"
+   ],
+   "flow": "Previous day S3 data → Glue Flex after hours transforms → Redshift Serverless → partners SQL during business hours"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 274,
+  "answer": "B",
+  "q_zh": "批次 ETL 分擷取、轉換、儲存階段，存 S3，每階段自動重試、可見各階段成敗，最少營運負擔？",
+  "q_en": "A company needs to build an extract, transform, and load (ETL) pipeline that has separate stages for batch data ingestion, transformation, and storage. The pipeline must store the transformed data in an Amazon S3 bucket. Each stage must automatically retry failures. The pipeline must provide visibility into the success or failure of individual stages. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Step Functions 編排 Lambda+Glue"
+  },
+  "answer_en": {
+   "B": "Deploy AWS Step Functions workflows to orchestrate AWS Lambda functions that ingest data. Use AWS Glue jobs to transform the data and store the data in the S3 bucket."
+  },
+  "notion": {
+   "keypoint": "多階段 ETL 需要 retries 與每個 stage 成功/失敗可視性，用 Step Functions 編排；Lambda 做 ingestion，Glue 做 transform/store 到 S3。",
+   "why": [
+    "Step Functions 原生支援 workflow stage 可視化、狀態追蹤、重試與錯誤處理。",
+    "Lambda 適合批次 ingestion 的觸發與輕量邏輯。",
+    "Glue jobs 適合資料轉換並將結果寫入 S3。",
+    "比單純 Glue triggers 串 job 或自建 EventBridge pipeline 更容易看到每個 stage 狀態與控制 retries。"
+   ],
+   "flow": "Step Functions workflow → Lambda ingest → Glue transform/store to S3 → per-stage status + retries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 275,
+  "answer": "C",
+  "q_zh": "資料網格：3 團隊各擁資料，Glue Catalog 千張表，用 Athena/Redshift，需跨域分析、稽核、限制 PII，可擴展？",
+  "q_en": "A company needs to implement a data mesh architecture in which domains for trading, risk, and compliance teams each have own their data. The teams need to share specific views with one another. The teams have over 1,000 tables across 50 databases in AWS Glue Data Catalog. All three teams use Amazon Athena to perform on-demand analysis. The teams use Amazon Redshift to generate complex reports. The compliance team must audit all data access. Access to personally identifiable information (PII) data must be restricted. The company requires a scalable solution to meet the team requirements. The solution must provide the ability to perform analysis across team domains. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "Lake Formation 跨域存取+細粒度"
+  },
+  "answer_en": {
+   "C": "Use AWS Lake Formation to set up cross-domain access to tables. Set up fine-grained access controls."
+  },
+  "notion": {
+   "keypoint": "Data mesh 中多 domain 共享但需限制 PII、審計資料存取與跨 domain 控管，用 AWS Lake Formation fine-grained access control。",
+   "why": [
+    "Lake Formation 可在 Glue Data Catalog tables 上集中管理資料湖權限。",
+    "支援 table/column/row/cell-level 等細粒度權限，適合限制 PII。",
+    "可設定跨 domain table access，同時保留各 domain 的資料所有權與控管。",
+    "Lake Formation 與 CloudTrail 可支援資料存取審計需求。"
+   ],
+   "flow": "Domains own tables → Lake Formation cross-domain grants → fine-grained PII controls → audited access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 276,
+  "answer": "C",
+  "q_zh": "S3 與 RDS 需備份並依期限保留，且保留期間防意外或惡意刪除，最少營運負擔？",
+  "q_en": "A company stores data in Amazon S3 and Amazon RDS. The company needs to apply technical controls to meet security requirements. The company must generate backups of the data and retain the backups for specified retention periods. The company must protect the backups from accidental or malicious deletion during the retention periods. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "AWS Backup 計畫+Vault Lock 合規"
+  },
+  "answer_en": {
+   "C": "Create a backup plan in AWS Backup. Specify the backup schedule, set window and lifecycle values, and select a backup vault. Assign the Amazon S3 and Amazon RDS resources to the backup plan. Create a vault lock in compliance mode."
+  },
+  "notion": {
+   "keypoint": "要統一管理 S3 與 RDS 備份、保留期，並防止保留期間被誤刪或惡意刪除，用 AWS Backup backup plan + Backup Vault Lock compliance mode。",
+   "why": [
+    "AWS Backup 可集中設定 backup schedule、backup window、lifecycle 與 retention period。",
+    "AWS Backup 支援將 S3 與 RDS resources 指派到同一 backup plan，降低多服務個別設定的維運。",
+    "Backup Vault Lock compliance mode 可強制保留，防止備份在保留期間遭 accidental / malicious deletion。",
+    "題目重點是最低營運負擔與防刪除，集中式 AWS Backup 比各服務個別 versioning/snapshot 設定更符合。"
+   ],
+   "flow": "S3 + RDS resources → AWS Backup plan → backup vault → Vault Lock compliance mode → retained and protected backups"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 277,
+  "answer": "C",
+  "q_zh": "每天上傳機密文件到 S3，需獨立驗證所有上傳資料完整性，確認傳輸未損毀？",
+  "q_en": "A data engineer uploads confidential documents to an Amazon S3 bucket every day. The data engineer requires a solution to independently verify the integrity of all uploaded data to confirm that there was no corruption during the transfer process. Which solution will meet this requirement?",
+  "answer_zh": {
+   "C": "上傳前算 SHA-256 傳給 SDK"
+  },
+  "answer_en": {
+   "C": ". Turn on S3 bucket keys to validate data integrity. C) Calculate the SHA-256 checksum for the objects before uploading the objects. Pass the calculated value to the AWS SDK in each upload request."
+  },
+  "notion": {
+   "keypoint": "要驗證 S3 上傳過程無損毀，先計算 SHA-256 checksum，並在 upload request 中傳給 AWS SDK，讓 S3 驗證完整性。",
+   "why": [
+    "S3 支援在物件上傳時提供 checksum，服務端會驗證收到的物件與 checksum 是否一致。",
+    "先在本地計算 SHA-256，再把 checksum 傳入 upload request，可獨立確認傳輸過程沒有 corruption。",
+    "這比上傳後下載全部資料再比對更有效率，也比手動抽樣更完整。"
+   ],
+   "flow": "Calculate SHA-256 locally → upload with checksum via SDK → S3 validates object integrity"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 278,
+  "answer": "C",
+  "q_zh": "S3 物件超過 1 年須 5 小時內可取，所有版本 WORM 不可變保留 7 年？",
+  "q_en": "A company needs to optimize storage for an Amazon S3 bucket. Objects older than 1 year must be accessible within 5 hours. All versions of the objects must be retained and immutable for 7 years. All versions of the objects must use the write-once-read-many (WORM) model. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "Object Lock+1年轉 Glacier Flexible"
+  },
+  "answer_en": {
+   "C": "Configure S3 Object Lock on the bucket and use the S3 Intelligent-Tiering storage class. Configure a lifecycle policy for the bucket to transition objects that are older than 1 year to S3 Glacier Flexible Retrieval. Configure the policy to delete objects that are older than 7 years."
+  },
+  "notion": {
+   "keypoint": "需要 WORM 與版本不可變保留，用 S3 Object Lock；1 年後仍需 5 小時內取回，用 S3 Glacier Flexible Retrieval；7 年後用 lifecycle 刪除。",
+   "why": [
+    "WORM 需求必須用 S3 Object Lock，確保物件版本在保留期內不可覆寫或刪除。",
+    "S3 Glacier Flexible Retrieval 支援 expedited / standard retrieval，能符合 5 小時內取回的需求。",
+    "Lifecycle policy 可將 1 年以上物件轉到較低成本的 Glacier Flexible Retrieval，並在 7 年後刪除。",
+    "S3 Intelligent-Tiering 可用於早期存放與自動最佳化，但 WORM 的關鍵是 Object Lock。"
+   ],
+   "flow": "S3 Object Lock WORM → lifecycle after 1 year to Glacier Flexible Retrieval → delete after 7 years"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 279,
+  "answer": "B",
+  "q_zh": "部署複雜管線，各階段要能執行腳本，只能用全託管、無伺服器服務？",
+  "q_en": "A data engineer needs to deploy a complex pipeline. The stages of the pipeline must be able to run a script. The data engineer must use only fully managed and serverless services in the pipeline. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "MWAA 建置並排程管線"
+  },
+  "answer_en": {
+   "B": "Use Amazon Managed Workflows for Apache Airflow (Amazon MWAA) to build and schedule the pipeline."
+  },
+  "notion": {
+   "keypoint": "複雜 pipeline 多階段都要執行 script，並需排程與管理 DAG，用 Amazon MWAA 建置與排程。",
+   "why": [
+    "題目強調 complex pipeline、stages must run a script，且要 fully managed / serverless services。",
+    "Amazon MWAA 是 managed Apache Airflow，適合用 DAG 編排多步驟 pipeline、排程與執行 script-based tasks。",
+    "比 EC2 cron 更少維運，且比 Glue/DataBrew 更適合通用複雜腳本式 workflow。"
+   ],
+   "flow": "Scripts per stage → Airflow DAG in Amazon MWAA → managed scheduling and orchestration"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 280,
+  "answer": "B",
+  "q_zh": "S3 每天千萬小物件：前60天即時取、61–180天偶爾取、181–365天1小時內可取、365天後刪，最佳化成本？",
+  "q_en": "A company needs to optimize storage costs for an Amazon S3 bucket. The S3 bucket receives 10 million objects every day. The objects range in size from 2 KB to 5 MB. The objects need to be immediately accessible for the first 60 days. Users access objects infrequently from 61 to 180 days. The objects must be accessible within an hour from 181 to 365 days. The company can delete the objects after 365 days. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "生命週期：60天IA→180天GFR→刪"
+  },
+  "answer_en": {
+   "B": "Create an S3 Lifecycle policy to move objects. Configure the policy to move objects from S3 Standard to S3 Standard-Infrequent Access (S3 Standard-IA) after 60 days. Move the objects to S3 Glacier Flexible Retrieval after 180 days. Expire objects after 365 days."
+  },
+  "notion": {
+   "keypoint": "S3 物件隨時間降低存取頻率時，用 lifecycle：Standard 60 天 → Standard-IA 180 天 → Glacier Flexible Retrieval → 365 天刪除。",
+   "why": [
+    "前 60 天需立即存取，使用 S3 Standard 最合適。",
+    "61–180 天不常存取但仍要立即可用，轉到 S3 Standard-IA。",
+    "181–365 天需 1 小時內可取回，S3 Glacier Flexible Retrieval 可滿足 expedited retrieval / 快速取回需求。",
+    "365 天後可刪除，使用 lifecycle expiration 自動刪除。"
+   ],
+   "flow": "0–60d Standard → 61–180d Standard-IA → 181–365d Glacier Flexible Retrieval → expire after 365d"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 281,
+  "answer": "D",
+  "q_zh": "Glue PySpark 需從 DynamoDB 讀已知分割鍵的資料，需 DynamicFrame，RCU 最少？",
+  "q_en": "A company needs to use an Aws Glue PySpark job to read specific data from an Amazon DynamoDB table. The company knows the partition key values for the required records. The existing processing logic of the AWS Glue PySpark job requires the data to be in DynamicFrame format. The company needs a solution to ensure that the job reads only the specified data. Which solution will meet this requirement with the MINIMUM number of read capacity units (RCUs)?",
+  "answer_zh": {
+   "D": "用分割鍵做 query 再轉 DF"
+  },
+  "answer_en": {
+   "D": "Perform a query on the DynamoDB table in the AWS Glue job. Use the partition key in the key condition expression. Put the data into a DynamicFrame."
+  },
+  "notion": {
+   "keypoint": "Glue 只讀 DynamoDB 指定 partition key 的資料時，用 DynamoDB Query + partition key KeyConditionExpression，避免 Scan/filter 浪費 RCU，再轉成 DynamicFrame。",
+   "why": [
+    "DynamoDB Query 會依 partition key 定位資料，只讀符合 key condition 的 items，RCU 消耗最低。",
+    "題目已知 required records 的 partition key values，所以應直接使用 partition key in key condition expression。",
+    "既有 Glue 邏輯需要 DynamicFrame，因此查詢後將結果放入 DynamicFrame。",
+    "Scan 再 filter 會先讀取大量不需要資料，RCU 成本高。"
+   ],
+   "flow": "Known partition keys → DynamoDB Query KeyConditionExpression → selected items only → DynamicFrame"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 282,
+  "answer": "A",
+  "q_zh": "多租戶 EMR，團隊用 EMR Step 跑 Spark 讀 DynamoDB 機密表，只允許特定團隊存取？",
+  "q_en": "A company runs a multi-tenant Amazon EMR cluster on Amazon EC2 instances. Multiple teams perform interactive query analyses and data transformations on the data in the EMR cluster. The teams can access the cluster only through EMR Studio workspaces and EMR steps. The teams need to use EMR steps to run Apache Spark jobs to fetch data from an Amazon DynamoDB table. The DynamoDB table contains confidential data that must be accessible to only one specific team. The company needs to ensure that only the appropriate team can access the confidential data in the EMR cluster. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "為 EMR Step 設 runtime role"
+  },
+  "answer_en": {
+   "A": "Set up runtime roles for EMR steps."
+  },
+  "notion": {
+   "keypoint": "多租戶 EMR 中要讓不同 team 的 EMR steps 只用各自權限存取 DynamoDB，用 runtime roles for EMR steps。",
+   "why": [
+    "EMR runtime roles 可在提交 step/job 時指定 IAM role，讓不同 team 的 step 使用不同權限。",
+    "可把 DynamoDB confidential table access 綁定到特定 team 的 role，避免整個 cluster 共用過寬權限。",
+    "題目說 teams 只能透過 EMR Studio workspaces 和 EMR steps 存取 cluster，runtime roles 正好控制 step 執行時權限。"
+   ],
+   "flow": "Team submits EMR step → step assumes runtime role → role permits only team’s DynamoDB data"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 283,
+  "answer": "C",
+  "q_zh": "S3 每小時進數千個 50–100KB Parquet，評估 Iceberg+Glue Catalog，需確保檔案增多效能不下降？",
+  "q_en": "A company stores Apache Parquet files in an Amazon S3 data lake. The data lake receives thousands of files from multiple sources every hour. The files range in size from 50 KB to 100 KB. The company is evaluating the implementation of Apache Iceberg tables for the data lake. The company is using AWS Glue Data Catalog as part of the evaluation. The company needs a solution to optimize query performance in Iceberg. The solution must ensure that Iceberg table performance does not degrade when more files are added over time. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "Iceberg 依檔案大小/數量自動壓縮"
+  },
+  "answer_en": {
+   "C": "Configure Iceberg table properties to enable automatic compaction based on thresholds for file size and the number of files."
+  },
+  "notion": {
+   "keypoint": "Iceberg 表大量小檔會讓 metadata 與掃描成本上升；設定 automatic compaction thresholds 依檔案大小/數量自動合併小檔。",
+   "why": [
+    "題目每小時新增 thousands of files，且每個只有 50–100 KB，典型 small files problem。",
+    "小檔過多會讓 Iceberg 查詢要讀更多 manifest/metadata 與檔案，查詢效能會隨時間下降。",
+    "以 Iceberg table properties 設定自動 compaction，能依 file size 與 number of files thresholds 自動維持檔案大小。",
+    "比每天手動 Glue job 或頻繁 crawler 更能持續避免效能退化。"
+   ],
+   "flow": "Many 50–100 KB files → Iceberg table compaction thresholds → automatic compaction → stable query performance"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 284,
+  "answer": "B",
+  "q_zh": "IoT 管線用 KDS→Firehose→S3，需監控管線健康，最少營運工作？",
+  "q_en": "A data engineer must maintain and monitor a data pipeline on AWS that processes streaming data from Internet of Things (IoT) devices. The pipeline uses Amazon Kinesis Data Streams to ingest data and Amazon Data Firehose to deliver data to an Amazon S3 bucket. The data engineer needs to monitor the health of the pipeline. Which solution will meet these requirements with the LEAST operational effort?",
+  "answer_zh": {
+   "B": "CW 警報監控 IncomingBytes 等指標"
+  },
+  "answer_en": {
+   "B": "Configure Amazon CloudWatch alarms to monitor key metrics such as IncomingBytes, OutgoingBytes, and DeliveryToS3.Success for Kinesis Data Streams and Firehose"
+  },
+  "notion": {
+   "keypoint": "監控 Kinesis Data Streams 與 Firehose pipeline 健康，最低維運用 CloudWatch alarms 監控關鍵 metrics。",
+   "why": [
+    "CloudWatch 原生收集 Kinesis 與 Firehose metrics，可直接建立 alarms。",
+    "IncomingBytes / OutgoingBytes 可觀察串流進出量是否異常。",
+    "DeliveryToS3.Success 可監控 Firehose 是否成功交付到 S3。",
+    "不需要人工看 logs、自寫 Lambda daily check 或建立 Flink anomaly detection。"
+   ],
+   "flow": "KDS + Firehose metrics → CloudWatch alarms → alert on throughput/delivery failures"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 285,
+  "answer": "A",
+  "q_zh": "產品屬性可變，需高量突發查詢、個位數毫秒延遲，以 Product ID 取值並可依 Category、Brand 查？",
+  "q_en": "A company needs a solution to store and query product data that has variable attributes. The solution must support unpredictable and high-volume queries with single-digit millisecond latency, even during sudden traffic spikes. The solution must retrieve items by a primary identifier named Product ID. The solution must allow flexible queries by secondary attributes named Category and Brand. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "DynamoDB 隨需容量+主鍵+GSI"
+  },
+  "answer_en": {
+   "A": "Use an Amazon DynamoDB table with on-demand capacity to store product data. Store products by primary key. Use global secondary indexes (GSIs) to store secondary attributes."
+  },
+  "notion": {
+   "keypoint": "可變屬性、高流量不可預測、單位數毫秒查詢用 DynamoDB on-demand；依 Category/Brand 查詢用 GSIs。",
+   "why": [
+    "DynamoDB 適合 key-value / document 類可變屬性資料，並提供 single-digit millisecond latency。",
+    "On-demand capacity 可自動應付 unpredictable and high-volume queries，不需預先容量規劃。",
+    "主查詢用 Product ID 作 primary key。",
+    "Category、Brand 這類次要查詢模式可用 GSI 支援 flexible queries。"
+   ],
+   "flow": "ProductID primary key → DynamoDB on-demand → GSIs on Category/Brand → millisecond flexible queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 286,
+  "answer": "A",
+  "q_zh": "地端日誌上傳 S3，需驗證 S3 上的日誌與地端一致？",
+  "q_en": "A company is uploading log files from on-premises servers to an Amazon S3 bucket. The company needs to validate that the logs from the on-premises server are the same as the logs that are stored in the S3 bucket. Which solution will meet this requirement?",
+  "answer_zh": {
+   "A": "SDK 上傳自動算 CRC32 存中繼資料"
+  },
+  "answer_en": {
+   "A": "Use the AWS SDK to automatically compute CRC32 checksums during the upload. Store the checksums in S3 object metadata."
+  },
+  "notion": {
+   "keypoint": "要驗證 on-prem 上傳到 S3 的 log 檔案未損毀，可在 upload 時用 AWS SDK checksum（CRC32） 做完整性驗證，並把 checksum 存入 object metadata。",
+   "why": [
+    "AWS SDK 可在上傳時計算 checksum，S3 可用 checksum 驗證傳輸內容是否一致。",
+    "將 checksum 存在 S3 object metadata，之後可用來比對 on-prem 原始 log 與 S3 中的物件。",
+    "這是針對「資料是否相同、是否在傳輸中損毀」的直接解法。",
+    "Object Lock 是保護物件不被改/刪，不是驗證上傳完整性。"
+   ],
+   "flow": "On-prem log → AWS SDK upload with CRC32 checksum → S3 validates → checksum stored in metadata"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 287,
+  "answer": "A",
+  "q_zh": "EventBridge Scheduler 呼叫 Glue workflow，取消訂單 FailedInvocations 很高，須找出失敗原因？",
+  "q_en": "An ecommerce company uses AWS Glue ETL to process and analyze orders. The company wants to build an extract, transform, and load (ETL) pipeline that processes placed, shipped, delivered, and canceled orders differently. The company integrates the order processing system with Amazon EventBridge. The company configures EventBridge Scheduler rules for each order status to invoke different AWS Glue workflows. When the company examines Amazon CloudWatch metrics for the workflow, the company notices that the FailedInvocations metric shows a high value for canceled orders. The company must determine the cause of the failed invocations. Which solution will meet this requirement?",
+  "answer_zh": {
+   "A": "Scheduler 設 DLQ 存失敗事件分析"
+  },
+  "answer_en": {
+   "A": "Configure a dead-letter queue in EventBridge Scheduler to store failed events. Analyze the failed order events."
+  },
+  "notion": {
+   "keypoint": "EventBridge Scheduler 觸發失敗要找原因，設定 dead-letter queue（DLQ） 保存 failed events，再分析失敗的事件內容。",
+   "why": [
+    "FailedInvocations 只能看出呼叫失敗量高，但不能完整保留每個失敗事件的 payload 與上下文。",
+    "EventBridge Scheduler 支援 DLQ，目標呼叫失敗後可把事件送到 DLQ。",
+    "分析 DLQ 中 canceled orders 的 failed events，就能找出是資料內容、權限、目標 workflow 或參數造成失敗。",
+    "調整 retry policy 可能降低暫時性失敗，但不能幫助判斷根因。"
+   ],
+   "flow": "Scheduler invokes Glue workflow → failed invocation → event sent to DLQ → inspect canceled order payload/cause"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 288,
+  "answer": "C",
+  "q_zh": "處理 S3 1TB 檔產生 3 個 DataFrame 平行存另一 S3，管線為 EventBridge 規則目標，最少維護？",
+  "q_en": "A company needs to build a data pipeline to process a 1-TB file from an Amazon S3 bucket. The pipeline needs to create three DataFrames based on business logic. The pipeline must save all three DataFrames to a second S3 bucket in parallel. The company needs to set the pipeline to be the target of an Amazon EventBridge rule that matches file uploads to the source S3 bucket. Which solution will meet these requirements with the LEAST maintenance overhead?",
+  "answer_zh": {
+   "C": "Glue workflow 平行跑 3 個 job"
+  },
+  "answer_en": {
+   "C": "Configure an AWS Glue workflow to run three AWS Glue jobs in parallel to process the file."
+  },
+  "notion": {
+   "keypoint": "大型 S3 檔案要平行產生多個 DataFrames 並最低維運，用 AWS Glue workflow 平行啟動三個 Glue jobs。",
+   "why": [
+    "1 TB 檔案不適合 Lambda 處理；Glue/Spark 更適合大型資料處理。",
+    "三個 DataFrames 可由三個 Glue jobs 平行處理，各自依 business logic 輸出到目標 S3 bucket。",
+    "Glue workflow 可編排 Glue jobs 並支援平行執行，維運少於 EMR Spark Streaming 或 Step Functions 額外編排層。",
+    "EventBridge rule 可在 source S3 bucket 上傳檔案時觸發 workflow。"
+   ],
+   "flow": "S3 upload event → EventBridge → Glue workflow → 3 parallel Glue jobs → 3 DataFrames to destination S3"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 289,
+  "answer": "B",
+  "q_zh": "KDS 的 IoT 資料需近即時做複雜、有狀態轉換後存 S3，最少營運負擔？",
+  "q_en": "A company needs to transform IoT sensor data in near real time before the company stores the data in an Amazon S3 bucket. The data is available from a data stream in Amazon Kinesis Data Streams. The company needs to apply complex and stateful transformations to the data before the company stores the data. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Managed Service for Apache Flink"
+  },
+  "answer_en": {
+   "B": "Configure an application in Amazon Managed Service for Apache Flink to process the data stream."
+  },
+  "notion": {
+   "keypoint": "Kinesis 串流資料需要近即時、複雜且 stateful transformations，用 Amazon Managed Service for Apache Flink。",
+   "why": [
+    "Apache Flink 適合低延遲、有狀態串流處理，例如 window、聚合、事件狀態與複雜轉換。",
+    "Managed Service for Apache Flink 是全託管服務，降低自行管理叢集的營運負擔。",
+    "Glue ETL jobs 與 EMR Spark jobs 偏批次/叢集工作，不是最低維運的近即時 stateful stream processing。",
+    "Lambda 可做簡單事件處理，但複雜 stateful transformations 不如 Flink 適合。"
+   ],
+   "flow": "Kinesis IoT stream → Managed Service for Apache Flink stateful transforms → S3"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 290,
+  "answer": "A",
+  "q_zh": "S3 時序資料只允許部署在公司 VPC 內的工作負載存取？",
+  "q_en": "A company stores time-series data that is collected from streaming services in an Amazon S3 bucket. The company must ensure that only workloads that are deployed within the company’s VPC can access the data. Which solution will meet this requirement?",
+  "answer_zh": {
+   "A": "Bucket policy 條件限定來源 VPC"
+  },
+  "answer_en": {
+   "A": "Create an S3 bucket policy that uses a condition to allow access only to traffic that originates from the company’s VPC."
+  },
+  "notion": {
+   "keypoint": "要限制 S3 bucket 只能由公司 VPC 內 workload 存取，用 S3 bucket policy condition（例如來源 VPC / VPC endpoint 條件）控管。",
+   "why": [
+    "S3 bucket policy 可用 condition 限制請求來源，例如只允許來自特定 VPC 或 VPC endpoint 的流量。",
+    "這能集中保護 bucket，確保只有部署在公司 VPC 且透過允許路徑來的 workloads 可以存取資料。",
+    "Security group 不能套用到 S3 bucket。",
+    "Network ACL 是 subnet 層級控制，不適合精準授權 S3 bucket 存取。"
+   ],
+   "flow": "Workload in company VPC → VPC endpoint/source VPC condition → S3 bucket policy allows access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 291,
+  "answer": "A",
+  "q_zh": "Glue 平台需資料品質驗證：含已知問題規則，且能自動偵測未預期問題，最少營運負擔？",
+  "q_en": "A company runs a data platform on AWS. The data platform uses AWS Glue to provide a data catalog and to perform processing. The company notices quality issues in the data. The company needs to implement data quality validations. The validations must include rules for known issues. The validations must have the ability to automatically detect unexpected data quality issues. Which solution will meet these requirements with the LEAST operation overhead?",
+  "answer_zh": {
+   "A": "Glue Data Quality+異常偵測"
+  },
+  "answer_en": {
+   "A": "Use AWS Glue jobs to implement AWS Glue Data Quality validations that include anomaly detection."
+  },
+  "notion": {
+   "keypoint": "AWS Glue 資料平台要做資料品質驗證，且要同時支援已知規則與自動偵測未預期問題，用 AWS Glue Data Quality + anomaly detection。",
+   "why": [
+    "題目已使用 Glue 做 catalog 與 processing，因此用 Glue Data Quality 可直接整合現有 Glue jobs。",
+    "已知問題可透過 Glue Data Quality rules 驗證。",
+    "未預期資料品質問題可透過 anomaly detection 自動偵測。",
+    "比自行導入 open source framework、手寫 SQL statement 或先用 DataBrew profiling 再設規則更少營運負擔。"
+   ],
+   "flow": "Glue jobs/data catalog → Glue Data Quality rules → anomaly detection → known + unexpected issues"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 292,
+  "answer": "D",
+  "q_zh": "自管 Iceberg 資料湖，即時表由大量小檔組成導致查詢慢，需提升效能？",
+  "q_en": "A company uses an Amazon S3 Standard bucket to maintain a self-managed transactional data lake that uses Apache Iceberg tables. The data lake ingests data both in real time and in batches. Users report slow performance for real-time tables. A data engineer reviews the real-time tables and notices that the tables are made up of many small data files The data engineer must improve the performance of the real-time tables. Which solution will meet this requirement?",
+  "answer_zh": {
+   "D": "執行壓縮(compaction)"
+  },
+  "answer_en": {
+   "D": "Apply compaction."
+  },
+  "notion": {
+   "keypoint": "Iceberg 即時表由大量小檔組成導致查詢慢時，套用 compaction 合併小檔，降低 metadata 與 file scan overhead。",
+   "why": [
+    "即時與批次 ingestion 容易產生許多小資料檔。",
+    "小檔太多會增加 manifest/metadata 讀取與 S3 request/file open overhead，讓 Iceberg 查詢變慢。",
+    "Compaction 會把小檔合併成較大的檔案，改善查詢效能。"
+   ],
+   "flow": "Realtime Iceberg writes → many small files → compaction → fewer larger files → faster queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 293,
+  "answer": "D",
+  "q_zh": "每日 CSV 交易日誌存 S3，Athena 當天查部分欄位，量增變慢，要查詢時間最短？",
+  "q_en": "An ecommerce company collects daily customer transaction logs in CSV format and stores the logs in Amazon S3. The company uses Amazon Athena to scan a subset of attributes from the logs on the same day the company receives each log. Query times are increasing because of increasing transaction volume. The company wants to improve query performance. Which solution will meet these requirements with the SHORTEST query times?",
+  "answer_zh": {
+   "D": "每日單一 Parquet+日期分割+下推"
+  },
+  "answer_en": {
+   "D": "Convert the CSV logs to a single Apache Parquet file for each day Partition the data by date in Amazon S3. Use Athena with predicate pushdown filters."
+  },
+  "notion": {
+   "keypoint": "Athena 查大量 CSV 要縮短查詢時間，轉成 Parquet、依日期分區，並在查詢使用 predicate pushdown / partition filters。",
+   "why": [
+    "Parquet 是欄式格式，Athena 可只讀需要欄位並利用壓縮，通常比 CSV 快很多。",
+    "依 date 分區後，Athena 可透過 partition pruning 只掃描指定日期。",
+    "Predicate pushdown filters 可進一步降低掃描資料量。",
+    "每日單一 Parquet 檔也可避免過多小檔造成的查詢 overhead。"
+   ],
+   "flow": "Daily CSV logs → one Parquet file per day → S3 date partitions → Athena predicate pushdown → shortest query time"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 294,
+  "answer": "A",
+  "q_zh": "S3 客戶資料超過 7 年必須永久刪除？",
+  "q_en": "A company stores customer data in an Amazon S3 bucket. The company must permanently delete all customer data that is older than 7 years. Which solution will meet this requirement?",
+  "answer_zh": {
+   "A": "生命週期政策刪除超過7年物件"
+  },
+  "answer_en": {
+   "A": "Configure an S3 Lifecycle policy to permanently delete objects that are older than 7 years."
+  },
+  "notion": {
+   "keypoint": "S3 物件超過固定保存期限需永久刪除，用 S3 Lifecycle expiration 自動刪除超過 7 年的 objects。",
+   "why": [
+    "S3 Lifecycle 可依物件年齡自動 transition 或 expire objects。",
+    "題目要求 permanently delete all customer data older than 7 years，直接設定 7 年後 expiration 最符合。",
+    "不需要每天用 Athena 查詢後手動/程式刪除。"
+   ],
+   "flow": "S3 customer objects → lifecycle rule age \\> 7 years → expire/delete permanently"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 295,
+  "answer": "D",
+  "q_zh": "兩團隊各在不同帳號，要存取第三帳號 Redshift 的 datashare salesshare，用 SQL 授權？",
+  "q_en": "Two data engineering teams use separate AWS accounts. Both teams request access to the same datashare in an Amazon Redshift cluster that is in a third AWS account. The datashare is named salesshare. A data engineer must use the Amazon Redshift SQL interface to grant both data engineering teams' access to the datashare. Which command or commands will meet this requirement?",
+  "answer_zh": {
+   "D": "兩條 GRANT … TO NAMESPACE"
+  },
+  "answer_en": {
+   "D": "GRANT USAGE ON DATASHARE salesshare TO NAMESPACE ‘’; GRANT USAGE ON DATASHARE salesshare TO NAMESPACE ‘’;"
+  },
+  "notion": {
+   "keypoint": "Redshift datashare 要授權給特定 consumer cluster/serverless workgroup，使用 GRANT USAGE ON DATASHARE ... TO NAMESPACE 對各 namespace 授權。",
+   "why": [
+    "Redshift data sharing 的消費端識別常用 namespace，而不是直接用 AWS account name 或 IAM-style account string。",
+    "兩個 data engineering teams 在不同 AWS accounts，需要分別對各自的 Redshift namespace 授權。",
+    "SQL 介面中用 GRANT USAGE ON DATASHARE saleshare TO NAMESPACE '...' 可讓指定 namespace 使用 datashare。"
+   ],
+   "flow": "Producer datashare saleshare → grant usage to namespace A → grant usage to namespace B → teams can access"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 296,
+  "answer": "D",
+  "q_zh": "DynamoDB 資料保留 1 年，之後封存 5 年再刪除，最具作業效率？",
+  "q_en": "A company regularly loads data into an Amazon DynamoDB table. The company must retain the data in DynamoDB for 1 year. After 1 year, the company must archive the data for 5 years. After 5 years, the company must delete the data. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "answer_zh": {
+   "D": "Streams+TTL+Lambda→DA+生命週期刪"
+  },
+  "answer_en": {
+   "D": "Enable Amazon DynamoDB Streams. Configure a TTL rule to delete items from the DynamoDB table after 1 year. Use an AWS Lambda function to consume the stream and send items directly to Amazon S3 Glacier Deep Archive. Create an S3 Lifecycle policy to delete the items after 5 years."
+  },
+  "notion": {
+   "keypoint": "DynamoDB 資料保留 1 年後要歸檔，再 5 年後刪除：用 DynamoDB TTL 觸發刪除，透過 DynamoDB Streams + Lambda 擷取舊資料送到 S3 Glacier Deep Archive，再用 S3 lifecycle 到期刪除。",
+   "why": [
+    "DynamoDB TTL 可自動在 1 年後刪除 table 中的 items，營運負擔低。",
+    "啟用 DynamoDB Streams 並保留 old image，可讓 Lambda 在 TTL delete 時取得被刪除 item。",
+    "Lambda 將 item 直接寫入 S3 Glacier Deep Archive，符合長期低成本歸檔。",
+    "S3 Lifecycle 可在歸檔滿 5 年後自動刪除，避免自建排程清理。"
+   ],
+   "flow": "DynamoDB item → TTL after 1 year → Streams REMOVE old image → Lambda → S3 Glacier Deep Archive → lifecycle delete after 5 years"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 297,
+  "answer": "D",
+  "q_zh": "已啟用版本控制的 S3，設 365 天過期規則後物件數反而加倍，須如何永久刪除舊物件？",
+  "q_en": "A company must retain specific data for 1 year. A data engineer observes that one of the company’s Amazon S3 buckets contains millions of objects that are older than 3 years. Versioning is enabled on the bucket. To reduce costs, the data engineer implements an S3 Lifecycle rule to expire objects after 365 days. The new S3 Lifecycle rule causes the object count to double instead of decrease. Which additional step must the data engineer take to permanently delete the old objects?",
+  "answer_zh": {
+   "D": "加規則刪除現行與非現行版本"
+  },
+  "answer_en": {
+   "D": "Add an additional S3 Lifecycle rule to delete the current and expired versions of objects that are older than 365 days."
+  },
+  "notion": {
+   "keypoint": "S3 versioning bucket 只 expire current object 會產生 delete marker，物件數可能增加；要永久刪除需 lifecycle 同時清理 current / noncurrent versions 與 expired delete markers。",
+   "why": [
+    "啟用 versioning 時，刪除目前版本通常會新增 delete marker，而不是立刻刪除所有版本。",
+    "只設定 expire current objects 可能讓 delete marker 增加，因此 object count 反而上升。",
+    "需要額外 lifecycle rule 清理舊版本/過期版本，才能永久刪除超過 365 天的資料。"
+   ],
+   "flow": "Versioned bucket + expire current → delete markers increase → lifecycle deletes old versions/delete markers → permanent deletion"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 298,
+  "answer": "A",
+  "q_zh": "Glue 處理 IoT 資料，需自動標記溫度超出 -50~150°C 及缺時間戳記錄，極少寫程式？",
+  "q_en": "A manufacturing company uses AWS Glue jobs to process IoT sensor data to generate predictive maintenance models. A data engineer needs to implement automated data quality checks to identify temperature readings that are outside the expected range of -50°C to 150°C. The data quality checks must also identify records that are missing timestamp values. The data engineer needs a solution that requires minimal coding and can automatically flag the specified issues. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "DataBrew：完整性+數值範圍規則"
+  },
+  "answer_en": {
+   "A": "Create an AWS Glue DataBrew project to profile the sensor data Define completeness rules for timestamps. Set up numeric range validation for temperature values."
+  },
+  "notion": {
+   "keypoint": "少寫程式地檢查已知資料品質規則（timestamp 不可缺、temperature 範圍），用 AWS Glue DataBrew profile + data quality rules。",
+   "why": [
+    "題目要求 minimal coding 並自動 flag 指定問題。",
+    "DataBrew 可視覺化建立資料剖析與資料品質 rules。",
+    "Completeness rule 可檢查 timestamp 是否缺漏。",
+    "Numeric range validation 可檢查 temperature 是否超出 -50°C 到 150°C。"
+   ],
+   "flow": "Sensor data → DataBrew profile → completeness(timestamp) + numeric range(temperature) → flagged issues"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 299,
+  "answer": "A",
+  "q_zh": "推薦系統需整合第三方資料集到既有分析平台，最少營運負擔與時間？",
+  "q_en": "A media company wants to improve a system that recommends media content to customers based on user behavior and preferences. To improve the recommendation system, the company needs to incorporate insights from third- party datasets into the company’s existing analytics platform. The company wants to minimize the effort and time required to incorporate third-party datasets. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "API 從 AWS Data Exchange 取用"
+  },
+  "answer_en": {
+   "A": "Use API calls to access and integrate third-party datasets from AWS Data Exchange."
+  },
+  "notion": {
+   "keypoint": "要快速、低維運取得並整合第三方資料集，用 AWS Data Exchange，透過 API 存取第三方 datasets。",
+   "why": [
+    "AWS Data Exchange 是 AWS 上尋找、訂閱與使用第三方資料集的服務。",
+    "透過 API calls 可把第三方資料集整合到既有 analytics platform，減少自行找資料來源、下載與維護整合流程的時間。",
+    "題目重點是 minimize effort and time，Data Exchange 最貼合。"
+   ],
+   "flow": "Need third-party datasets → AWS Data Exchange subscription/API → integrate into analytics platform"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 300,
+  "answer": "C",
+  "q_zh": "年度報表存 S3，1 週後少存取，需保留 7 年且隨時可存取，最具成本效益？",
+  "q_en": "A company generates yearly financial statements for customers and stores the statements in an Amazon S3 bucket. Customers rarely access the documents after 1 week. The company must retain the statements for 7 years. The statements must remain readily accessible for customers. Which solution will meet these requirements in the MOST cost-effective way?",
+  "answer_zh": {
+   "C": "7天後轉 Glacier IR，7年過期"
+  },
+  "answer_en": {
+   "C": "Create an S3 Lifecycle rule to transition objects to S3 Glacier Instant Retrieval after 7 days. Expire the objects after 7 years."
+  },
+  "notion": {
+   "keypoint": "S3 物件 1 週後很少存取但仍需立即可用，最省成本用 S3 Glacier Instant Retrieval；7 年後用 lifecycle expiration 刪除。",
+   "why": [
+    "報表 1 週後 rarely accessed，適合移到低成本 archival storage。",
+    "需求是 readily accessible，Glacier Instant Retrieval 可提供毫秒級取回，適合偶爾存取但要立即讀取的資料。",
+    "7 年保存期結束後，用 S3 Lifecycle expire objects。",
+    "Glacier Deep Archive 取回時間較長，不符合 readily accessible。"
+   ],
+   "flow": "S3 financial statements → after 7 days Glacier Instant Retrieval → expire after 7 years"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 301,
+  "answer": "B",
+  "q_zh": "Glue ETL 處理 PII 並寫入 CW Logs 日誌群組，需在日誌群組遮罩 PII？",
+  "q_en": "A company runs an extract, transform, and load (ETL) job in AWS Glue. The job processes personally identifiable information (PII) data and writes logs to an Amazon CloudWatch Logs log group. A data engineer needs to mask PII data in the CloudWatch logs group. Which solution will meet these requirements?",
+  "answer_zh": {
+   "B": "日誌群組套用資料保護政策"
+  },
+  "answer_en": {
+   "B": "Configure a data protection policy. Attach the policy to the CloudWatch log group."
+  },
+  "notion": {
+   "keypoint": "CloudWatch Logs 中要遮罩/保護 PII，使用 CloudWatch Logs data protection policy 套用到 log group。",
+   "why": [
+    "題目重點是 PII 已寫入 CloudWatch Logs，需要在 CloudWatch log group 中 mask PII。",
+    "CloudWatch Logs data protection policy 可偵測並遮罩敏感資料，並可套用在指定 log group。",
+    "這是針對「log 中 PII 保護」的原生解法。"
+   ],
+   "flow": "Glue ETL logs → CloudWatch log group → data protection policy → PII masked in logs"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 302,
+  "answer": "C",
+  "q_zh": "EC2 與 RDS 同子網，EC2 應用需以 JDBC 連 RDS？",
+  "q_en": "A company creates a new non-production application that runs on an Amazon EC2 instance. The application needs to communicate with an Amazon RDS database instance using Java Database Connectivity (JDBC). The EC2 instances and the RDS database instance are in the same subnet. Which solution will meet this requirement?",
+  "answer_zh": {
+   "C": "DB 安全群組允許 EC2 連入"
+  },
+  "answer_en": {
+   "C": "Update the database security group to allow connections from the EC2 instances."
+  },
+  "notion": {
+   "keypoint": "EC2 要連 RDS，核心是 RDS security group inbound rule 允許 EC2 instance / EC2 security group 的資料庫連線。",
+   "why": [
+    "EC2 與 RDS 在同一 subnet 不代表自動可互通，仍需 security group 允許 inbound database port。",
+    "JDBC 連線是 network-level database connection，應在 RDS security group 允許來自 EC2 的連線。",
+    "最佳做法通常是以 EC2 的 security group 作為來源，而不是開放 CIDR。"
+   ],
+   "flow": "EC2 app → RDS security group inbound allows EC2 SG/database port → JDBC connection succeeds"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 303,
+  "answer": "C",
+  "q_zh": "電商需收集網站與 App 點擊流做即時分析並儲存，最少持續維護？",
+  "q_en": "A retail company wants to implement real-time analytics for an ecommerce platform. The company needs to collect clickstream data from the company's website and mobile apps. The company needs to store the data for analytics. Which solution will meet these requirements with the LEAST ongoing maintenance?",
+  "answer_zh": {
+   "C": "KDS 收集+Firehose 送 S3"
+  },
+  "answer_en": {
+   "C": "Use Amazon Kinesis Data Streams to collect the streaming data. Use Amazon Data Firehose to deliver the data to an Amazon S3 bucket."
+  },
+  "notion": {
+   "keypoint": "即時收集 clickstream 串流資料並低維運落地到資料湖，用 Kinesis Data Streams → Data Firehose → S3。",
+   "why": [
+    "Kinesis Data Streams 適合收集網站與 mobile app 的高吞吐 clickstream events。",
+    "Data Firehose 是全託管 delivery service，可把串流資料持續交付到 S3。",
+    "S3 可作為 analytics platform 的資料湖落地區，後續可由 Athena/Glue/Redshift Spectrum 等分析。",
+    "相比 EC2 agent、MSK、RDS，這個組合維運最低且更適合串流資料湖。"
+   ],
+   "flow": "Website/mobile clickstream → Kinesis Data Streams → Data Firehose → S3 data lake → analytics"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 304,
+  "answer": "C",
+  "q_zh": "Glue ETL 需檢查出貨日>訂單日、送達日>出貨日，不合格存另一 S3，最具成本效益？",
+  "q_en": "A company uses AWS Glue ETL pipelines to process data. The company uses Amazon Athena to analyze data in an Amazon S3 bucket. To better understand shipping timelines, the company decides to collect and store shipping and delivery dates in addition to order data. The company adds a data quality check to ensure that shipping date is greater than order date and that delivery date is greater than shipping date. Orders that fail the quality check must be stored in a second S3 bucket. Which solution will meet these requirements MOST cost-effectively?",
+  "answer_zh": {
+   "C": "Glue DQ 自訂規則用三日期欄"
+  },
+  "answer_en": {
+   "C": "Use AWS Glue Data Quality to create a custom rule that uses the three date columns."
+  },
+  "notion": {
+   "keypoint": "Glue ETL pipeline 中要檢查多欄位條件（shipping date \\> order date 且 delivery date \\> shipping date），用 AWS Glue Data Quality custom rule。",
+   "why": [
+    "題目已使用 Glue ETL，直接在 Glue pipeline 中加入 Glue Data Quality rule 最整合、最省成本。",
+    "Custom rule 可表達三個日期欄位之間的邏輯條件。",
+    "失敗的 records 可在 Glue job 中分流到第二個 S3 bucket。",
+    "不需要額外用 Athena 查詢、DataBrew 產生欄位或 crawler 只做 catalog。"
+   ],
+   "flow": "Glue ETL → Glue Data Quality custom date rule → pass to primary S3 / fail to second S3"
+  },
+  "disputed": ""
+ }
+]

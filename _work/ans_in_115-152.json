@@ -1,0 +1,829 @@
+[
+ {
+  "number": 115,
+  "answer": "C",
+  "q_zh": "公司用 Transfer Family 從地端遷移資料至 AWS，政策要求傳輸中加密須用 TLS 1.2 以上。哪個方案符合？",
+  "q_en": "A company is using an AWS Transfer Family server to migrate data from an on- premises environment to AWS. Company policy mandates the use of TLS 1.2 or above to encrypt the data in transit. Which solution will meet these requirements?",
+  "answer_zh": {
+   "C": "改 Transfer 安全政策最低 TLS 1.2"
+  },
+  "answer_en": {
+   "C": "Update the security policy of the Transfer Family server to specify a minimum protocol version of TLS 1.2"
+  },
+  "notion": {
+   "keypoint": "Transfer Family 要強制傳輸中加密版本，重點是更新 server security policy，指定最低 TLS 版本為 1.2。",
+   "why": [
+    "題目要求「必須使用 TLS 1.2 或以上」來加密傳輸中資料。",
+    "Transfer Family 的 security policy 可控制允許的 TLS protocol / cipher suites。",
+    "直接設定最低 TLS 1.2，最符合政策要求，也比只調網路規則更精準。"
+   ],
+   "flow": "Transfer Family server → security policy min TLS 1.2 → encrypted transfer"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 116,
+  "answer": "D",
+  "q_zh": "地端 Kafka 接收 Oracle 增量更新，要以 replatform（非 refactor）遷移至 AWS，管理負擔最低？",
+  "q_en": "A company wants to migrate an application and an on-premises Apache Kafka server to AWS. The application processes incremental updates that an on- premises Oracle database sends to the Kafka server. The company wants to use the replatform migration strategy instead of the refactor strategy. Which solution will meet these requirements with the LEAST management overhead?",
+  "answer_zh": {
+   "D": "MSK Serverless"
+  },
+  "answer_en": {
+   "D": "Amazon Managed Streaming for Apache Kafka (Amazon MSK) Serverless"
+  },
+  "notion": {
+   "keypoint": "要把既有 Apache Kafka 工作負載 replatform 到 AWS、又要最低管理負擔：選 MSK Serverless。",
+   "why": [
+    "題目明確是既有 Apache Kafka server，策略是 replatform 而非 refactor。",
+    "MSK Serverless 保留 Kafka 相容性，降低 broker、容量、擴縮與叢集維運。",
+    "Provisioned MSK 仍需較多容量規劃；Kinesis Data Streams / Firehose 會偏重構，不是保留 Kafka 生態的 replatform。"
+   ],
+   "flow": "On-prem Kafka workload → MSK Serverless → Kafka-compatible managed streaming"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 117,
+  "answer": "C",
+  "q_zh": "Glue ETL 匯入 S3 壓縮檔，管線須支援增量處理，該用哪個 Glue 功能？",
+  "q_en": "A data engineer is building an automated extract, transform, and load (ETL) ingestion pipeline by using AWS Glue. The pipeline ingests compressed files that are in an Amazon S3 bucket. The ingestion pipeline must support incremental data processing. Which AWS Glue feature should the data engineer use to meet this requirement?",
+  "answer_zh": {
+   "C": "Job bookmarks"
+  },
+  "answer_en": {
+   "C": "Job bookmarks"
+  },
+  "notion": {
+   "keypoint": "Glue 要支援增量處理，直接開 Job Bookmarks，讓 Glue 記住已處理過的 S3 檔案。",
+   "why": [
+    "Job bookmarks 會追蹤前次處理狀態，後續 job run 只處理新增或尚未處理資料。",
+    "題目核心是 ingestion pipeline must support incremental data processing，這正是 bookmarks 的用途。"
+   ],
+   "flow": "S3 compressed files → Glue job bookmarks → process only new files"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 118,
+  "answer": "A",
+  "q_zh": "銀行用 PutRecord 寫入 KDS，特定時段網路中斷，要整條管線 exactly-once 遞送，怎麼做？",
+  "q_en": "A banking company uses an application to collect large volumes of transactional data. The company uses Amazon Kinesis Data Streams for real- time analytics. The company’s application uses the PutRecord action to send data to Kinesis Data Streams. A data engineer has observed network outages during certain times of day. The data engineer wants to configure exactly-once delivery for the entire processing pipeline. Which solution will meet this requirement?",
+  "answer_zh": {
+   "A": "來源嵌入唯一 ID，處理時去重"
+  },
+  "answer_en": {
+   "A": "Design the application so it can remove duplicates during processing by embedding a unique ID in each record at the source."
+  },
+  "notion": {
+   "keypoint": "Kinesis 串流要做到整體 exactly-once，不能只靠服務本身；要在來源加入 unique ID，由處理端做去重與冪等。",
+   "why": [
+    "網路中斷時，producer 可能重試 PutRecord，造成同一事件被送入多次。",
+    "Kinesis Data Streams 本身不保證端到端 exactly-once；實務上要靠 record ID + consumer/state store 去重。",
+    "在來源嵌入唯一 ID，處理時移除重複，是整條 pipeline 最可靠的設計。"
+   ],
+   "flow": "Source adds unique event ID → Kinesis PutRecord/retry → consumer deduplicates → exactly-once effect"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 119,
+  "answer": "B",
+  "q_zh": "S3 日誌檔被誤刪，要防止未來誤刪，營運負擔最低？",
+  "q_en": "A company stores logs in an Amazon S3 bucket. When a data engineer attempts to access several log files, the data engineer discovers that some files have been unintentionally deleted. The data engineer needs a solution that will prevent unintentional file deletion in the future. Which solution will meet this requirement with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "啟用 S3 Versioning"
+  },
+  "answer_en": {
+   "B": "Enable S3 Versioning for the S3 bucket."
+  },
+  "notion": {
+   "keypoint": "防止 S3 物件被誤刪後無法復原，最低維運就是開 S3 Versioning。",
+   "why": [
+    "S3 Versioning 會保留物件歷史版本；刪除時會新增 delete marker，而不是直接永久移除舊版本。",
+    "對防止未來誤刪造成資料不可復原，是最少操作負擔的解法。"
+   ],
+   "flow": "S3 bucket → Enable Versioning → delete marker / old versions retained → recover logs"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 120,
+  "answer": "B",
+  "q_zh": "每秒數千筆網路用量即時處理後存 Aurora，需偵測用量驟降以立即處置，延遲最低？",
+  "q_en": "A telecommunications company collects network usage data throughout each day at a rate of several thousand data points each second. The company runs an application to process the usage data in real time. The company aggregates and stores the data in an Amazon Aurora DB instance. Sudden drops in network usage usually indicate a network outage. The company must be able to identify sudden drops in network usage so the company can take immediate remedial actions. Which solution will meet this requirement with the LEAST latency?",
+  "answer_zh": {
+   "B": "改寫入 KDS，用 Flink 偵測驟降"
+  },
+  "answer_en": {
+   "B": "Modify the processing application to publish the data to an Amazon Kinesis data stream. Create an Amazon Managed Service for Apache Flink (previously known as Amazon Kinesis Data Analytics) application to detect drops in network usage."
+  },
+  "notion": {
+   "keypoint": "要最低延遲偵測即時資料流中的異常下降：把事件送進 Kinesis Data Streams，用 Managed Service for Apache Flink 做串流偵測。",
+   "why": [
+    "題目每秒數千筆資料，且要在網路用量突然下降時立即採取補救，這是典型 streaming analytics。",
+    "Flink 適合在資料流上做 stateful / windowed processing，可即時偵測趨勢或異常。",
+    "查 Aurora 或 DynamoDB 每分鐘一次會有 polling 延遲，不符合 least latency。"
+   ],
+   "flow": "Usage events → Kinesis Data Streams → Managed Flink detects drops → immediate action"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 121,
+  "answer": "B",
+  "q_zh": "S3 數 TB 原始資料要清理後載入 Redshift 供複雜查詢，免複雜 ETL 與管理基礎設施，營運負擔最低？",
+  "q_en": "A data engineer is processing and analyzing multiple terabytes of raw data that is in Amazon S3. The data engineer needs to clean and prepare the data. Then the data engineer needs to load the data into Amazon Redshift for analytics. The data engineer needs a solution that will give data analysts the ability to perform complex queries. The solution must eliminate the need to perform complex extract, transform, and load (ETL) processes or to manage infrastructure. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "DataBrew清理/Glue載入/Redshift查"
+  },
+  "answer_en": {
+   "B": "Use AWS Glue DataBrew to prepare the data. Use AWS Glue to load the data into Amazon Redshift. Use Amazon Redshift to run queries."
+  },
+  "notion": {
+   "keypoint": "大量 S3 raw data 要低維運清理準備再進 Redshift：用 Glue DataBrew 做資料準備，Glue 載入 Redshift，分析查詢交給 Redshift。",
+   "why": [
+    "DataBrew 是低碼/視覺化資料準備工具，適合讓資料工程師清理與轉換 raw data，減少複雜 ETL 開發。",
+    "Glue 可負責把準備後資料載入 Redshift。",
+    "Redshift 適合資料分析師執行複雜 SQL 查詢，不需自行管理分析基礎設施。"
+   ],
+   "flow": "S3 raw data → DataBrew prepare → Glue load → Redshift queries"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 122,
+  "answer": "B",
+  "q_zh": "VPC 內的 Lambda 可連 SFTP，但上傳 S3 逾時，需安全解決且最具成本效益？",
+  "q_en": "A company uses an AWS Lambda function to transfer files from a legacy SFTP environment to Amazon S3 buckets. The Lambda function is VPC enabled to ensure that all communications between the Lambda function and other AVS services that are in the same VPC environment will occur over a secure network. The Lambda function is able to connect to the SFTP environment successfully. However, when the Lambda function attempts to upload files to the S3 buckets, the Lambda function returns timeout errors. A data engineer must resolve the timeout issues in a secure way. Which solution will meet these requirements in the MOST cost-effective way?",
+  "answer_zh": {
+   "B": "建 S3 gateway endpoint 並導流"
+  },
+  "answer_en": {
+   "B": "Create a VPC gateway endpoint for Amazon S3. Route network traffic to the VPC gateway endpoint."
+  },
+  "notion": {
+   "keypoint": "VPC 內 Lambda 要安全連 S3 且成本低：用 S3 Gateway VPC Endpoint，避免走 NAT/Internet。",
+   "why": [
+    "Lambda 在 VPC 裡連 S3，若沒有 NAT 或 S3 endpoint，常見現象就是上傳 S3 timeout。",
+    "S3 Gateway Endpoint 可讓 VPC 內流量私下到 S3，且通常比 NAT Gateway 成本低。",
+    "題目要求同 VPC 環境與 AWS 服務通訊走安全網路，gateway endpoint 正對題。"
+   ],
+   "flow": "Lambda in VPC → S3 Gateway Endpoint → Amazon S3"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 123,
+  "answer": "B",
+  "q_zh": "多個 RDS 客戶資料庫欄位名稱不一致，需跨庫連結客戶記錄，營運負擔最低？",
+  "q_en": "A company reads data from customer databases that run on Amazon RDS. The databases contain many inconsistent fields. For example, a customer record field that iPnamed place_id in one database is named location_id in another database. The company needs to link customer records across different databases, even when customer record fields do not match. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Glue crawler+FindMatches 並調校"
+  },
+  "answer_en": {
+   "B": "Create an AWS Glue crawler to craw the databases. Use the FindMatches transform to find duplicate records in the data. Evaluate and tune the transform by evaluating the performance and results."
+  },
+  "notion": {
+   "keypoint": "欄位名稱不同但語意相近，要找跨資料庫重複/相同客戶：用 Glue FindMatches 做 ML-based entity matching。",
+   "why": [
+    "題目例子 place_id vs location_id，欄位名稱不一致，傳統 exact match 不夠。",
+    "Glue FindMatches 是 ML transform，可找出近似/重複紀錄，適合資料去重與 entity resolution。",
+    "Crawler 先建立資料目錄，再用 FindMatches，並透過評估結果調整準確度。"
+   ],
+   "flow": "RDS databases → Glue crawler → FindMatches transform → duplicate/customer links"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 124,
+  "answer": "AD",
+  "q_zh": "第三方資料存 S3，Glue crawler 卻建出多張表，要確保只建一張表？（選2）",
+  "q_en": "A finance company receives data from third-party data providers and stores the data as objects in an Amazon S3 bucket. The company ran an AWS Glue crawler on the objects to create a data catalog. The AWS Glue crawler created multiple tables. However, the company expected that the crawler would create only one table. The company needs a solution that will ensure the AVS Glue crawler creates only one table. Which combination of solutions will meet this requirement? (Choose two.)",
+  "answer_zh": {
+   "A": "格式、壓縮、schema 全部一致",
+   "D": "S3 物件 prefix 結構一致"
+  },
+  "answer_en": {
+   "A": "Ensure that the object format, compression type, and schema are the same for each object.",
+   "D": "Ensure that the structure of the prefix for each S3 object name is consistent."
+  },
+  "notion": {
+   "keypoint": "Glue crawler 會依檔案格式/schema/壓縮與 S3 prefix 結構判斷分組；要只產生一個表，就要 schema/format/compression 一致 + prefix 結構一致。",
+   "why": [
+    "Crawler 看到不同 schema、格式、壓縮或目錄結構時，可能判定為不同資料集，因而建立多個表。",
+    "若所有 objects 的格式、compression、schema 相同，且 S3 key prefix 結構一致，Crawler 較能把它們歸為同一個 table/partition layout。"
+   ],
+   "flow": "Same format/compression/schema + consistent S3 prefix → Glue crawler → one table"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 125,
+  "answer": "AC",
+  "q_zh": "SQS 消費端偶爾停機，訊息 1 天後過期被刪造成資料遺失，如何降到最低？（選2）",
+  "q_en": "An application consumes messages from an Amazon Simple Queue Service (Amazon SQS) queue. The application experiences occasional downtime. As a result of the downtime, messages within the queue expire and are deleted after 1 day. The message deletions cause data loss for the application. Which solutions will minimize data loss for the application? (Choose two.)",
+  "answer_zh": {
+   "A": "延長訊息保留期間",
+   "C": "掛載 DLQ 死信佇列"
+  },
+  "answer_en": {
+   "A": "Increase the message retention period",
+   "C": "Attach a dead-letter queue (DLQ) to the SQS queue."
+  },
+  "notion": {
+   "keypoint": "SQS 訊息因應用停機而過期刪除時，降低資料遺失要 延長 retention，並用 DLQ 保存處理失敗或無法消費的訊息。",
+   "why": [
+    "訊息 1 天後過期代表 retention 太短；延長 retention 可讓應用停機期間的訊息保留更久。",
+    "DLQ 可接住多次處理失敗或無法正常消費的訊息，避免直接遺失，方便後續重放/排查。"
+   ],
+   "flow": "SQS messages → longer retention + DLQ → recover/reprocess after downtime"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 126,
+  "answer": "A",
+  "q_zh": "MSK 資料經管線寫入 Keyspaces、OpenSearch 及 S3 Avro，要近即時時序儀表板，延遲最低？",
+  "q_en": "A company is creating near real-time dashboards to visualize time series data. The company ingests data into Amazon Managed Streaming for Apache Kafka (Amazon MSK). A customized data pipeline consumes the data. The pipeline then writes data to Amazon Keyspaces (for Apache Cassandra), Amazon OpenSearch Service, and Apache Avro objects in Amazon S3. Which solution will make the data available for the data visualizations with the LEAST latency?",
+  "answer_zh": {
+   "A": "用 OpenSearch Dashboards"
+  },
+  "answer_en": {
+   "A": "Create OpenSearch Dashboards by using the data from OpenSearch Service."
+  },
+  "notion": {
+   "keypoint": "近即時 dashboard 要最低延遲，資料已寫入 OpenSearch 時，直接用 OpenSearch Dashboards 看 OpenSearch 資料。",
+   "why": [
+    "OpenSearch Service 本來就適合近即時搜尋、分析與 dashboard 視覺化。",
+    "資料管線已經把資料寫入 OpenSearch，直接用 OpenSearch Dashboards 可避免再經 Athena/S3/QuickSight 造成額外延遲。"
+   ],
+   "flow": "MSK → pipeline → OpenSearch Service → OpenSearch Dashboards"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 127,
+  "answer": "C",
+  "q_zh": "數 PB 資料在 S3 Standard，存取模式不可預測、部分數月未用但須毫秒取回，要降成本且營運負擔最低？",
+  "q_en": "A company stores petabytes of data in thousands of Amazon S3 buckets in the S3 Standard storage class. The data supports analytics workloads that have unpredictable and variable data access patterns. The company does not access some data for months. However, the company must be able to retrieve all data within milliseconds. The company needs to optimize S3 storage costs. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "C": "Intelligent-Tiering啟用Deep Archive"
+  },
+  "answer_en": {
+   "C": "Use S3 Intelligent-Tiering. Activate the Deep Archive Access tier."
+  },
+  "notion": {
+   "keypoint": "存取模式不可預測且要降低 S3 成本，考題答案選 S3 Intelligent-Tiering 自動分層，並啟用 archive access tier 進一步降低長期未存取資料成本。",
+   "why": [
+    "題目重點是數千個 bucket、PB 級資料、存取模式不可預測，最少維運就是讓 S3 Intelligent-Tiering 自動搬層。",
+    "Intelligent-Tiering 可依存取模式自動調整儲存層，不需要人工分析每個 bucket 或手寫大量 lifecycle rule。",
+    "依官方答案，啟用 Deep Archive Access tier 可讓長期未存取資料進一步降成本。"
+   ],
+   "flow": "S3 Standard → Intelligent-Tiering → Archive/Deep Archive Access for cold objects"
+  },
+  "disputed": "Deep Archive 取回需數小時，與「毫秒取回」矛盾；社群多選 D"
+ },
+ {
+  "number": 128,
+  "answer": "A",
+  "q_zh": "KDS 每日數百萬事件，需轉換後寫入 OpenSearch，營運負擔最低？",
+  "q_en": "A media company wants to use Amazon OpenSearch Service to analyze rea-time data about popular musical artists and songs. The company expects to ingest millions of new data events every day. The new data events will arrive through an Amazon Kinesis data stream. The company must transform the data and then ingest the data into the OpenSearch Service domain. Which method should the company use to ingest the data with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "Firehose+Lambda 轉換後寫入"
+  },
+  "answer_en": {
+   "A": "Use Amazon Kinesis Data Firehose and an AWS Lambda function to transform the data and deliver the transformed data to OpenSearch Service."
+  },
+  "notion": {
+   "keypoint": "Kinesis 串流資料要低維運轉換並送 OpenSearch：用 Firehose delivery stream + Lambda transform。",
+   "why": [
+    "Firehose 是托管式資料投遞服務，可直接投遞到 OpenSearch Service。",
+    "若需要轉換資料，可在 Firehose 中串 Lambda transformation，少維護 consumer 應用程式。",
+    "比 Logstash/KCL/自寫 Kinesis Agent pipeline 更少營運負擔。"
+   ],
+   "flow": "Kinesis stream → Firehose → Lambda transform → OpenSearch Service"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 129,
+  "answer": "A",
+  "q_zh": "Lake Formation 客戶表須禁止使用者存取加拿大客戶的資料列，營運最省力？",
+  "q_en": "A company stores customer data tables that include customer addresses in an AWS Lake Formation data lake. To comply with new regulations, the company must ensure that users cannot access data for customers who are in Canada. The company needs a solution that will prevent user access to rows for customers who are in Canada. Which solution will meet this requirement with the LEAST operational effort?",
+  "answer_zh": {
+   "A": "列級篩選排除 country=Canada"
+  },
+  "answer_en": {
+   "A": "Set a row-level filter to prevent user access to a row where the country is Canada."
+  },
+  "notion": {
+   "keypoint": "Lake Formation 要禁止看特定國家的列資料，最少維運是設定 row-level filter。",
+   "why": [
+    "Lake Formation 支援資料湖細粒度權限控管，可用 row-level filter 限制特定列。",
+    "題目要阻止使用者存取 country = Canada 的客戶列，row-level filter 正對題。"
+   ],
+   "flow": "Lake Formation table → row filter country != Canada → users cannot query Canada rows"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 130,
+  "answer": "B",
+  "q_zh": "Redshift 查詢編輯器要用第三方 IdP 登入，資料工程師第一步該做什麼？",
+  "q_en": "A company has implemented a lake house architecture in Amazon Redshift. The company needs to give users the ability to authenticate into Redshift query editor by using a third-party identity provider (IdP). A data engineer must set up the authentication mechanism. What is the first step the data engineer should take to meet this requirement?",
+  "answer_zh": {
+   "B": "在 Redshift 內註冊 IdP"
+  },
+  "answer_en": {
+   "B": "Register the third-party IdP as an identity provider from within Amazon Redshift."
+  },
+  "notion": {
+   "keypoint": "Redshift Query Editor 要用第三方 IdP 登入，第一步是在 Amazon Redshift 內註冊第三方 IdP。",
+   "why": [
+    "題目是要讓使用者透過 third-party identity provider 驗證後登入 Redshift Query Editor。",
+    "身分聯邦設定的起點是在 Redshift 端建立/註冊 IdP，讓 Redshift 知道要信任哪個外部身分來源。",
+    "Secrets Manager / ACM 是管理密碼或憑證，不是 Query Editor 第三方 IdP 驗證的第一步。"
+   ],
+   "flow": "Third-party IdP → register in Amazon Redshift → users authenticate to Query Editor"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 131,
+  "answer": "C",
+  "q_zh": "EMR 每日 Spark ETL 擴到 5 個 task 節點，CPU 滿載但記憶體 <30%，要最具成本效益地降成本？",
+  "q_en": "A company currently uses a provisioned Amazon EMR cluster that includes general purpose Amazon EC2 instances. The EMR cluster uses EMR managed scaling between one to five task nodes for the company’s long-running Apache Spark extract, transform, and load (ETL) job. The company runs the ETL job every day. When the company runs the ETL job, the EMR cluster quickly scales up to five nodes. The EMR cluster often reaches maximum CPU usage, but the memory usage remains under 30%. The company wants to modify the EMR cluster configuration to reduce the EMR costs to run the daily ETL job. Which solution will meet these requirements MOST cost-effectively?",
+  "answer_zh": {
+   "C": "task 節點改運算最佳化"
+  },
+  "answer_en": {
+   "C": "Switch the task node type from general purpose Re instances to compute optimized EC2 instances."
+  },
+  "notion": {
+   "keypoint": "EMR 工作負載 CPU 打滿但記憶體很低，代表是 CPU-bound；把 task nodes 換成 compute optimized instances 更省錢有效。",
+   "why": [
+    "題目說 CPU 常達上限、memory 低於 30%，表示資源瓶頸在 CPU，不是記憶體。",
+    "Compute optimized instances 提供更適合 CPU-bound workload 的性價比。",
+    "增加 task node 數量可能更貴；memory optimized 方向錯；縮短 cooldown 不解決 CPU-bound 成本問題。"
+   ],
+   "flow": "CPU high + memory low → CPU-bound → switch task nodes to compute optimized"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 132,
+  "answer": "A",
+  "q_zh": "Glue job 將 S3 CSV 寫入 Redshift，重跑會產生重複記錄，需更新且不重複？",
+  "q_en": "A company uploads .csv files to an Amazon S3 bucket. The company’s data platform team has set up an AWS Glue crawler to perform data discovery and to create the tables and schemas. An AWS Glue job writes processed data from the tables to an Amazon Redshift database. The AWS Glue job handles column mapping and creates the Amazon Redshift tables in the Redshift database appropriately. If the company reruns the AWS Glue job for any reason, duplicate records are introduced into the Amazon Redshift tables. The company needs a solution that will update the Redshift tables without duplicates. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "先寫 staging 表，再 SQL 更新"
+  },
+  "answer_en": {
+   "A": "Modify the AWS Glue job to copy the rows into a staging Redshift table. Add SQL commands to update the existing rows with new values from the staging Redshift table."
+  },
+  "notion": {
+   "keypoint": "Glue 載入 Redshift 要避免重跑產生 duplicates：先進 staging table，再用 SQL 做 update/merge 類邏輯。",
+   "why": [
+    "直接把 Glue output 寫進目標 Redshift table，重跑時會再插入同一批資料，產生 duplicates。",
+    "先載入 staging table，再用 SQL 比對 key、更新既有列或插入新列，可讓載入流程具備 idempotent/upsert 行為。",
+    "Spark dropDuplicates() 只能處理當批資料內重複，不一定能避免目標表已有資料被重複插入。"
+   ],
+   "flow": "Glue output → Redshift staging table → SQL update/insert target table"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 133,
+  "answer": "D",
+  "q_zh": "數百個檔案載入 Redshift 事實表，要最大吞吐量並最佳利用叢集資源？",
+  "q_en": "A company is using Amazon Redshift to build a data warehouse solution. The company is loading hundreds of files into a fact table that is in a Redshift cluster. The company wants the data warehouse solution to achieve the greatest possible throughput. The solution must use cluster resources optimally when the company loads data into the fact table. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "用單一 COPY 指令載入"
+  },
+  "answer_en": {
+   "D": "Use a single COPY command to load the data into the Redshift cluster."
+  },
+  "notion": {
+   "keypoint": "Redshift bulk load 最佳實務是用 單一 COPY command 一次載入多檔，讓 Redshift 自動平行分散到 slices/nodes。",
+   "why": [
+    "COPY 是 Redshift 高吞吐載入的原生方式，可從 S3 平行讀取多個檔案。",
+    "單一 COPY 載入一批檔案能讓 Redshift 最佳化叢集資源使用。",
+    "多個 COPY commands 或大量 INSERT statements 通常會增加 overhead，吞吐量較差。"
+   ],
+   "flow": "Hundreds of files on S3 → single Redshift COPY → parallel load into fact table"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 134,
+  "answer": "D",
+  "q_zh": "Glue ETL 寫入 S3 資料湖供 Athena 查詢，需在無共同唯一 ID 下找出相符記錄？",
+  "q_en": "A company ingests data from multiple data sources and stores the data in an Amazon S3 bucket. An AWS Glue extract, transform, and load (ETL) job transforms the data and writes the transformed data to an Amazon S3 based data lake. The company uses Amazon Athena to query the data that is in the data lake. The company needs to identify matching records even when the records do not have a common unique identifier. Which solution will meet this requirement?",
+  "answer_zh": {
+   "D": "訓練並用 FindMatches 轉換"
+  },
+  "answer_en": {
+   "D": "Train and use the AWS Lake Formation FindMatches transform in the ETL job."
+  },
+  "notion": {
+   "keypoint": "沒有共同 unique identifier 仍要找相似/匹配紀錄，用 FindMatches transform 做 ML-based matching。",
+   "why": [
+    "題目明確說 records 沒有共同 unique identifier，傳統 key join/partition 不適合。",
+    "FindMatches 透過機器學習比對近似紀錄，可用於找出同一實體的 matching records。",
+    "這類題型重點是「模糊比對 / entity resolution」，不是 Macie pattern matching 或一般 PySpark filter。"
+   ],
+   "flow": "S3 data lake → ETL job → FindMatches transform → matched records"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 135,
+  "answer": "C",
+  "q_zh": "S3 混放 csv 與 json，crawler 已排除 json 但 Athena 仍掃到 json，不影響 csv 存取，查詢最快？",
+  "q_en": "A data engineer is using an AWS Glue crawler to catalog data that is in an Amazon S3 bucket. The S3 bucket contains both .csv and json files. The data engineer configured the crawler to exclude the .json files from the catalog. When the data engineer runs queries in Amazon Athena, the queries also process the excluded .json files. The data engineer wants to resolve this issue. The data engineer needs a solution that will not affect access requirements for the .csv files in the source S3 bucket. Which solution will meet this requirement with the SHORTEST query times?",
+  "answer_zh": {
+   "C": "把 json 移到 S3 其他路徑"
+  },
+  "answer_en": {
+   "C": "Relocate the .json files to a different path within the S3 bucket."
+  },
+  "notion": {
+   "keypoint": "Glue crawler 的 exclude 只影響 Catalog 建表/分區發現，不會阻止 Athena 掃 table location 下的檔案；要縮短查詢時間，把 .json 移出 .csv table 的 S3 path。",
+   "why": [
+    "Crawler exclusion pattern 只決定哪些檔案不進 Glue Data Catalog。",
+    "Athena 查詢時會依 table 的 S3 LOCATION 掃描該 path 下可讀檔案；.json 還在同一路徑，就可能被掃到。",
+    "把 .json 搬到不同 prefix/path，能物理上避免 Athena 掃描，查詢時間最短，也不影響 .csv 存取。"
+   ],
+   "flow": "Same S3 path（csv + json）→ Athena scans table location → move json to separate path → scan only csv"
+  },
+  "disputed": "crawler exclude 只影響 Catalog，不影響 Athena 掃描"
+ },
+ {
+  "number": 136,
+  "answer": "D",
+  "q_zh": "Lambda 執行角色已可存取 S3，讀取 KMS 加密物件仍失敗，可能原因？",
+  "q_en": "A data engineer set up an AWS Lambda function to read an object that is stored in an Amazon S3 bucket. The object is encrypted by an AWS KMS key. The data engineer configured the Lambda function’s execution role to access the S3 bucket. However, the Lambda function encountered an error and failed to retrieve the content of the object. What is the likely cause of the error?",
+  "answer_zh": {
+   "D": "執行角色缺 KMS 金鑰解密權限"
+  },
+  "answer_en": {
+   "D": "The Lambda function’s execution role does not have the necessary permissions to access the KMS key that can decrypt the S3 object."
+  },
+  "notion": {
+   "keypoint": "Lambda 讀 SSE-KMS 加密的 S3 object，除了 S3 權限，還要有 KMS key decrypt 權限。",
+   "why": [
+    "Lambda execution role 已可存取 S3 bucket，但 object 由 KMS key 加密。",
+    "讀取 SSE-KMS object 時，呼叫者還需要 kms:Decrypt，且 KMS key policy/IAM policy 都要允許。"
+   ],
+   "flow": "Lambda role → s3:GetObject + kms:Decrypt → read SSE-KMS S3 object"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 137,
+  "answer": "B",
+  "q_zh": "1,000 張 Data Catalog 表的資料品質規則需修改，營運負擔最低？",
+  "q_en": "A data engineer has implemented data quality rules in 1,000 AWS Glue Data Catalog tables. Because of a recent change in business requirements, the data engineer must edit the data quality rules. How should the data engineer meet this requirement with the LEAST operational overhead?",
+  "answer_zh": {
+   "B": "Lambda 呼叫 Glue Data Quality API"
+  },
+  "answer_en": {
+   "B": "Create an AWS Lambda function that makes an API call to AWS Glue Data Quality to make the edits."
+  },
+  "notion": {
+   "keypoint": "大量 Glue Data Quality rules 要批次修改，最低維運是用 Lambda 呼叫 Glue Data Quality API 自動化。",
+   "why": [
+    "1,000 張表逐一用 Console 改太慢。",
+    "EMR / Glue ETL pipeline 都太重；只是改規則設定，不需要跑資料處理叢集。",
+    "Lambda + API 是輕量自動化方案，可批次更新 rules。"
+   ],
+   "flow": "Lambda script → Glue Data Quality API → update rules for 1,000 tables"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 138,
+  "answer": "C",
+  "q_zh": "Branch A 已部署上線，Branch B 下週要合併到 master，發 PR 前 Branch B 應執行？",
+  "q_en": "Two developers are working on separate application releases. The developers have created feature branches named Branch A and Branch B by using a GitHub repository’s master branch as the source. The developer for Branch A deployed code to the production system. The code for Branch B will merge into a master branch in the following week’s scheduled application release. Which command should the developer for Branch B run before the developer raises a pull request to the master branch?",
+  "answer_zh": {
+   "C": "git rebase master"
+  },
+  "answer_en": {
+   "C": "git rebase master"
+  },
+  "notion": {
+   "keypoint": "Branch B 要在提 PR 前接上最新 master 變更，用 git rebase master 把自己的 commits 重放到最新 master 後面。",
+   "why": [
+    "Branch A 已部署，代表 master 可能已有新變更。",
+    "Branch B 在 raise PR 前先 rebase master，可降低合併衝突並讓 commit history 更線性。"
+   ],
+   "flow": "master updated by Branch A → Branch B runs `git rebase master` → PR to master"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 139,
+  "answer": "AB",
+  "q_zh": "Redshift 表以 Region ID、Department ID、Role ID 為複合排序鍵，哪些查詢最能加速？（選2）（NA=North America）",
+  "q_en": "A company stores employee data in Amazon Resdshift. A table names Employee uses columns named Region ID, Department ID, and Role ID as a compound sort key. Which queries will MOST increase the speed of query by using a compound sort key of the table? (Choose two.)",
+  "answer_zh": {
+   "A": "WHERE Region ID='NA'",
+   "B": "WHERE Region ID='NA' AND Dept ID=20"
+  },
+  "answer_en": {
+   "A": "Select *from Employee where Region ID=’North America’;",
+   "B": "Select *from Employee where Region ID=’North America’ and Department ID=20;"
+  },
+  "notion": {
+   "keypoint": "Compound sort key 最吃 leading prefix：先用第 1 欄，或第 1+2 欄，最能利用排序剪枝。",
+   "why": [],
+   "flow": "Compound sort key (Region → Department → Role) → best filters use leftmost prefix → A / B"
+  },
+  "disputed": "compound sort key 看最左前綴"
+ },
+ {
+  "number": 140,
+  "answer": "B",
+  "q_zh": "數百萬個 1KB JSON 檔經 Glue 轉 Parquet 載入 Redshift，處理時間增加，最能縮短時間？",
+  "q_en": "A company receives test results from testing facilities that are located around the world. The company stores the test results in millions of 1 KB JSON files in an Amazon S3 bucket. A data engineer needs to process the files, convert them into Apache Parquet format, and load them into Amazon Redshift tables. The data engineer uses AWS Glue to process the files, AWS Step Functions to orchestrate the processes, and Amazon EventBridge to schedule jobs. The company recently added more testing facilities. The time required to process files is increasing. The data engineer must reduce the data processing time. Which solution will MOST reduce the data processing time?",
+  "answer_zh": {
+   "B": "Glue dynamic frame 檔案分組讀取"
+  },
+  "answer_en": {
+   "B": "Use the AWS Glue dynamic frame file-grouping option to ingest the raw input files. Process the files. Load the files into the Amazon Redshift tables."
+  },
+  "notion": {
+   "keypoint": "Glue 處理大量小檔案變慢時，用 DynamicFrame file grouping 把小檔合併成較大的處理群組，降低 task overhead。",
+   "why": [
+    "題目是「數百萬個 1 KB JSON 小檔」，處理時間增加通常是小檔案 overhead 問題。",
+    "Glue 的 file grouping 可把多個小檔分組成較少的 processing tasks，減少 S3 list/read 與 task 啟動成本。",
+    "仍保留現有 Glue → Parquet → Redshift 流程，但處理小檔更有效率。"
+   ],
+   "flow": "Many small JSON files → Glue DynamicFrame file grouping → Parquet → Redshift"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 141,
+  "answer": "D",
+  "q_zh": "MWAA 工作流程執行失敗，要用 Airflow 日誌診斷原因，該看哪種日誌？",
+  "q_en": "A data engineer uses Amazon Managed Workflows for Apache Airflow (Amazon MWAA) to run data pipelines in an AWS account. A workflow recently failed to run. The data engineer needs to use Apache Airflow logs to diagnose the failure of the workflow. Which log type should the data engineer use to diagnose the cause of the failure?",
+  "answer_zh": {
+   "D": "YourEnvironmentName-Task"
+  },
+  "answer_en": {
+   "D": "YourEnvironmentName-Task"
+  },
+  "notion": {
+   "keypoint": "MWAA 要診斷單一 task/workflow 失敗原因，看 Task logs。",
+   "why": [
+    "Airflow pipeline 失敗通常要看實際 task instance 的執行錯誤、stack trace、operator output。",
+    "MWAA 會把不同元件的 logs 分到 WebServer、Scheduler、DAGProcessing、Task 等 log group。",
+    "診斷 task 執行失敗，最直接是 YourEnvironmentName-Task。"
+   ],
+   "flow": "MWAA workflow failed → CloudWatch Logs → YourEnvironmentName-Task → task error"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 142,
+  "answer": "AC",
+  "q_zh": "Redshift Spectrum 存取共用 S3 的第三方資料，法規要求資料不可從公司 AWS 環境外存取？（選2）",
+  "q_en": "A finance company uses Amazon Redshift as a data warehouse. The company stores the data in a shared Amazon S3 bucket. The company uses Amazon Redshift Spectrum to access the data that is stored in the S3 bucket. The data comes from certified third-party data providers. Each third-party data provider has unique connection details. To comply with regulations, the company must ensure that none of the data is accessible from outside the company's AWS environment. Which combination of steps should the company take to meet these requirements? (Choose two.)",
+  "answer_zh": {
+   "A": "Redshift 移私有子網+介面端點+NAT",
+   "C": "啟用增強 VPC 路由+Direct Connect"
+  },
+  "answer_en": {
+   "A": "Replace the existing Redshift cluster with a new Redshift cluster that is in a private subnet. Use an interface VPC endpoint to connect to the Redshift cluster. Use a NAT gateway to give Redshift access to the S3 bucket.",
+   "C": "Turn on enhanced VPC routing for the Amazon Redshift cluster. Set up an AWS Direct Connect connection and configure a connection between each data provider and the finance company’s VPC."
+  },
+  "notion": {
+   "keypoint": "Redshift/Spectrum 要避免資料從公司 AWS 環境外部被存取：Redshift 放私有網路，並用 Enhanced VPC Routing + Direct Connect 控制資料流經公司 VPC/私有連線。",
+   "why": [
+    "Private subnet + endpoint 可避免 Redshift 對外公開。",
+    "Enhanced VPC Routing 會讓 Redshift 到 S3 的流量經過 VPC，便於使用 VPC 路由、網路控管與端點策略。",
+    "Direct Connect 讓第三方 provider 透過私有連線進入公司 VPC，不走公網。"
+   ],
+   "flow": "Providers → Direct Connect → Company VPC → private Redshift + enhanced VPC routing → S3"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 143,
+  "answer": "D",
+  "q_zh": "多來源檔案定期進 S3，需在新檔到達時近即時匯入 Redshift？",
+  "q_en": "Files from multiple data sources arrive in an Amazon S3 bucket on a regular basis. A data engineer wants to ingest new files into Amazon Redshift in near real time when the new files arrive in the S3 bucket. Which solution will meet these requirements?",
+  "answer_zh": {
+   "D": "S3 事件通知觸發 Lambda 載入"
+  },
+  "answer_en": {
+   "D": "Use S3 Event Notifications to invoke an AWS Lambda function that loads new files into Amazon Redshift."
+  },
+  "notion": {
+   "keypoint": "S3 新檔一到就近即時載入 Redshift，用 S3 Event Notifications → Lambda → Redshift load/COPY 的事件驅動流程。",
+   "why": [
+    "題目要求 new files arrive 時近即時載入，事件驅動比排程更即時。",
+    "S3 Event Notifications 可在 object created 時觸發 Lambda。",
+    "Lambda 可依新檔資訊執行 Redshift COPY 或載入邏輯。"
+   ],
+   "flow": "S3 ObjectCreated → Event Notification → Lambda → Redshift COPY/load"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 144,
+  "answer": "D",
+  "q_zh": "KDS 即時收集日誌，要在 Redshift 即時查詢並加值，匯入的營運負擔最低？",
+  "q_en": "A technology company currently uses Amazon Kinesis Data Streams to collect log data in real time. The company wants to use Amazon Redshift for downstream real-time queries and to enrich the log data. Which solution will ingest data into Amazon Redshift with the LEAST operational overhead?",
+  "answer_zh": {
+   "D": "Redshift 串流擷取 KDS 成具體化檢視"
+  },
+  "answer_en": {
+   "D": "Use Amazon Redshift streaming ingestion from Kinesis Data Streams and to present data as a materialized view."
+  },
+  "notion": {
+   "keypoint": "Kinesis Data Streams 要低維運進 Redshift 做即時查詢：用 Redshift streaming ingestion，資料以 materialized view 呈現。",
+   "why": [
+    "Redshift streaming ingestion 可直接從 Kinesis Data Streams 讀取資料，減少 Firehose、Flink、批次 COPY 等中介元件。",
+    "Streaming ingestion 會把串流資料映射到 materialized view，方便下游 SQL 查詢與 enrichment。",
+    "符合 least operational overhead。"
+   ],
+   "flow": "Kinesis Data Streams → Redshift streaming ingestion → materialized view → real-time SQL/enrichment"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 145,
+  "answer": "B",
+  "q_zh": "地端 Oracle 資料倉儲表（<50GB、有單調遞增欄位）需每日增量同步到 S3 資料湖，最具作業效率？",
+  "q_en": "A company maintains a data warehouse in an on-premises Oracle database. The company wants to build a data lake on AWS. The company wants to load data warehouse tables into Amazon S3 and synchronize the tables with incremental data that arrives from the data warehouse every day. Each table has a column that contains monotonically increasing values. The size of each table is less than 50 GB. The data warehouse tables are refreshed every night between 1 AM and 2 AM. A business intelligence team queries the tables between 10 AM and 8 PM every day. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "answer_zh": {
+   "B": "Glue JDBC+遞增欄位 job bookmark"
+  },
+  "answer_en": {
+   "B": "Use an AWS Glue Java Database Connectivity (JDB"
+  },
+  "notion": {
+   "keypoint": "若來源表有 monotonically increasing column，且每天固定批次同步到 S3，官方答案偏向用 Glue JDBC + job bookmarks 做增量 append。",
+   "why": [],
+   "flow": "Oracle table monotonic column → Glue JDBC bookmark → daily incremental append → S3 full-load copy"
+  },
+  "disputed": "社群爭議選項為 DMS CDC"
+ },
+ {
+  "number": 146,
+  "answer": "C",
+  "q_zh": "地端 Oracle 70 張表（皆有主鍵、偶有異動），每天匯入 S3 Parquet 資料湖，最省工？",
+  "q_en": "A company is building a data lake for a new analytics team. The company is using Amazon S3 for storage and Amazon Athena for query analysis. All data that is in Amazon S3 is in Apache Parquet format. The company is running a new Oracle database as a source system in the company’s data center. The company has 70 tables in the Oracle database. All the tables have primary keys. Data can occasionally change in the source system. The company wants to ingest the tables every day into the data lake. Which solution will meet this requirement with the LEAST effort?",
+  "answer_zh": {
+   "C": "DMS 持續複寫至 S3（Parquet）"
+  },
+  "answer_en": {
+   "C": "Create an AWS Database Migration Service (AWS DMS) task for ongoing replication. Set the Oracle database as the source. Set Amazon S3 as the target. Configure the task to write the data in Parquet format."
+  },
+  "notion": {
+   "keypoint": "Oracle 資料表要每日進 S3 Parquet，且來源資料可能更新變更：用 AWS DMS ongoing replication 到 S3 Parquet 最省力。",
+   "why": [
+    "題目說所有 tables 有 primary key，且資料可能偶爾變更，不只是 append-only。",
+    "DMS 支援 Oracle 作為來源、S3 作為目標，並可輸出 Parquet，適合 ongoing replication / CDC。",
+    "相比 Glue bookmark 或 Sqoop，DMS 對資料庫變更捕捉與同步的管理負擔較低。"
+   ],
+   "flow": "Oracle DB → DMS ongoing replication/CDC → S3 Parquet → Athena data lake"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 147,
+  "answer": "B",
+  "q_zh": "每秒 1 萬筆 10 bytes 定位記錄寫入 KDS，可容忍數分鐘延遲，需可靠且最大化 shard 吞吐效率？",
+  "q_en": "A transportation company wants to track vehicle movements by capturing geolocation records. The records are 10 bytes in size. The company receives up to 10.000 records every second. Data transmission delays of a few minutes are acceptable because of unreliable network conditions. The transportation company wants to use Amazon Kinesis Data Streams to ingest the geolocation data. The company needs a reliable mechanism to send data to Kinesis Data Streams. The company needs to maximize the throughput efficiency of the Kinesis shards. Which solution will meet these requirements in the MOST operationally efficient way?",
+  "answer_zh": {
+   "B": "Kinesis Producer Library (KPL)"
+  },
+  "answer_en": {
+   "B": "Kinesis Producer Library (KPL)"
+  },
+  "notion": {
+   "keypoint": "大量 records 寫入 Kinesis Data Streams 要提高 producer 吞吐與 shard 效率，選 KPL，因為支援 batching、aggregation、retry。",
+   "why": [
+    "每筆約 10 bytes、最高 10,000 records/sec，單筆很小，重點是把多筆小紀錄 aggregation 成較少 Kinesis records。",
+    "KPL 內建 record aggregation、batching、重試與 async producer 行為，可提升 shard 吞吐使用效率。",
+    "題目允許數分鐘延遲，表示可以接受 batching/aggregation 帶來的延遲以換取效率。"
+   ],
+   "flow": "Small geolocation records → KPL aggregation/batching → Kinesis Data Streams shards"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 148,
+  "answer": "A",
+  "q_zh": "持續成長的半結構化資料需去重，含有拼寫錯誤的重複記錄，營運負擔最低？",
+  "q_en": "An investment company needs to manage and extract insights from a volume of semi-structured data that grows continuously. A data engineer needs to deduplicate the semi-structured data, remove records that are duplicates, and remove common misspellings of duplicates. Which solution will meet these requirements with the LEAST operational overhead?",
+  "answer_zh": {
+   "A": "Glue FindMatches 移除重複"
+  },
+  "answer_en": {
+   "A": "Use the FindMatches feature of AWS Glue to remove duplicate records."
+  },
+  "notion": {
+   "keypoint": "半結構化資料要找重複、拼字錯誤造成的近似重複，最低維運用 AWS Glue FindMatches。",
+   "why": [
+    "FindMatches 是 ML-based transform，適合找出沒有完全相同 key、但實際代表同一實體的重複資料。",
+    "題目提到 common misspellings，代表不是單純 exact match，而是模糊比對/entity matching。",
+    "比在 Athena 自寫 UDF、EMR ML、DynamoDB global tables 更貼近需求且維運較低。"
+   ],
+   "flow": "Semi-structured data → Glue FindMatches → remove fuzzy duplicates/misspellings"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 149,
+  "answer": "AC",
+  "q_zh": "KPL 寫入、KCL 消費 KDS（自動擴縮），補貨系統收到重複資料，可能原因？（選2）",
+  "q_en": "A company is building an inventory management system and an inventory reordering system to automatically reorder products. Both systems use Amazon Kinesis Data Streams. The inventory management system uses the Amazon Kinesis Producer Library (KPL) to publish data to a stream. The inventory reordering system uses the Amazon Kinesis Client Library (KCL) to consume data from the stream. The company configures the stream to scale up and down as needed. Before the company deploys the systems to production, the company discovers that the inventory reordering system received duplicated data. Which factors could have caused the reordering system to receive duplicated data? (Choose two.)",
+  "answer_zh": {
+   "A": "Producer 遇網路逾時",
+   "C": "shard 或 record processor 數變動"
+  },
+  "answer_en": {
+   "A": "The producer experienced network-related timeouts.",
+   "C": "There was a change in the number of shards, record processors, or both."
+  },
+  "notion": {
+   "keypoint": "Kinesis consumer 收到重複資料常見原因：producer timeout 後重試造成重送，或 shard/record processor 變動造成重新處理。",
+   "why": [
+    "Producer 發生 network timeout 時，producer 可能不知道前一次 Put 是否成功，因此 retry 可能產生重複紀錄。",
+    "KCL 在 shard split/merge、resharding、record processor 重新分配時，checkpoint 與 processor 交接可能導致部分 records 被重新處理。",
+    "Kinesis Data Streams 通常提供 at-least-once processing；應用端需用 idempotency/dedup 處理重複。"
+   ],
+   "flow": "Network timeout retry / shard processor changes → at-least-once replay → duplicate records"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 150,
+  "answer": "A",
+  "q_zh": "多個 AWS 營運系統各有 JDBC 關聯式資料庫，需每小時追蹤全流程訂單，開發負擔最低？",
+  "q_en": "An ecommerce company operates a complex order fulfilment process that spans several operational systems hosted in AWS. Each of the operational systems has a Java Database Connectivity (JDBC)-compliant relational database where the latest processing state is captured. The company needs to give an operations team the ability to track orders on an hourly basis across the entire fulfillment process. Which solution will meet these requirements with the LEAST development overhead?",
+  "answer_zh": {
+   "A": "Glue 匯入 Redshift，QS 儀表板"
+  },
+  "answer_en": {
+   "A": "Use AWS Glue to build ingestion pipelines from the operational systems into Amazon Redshift Build dashboards in Amazon QuickSight that track the orders."
+  },
+  "notion": {
+   "keypoint": "多個 JDBC 關聯式 operational systems 要每小時追蹤訂單狀態，官方答案選 Glue JDBC ingestion → Redshift → QuickSight，主打最低開發負擔。",
+   "why": [],
+   "flow": "JDBC operational DBs → AWS Glue ingestion → Amazon Redshift → QuickSight hourly order dashboard"
+  },
+  "disputed": "社群爭議選項為 DMS+DynamoDB"
+ },
+ {
+  "number": 151,
+  "answer": "AD",
+  "q_zh": "用 Amazon Neptune 開發圖形應用程式，應使用哪些語言？（選2）",
+  "q_en": "A data engineer needs to use Amazon Neptune to develop graph applications. Which programming languages should the engineer use to develop the graph applications? (Choose two.)",
+  "answer_zh": {
+   "A": "Gremlin",
+   "D": "SPARQL"
+  },
+  "answer_en": {
+   "A": "Gremlin",
+   "D": "SPARQL"
+  },
+  "notion": {
+   "keypoint": "Amazon Neptune 支援圖形查詢語言 Apache TinkerPop Gremlin 與 W3C RDF SPARQL。",
+   "why": [
+    "Neptune 是託管 graph database，支援兩種主要圖模型/查詢模式：",
+    "題目問 develop graph applications 的 programming/query languages，正解就是 Gremlin + SPARQL。"
+   ],
+   "flow": "Neptune graph app → Gremlin（property graph）或 SPARQL（RDF）"
+  },
+  "disputed": ""
+ },
+ {
+  "number": 152,
+  "answer": "A",
+  "q_zh": "遊戲 App 送 20KB 記錄，需裝置端最佳吞吐，3 個內部消費者各需專用吞吐量？",
+  "q_en": "A mobile gaming company wants to capture data from its gaming app. The company wants to make the data available to three internal consumers of the data. The data records are approximately 20 KB in size. The company wants to achieve optimal throughput from each device that runs the gaming app. Additionally, the company wants to develop an application to process data streams. The stream-processing application must have dedicated throughput for each internal consumer. Which solution will meet these requirements?",
+  "answer_zh": {
+   "A": "PutRecords 送 KDS+增強型扇出"
+  },
+  "answer_en": {
+   "A": "Configure the mobile app to call the PutRecords API operation to send data to Amazon Kinesis Data Streams. Use the enhanced fan-out feature with a stream for each internal consumer."
+  },
+  "notion": {
+   "keypoint": "多個 consumer 要各自有專用吞吐讀 Kinesis Data Streams：producer 用 PutRecords 批次寫入，consumer 用 Enhanced Fan-Out。",
+   "why": [
+    "PutRecords 可讓每個 mobile device 批次送資料到 Kinesis Data Streams，比單筆 put 更有效率。",
+    "Enhanced fan-out 讓每個 registered stream consumer 有專用讀取吞吐，避免多個 consumer 互相搶 shared throughput。",
+    "題目明確要三個內部 consumers 各自 dedicated throughput，因此 enhanced fan-out 正對題。"
+   ],
+   "flow": "Mobile app → KDS PutRecords → Enhanced Fan-Out → 3 dedicated stream consumers"
+  },
+  "disputed": ""
+ }
+]
