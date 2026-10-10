@@ -128,9 +128,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,
 header{position:sticky;top:0;z-index:9;background:var(--card);border-bottom:1px solid var(--line);padding:6px 10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 header b{font-size:15px;margin-right:auto}
 header select,header input{font-size:14px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
-#flt{max-width:40%}
+#flt{max-width:34%}
+#st{max-width:26%}
 #kw{flex:1;min-width:0}
 header a{font-size:13px;color:var(--acc);white-space:nowrap}
+#seen{font-size:12px;color:var(--sub);white-space:nowrap}
+#go{font-size:14px;padding:3px 10px;border:1px solid var(--acc);border-radius:6px;background:var(--acc);color:#000}
+#pg{position:absolute;left:0;bottom:-1px;height:3px;width:0;background:var(--ok);transition:width .3s}
 main{padding:6px 4px}
 .c{background:var(--card);border-radius:10px;padding:8px 8px;margin:0 0 10px;border:1px solid var(--line)}
 .h{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--sub);margin-bottom:4px}
@@ -153,6 +157,13 @@ main{padding:6px 4px}
 .f.w i::before{content:"↓"}}
 .n{margin-top:6px;font-size:13px;color:var(--sub)}
 .c.hit{outline:3px solid var(--acc)}
+.c.seen{border-left:4px solid var(--ok)}
+.c.last{outline:2px solid var(--acc)}
+.c.go{outline:2px dashed var(--acc)}
+.tag.l{display:none;background:var(--acc);color:#000}
+.c.last .tag.l{display:inline}
+.sn{display:block;margin:10px 0 0 auto;font-size:14px;padding:6px 12px;border:1px solid var(--ok);border-radius:6px;background:var(--card);color:var(--ok)}
+.c.seen .sn{background:var(--okbg)}
 .ch{font-size:15px;margin:14px 2px 8px;padding:6px 8px;border-left:4px solid var(--acc);background:var(--card);border-radius:4px}
 .ch small{color:var(--sub);font-weight:400;margin-left:6px}
 body.num .ch{display:none}
@@ -168,29 +179,49 @@ const WR=wrongSet(),qp=new URLSearchParams(location.search).get('q');
 const LIST=qp?new Set(qp.split(',').map(x=>x.trim()).filter(x=>/^\d+$/.test(x))):null;
 $('flt').querySelector('option[value="wrong"]').textContent=`只看練習版錯題（${WR.size}）`;
 if(LIST)$('flt').querySelector('optgroup[label="篩選"]').prepend(new Option(`連結指定的 ${LIST.size} 題`,'list'));
+// 「看過」紀錄：按「看過，下一題」標記，「接續」跳到上次那題之後第一個還沒看過的
+const seen=new Set(JSON.parse(localStorage.getItem(LS+'seen')||'[]'));let last=localStorage.getItem(LS+'last');
+function prog(){$('seen').textContent=`已看 ${seen.size}`;$('pg').style.width=seen.size/cards.length*100+'%'}
+function saveSeen(){localStorage.setItem(LS+'seen',JSON.stringify([...seen]));last?localStorage.setItem(LS+'last',last):localStorage.removeItem(LS+'last');prog()}
+function mark(c){const n=c.dataset.n,s=seen.has(n);c.classList.toggle('seen',s);c.classList.toggle('last',n===last);
+  c.querySelector('.sn').textContent=s?'✓ 已看過（再點取消）':'看過，下一題 ↓'}
+const visible=()=>[...main.querySelectorAll('.c')].filter(c=>c.style.display!=='none');
+function target(c){cards.forEach(x=>x.classList.toggle('go',x===c));go(c,true)}
+function resume(){const vis=visible(),i=vis.findIndex(c=>c.dataset.n===last),
+  t=vis.slice(i+1).find(c=>!seen.has(c.dataset.n))||vis.find(c=>!seen.has(c.dataset.n))||vis[i];
+  if(!t)return false;target(t);return true}
 function layout(){
   const num=$('ord').value==='num';document.body.classList.toggle('num',num);
   if(num)[...cards].sort((a,b)=>a.dataset.n-b.dataset.n).forEach(c=>main.appendChild(c));
   else heads.forEach(h=>{main.appendChild(h);cards.filter(c=>c.dataset.c===h.dataset.c).sort((a,b)=>a.dataset.o-b.dataset.o).forEach(c=>main.appendChild(c))})}
 function apply(){
-  const v=$('flt').value,k=$('kw').value.trim().toLowerCase();
+  const v=$('flt').value,k=$('kw').value.trim().toLowerCase(),st=$('st').value;
   cards.forEach(c=>{const n=c.dataset.n;let s=true;
     if(v==='multi')s=c.dataset.a.length>1;else if(v==='dis')s=!!c.dataset.d;
     else if(v==='wrong')s=WR.has(n);else if(v==='list')s=LIST.has(n);
     else if(v[0]==='c')s=c.dataset.c===v.slice(1);
     else if(v.includes('-')){const[a,b]=v.split('-').map(Number);s=+n>=a&&+n<=b}
     if(s&&k)s=('q'+n+' '+c.textContent).toLowerCase().includes(k);
+    if(s&&st!=='all')s=(st==='seen')===seen.has(n);
     c.style.display=s?'':'none'});
   heads.forEach(h=>h.style.display=cards.some(c=>c.dataset.c===h.dataset.c&&c.style.display!=='none')?'':'none');
   $('cnt').textContent=cards.filter(c=>c.style.display!=='none').length}
 function firstVisible(){const y=hdr.offsetHeight;return cards.find(c=>c.style.display!=='none'&&c.getBoundingClientRect().bottom>y+4)}
-function go(c){scrollTo(0,c.getBoundingClientRect().top+scrollY-hdr.offsetHeight-6)}
+function go(c,smooth){scrollTo({top:c.getBoundingClientRect().top+scrollY-hdr.offsetHeight-6,behavior:smooth?'smooth':'auto'})}
 let t;addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const c=firstVisible();if(c)localStorage.setItem(LS+'at',c.dataset.n)},200)});
 $('ord').onchange=()=>{localStorage.setItem(LS+'ord',$('ord').value);layout();scrollTo(0,0)};
 $('flt').onchange=()=>{localStorage.setItem(LS+'flt',$('flt').value);apply();scrollTo(0,0)};
 $('kw').oninput=()=>{apply();scrollTo(0,0)};
-const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),at=localStorage.getItem(LS+'at');
+$('st').onchange=()=>{if($('st').value==='clear'){if(confirm('清除所有「看過」紀錄，從頭再看一輪？')){seen.clear();last=null;saveSeen();cards.forEach(mark)}$('st').value='all'}
+  localStorage.setItem(LS+'st',$('st').value);apply();scrollTo(0,0)};
+cards.forEach(c=>c.querySelector('.sn').onclick=()=>{const n=c.dataset.n;
+  if(seen.has(n)){seen.delete(n);if(last===n)last=null}
+  else{seen.add(n);last=n;const vis=visible(),nx=vis[vis.indexOf(c)+1];if(nx)target(nx)}
+  cards.forEach(mark);saveSeen()});
+$('go').onclick=()=>{if(!resume())scrollTo(0,0)};
+const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),at=localStorage.getItem(LS+'at'),ss=localStorage.getItem(LS+'st');
 if(so)$('ord').value=so;
+if(ss==='seen'||ss==='todo')$('st').value=ss;
 if(sf&&[...$('flt').options].some(o=>o.value===sf))$('flt').value=sf;
 if(LIST)$('flt').value='list';
 // #q17：從練習版點題號過來，直接捲到那一題
@@ -198,8 +229,8 @@ function hashGo(){const m=location.hash.match(/^#q(\d+)$/),c=m&&cards.find(x=>x.
   if(c.style.display==='none'){$('kw').value='';$('flt').value='all';apply()}
   cards.forEach(x=>x.classList.toggle('hit',x===c));go(c);return true}
 addEventListener('hashchange',hashGo);
-layout();apply();
-if(!hashGo()&&!LIST){const c0=cards.find(c=>c.dataset.n===at&&c.style.display!=='none');if(c0)go(c0)}
+layout();apply();cards.forEach(mark);prog();
+if(!hashGo()&&!LIST&&!(last&&resume())){const c0=cards.find(c=>c.dataset.n===at&&c.style.display!=='none');if(c0)go(c0)}
 """
 
 
@@ -254,17 +285,18 @@ def render(data, meta):
         note = f'<div class="n">{"<br>".join(notes)}</div>' if notes else ""
         cards.append(
             f'<div class="c" data-n="{n}" data-a="{a}" data-c="{s.split(".")[0]}" data-o="{rank[n]}"{dis}>'
-            f'<div class="h"><b>Q{n}</b>{tag}</div><p class="q">{html.escape(it["q"])}</p>{ans}'
-            f'<p class="y">{html.escape(it["why"])}</p>{flow_html(it["flow"])}{note}</div>')
+            f'<div class="h"><b>Q{n}</b>{tag}<span class="tag l">上次</span></div><p class="q">{html.escape(it["q"])}</p>{ans}'
+            f'<p class="y">{html.escape(it["why"])}</p>{flow_html(it["flow"])}{note}<button class="sn">看過，下一題 ↓</button></div>')
     return f"""<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DEA-C01 答案速讀</title><style>{CSS}</style></head><body>
-<header><b>DEA-C01 答案速讀 <span id="cnt">342</span> 題</b><a href="Short_ZH.html">作答練習版 →</a>
+<header><b>答案速讀 <span id="cnt">342</span> 題</b><span id="seen"></span><button id="go">接續</button><a href="Short_ZH.html">練習版</a>
 <div style="width:100%;display:flex;gap:6px"><select id="ord"><option value="topic">依主題</option><option value="num">依題號</option></select>
 <select id="flt"><option value="all">全部</option><optgroup label="主題">{ch_opts}</optgroup>
 <optgroup label="篩選"><option value="wrong">只看練習版錯題</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號">{ranges}</optgroup></select>
-<input id="kw" type="search" placeholder="搜尋"></div></header>
+<select id="st"><option value="all">全部狀態</option><option value="todo">未看過</option><option value="seen">已看過</option><option value="clear">清除看過紀錄…</option></select>
+<input id="kw" type="search" placeholder="搜尋"></div><div id="pg"></div></header>
 <main>{heads}{''.join(cards)}</main><script>{JS}</script></body></html>"""
 
 
