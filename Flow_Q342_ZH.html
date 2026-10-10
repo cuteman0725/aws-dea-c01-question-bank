@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="AWS DEA-C01 第 342 題動態圖解：Lambda App logs 與 System logs 分開設層級，要先改 JSON log format。">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>DEA Q342 Lambda 日誌層級</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: mobile-first single column; the live log-flow diagram is the one loud element. >=1080px: question + answer left, diagram right (sticky). Industrial-label feel: condensed caps for levels and option letters, monospace for log lines. */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --surface-2:#E3EAE6; --line:#C6D2CC;
+  --fg:#14201C; --muted:#55665F;
+  --accent:#08866A; --accent-ink:#065443; --accent-soft:#D8F0E7; --on-accent:#FFFFFF;
+  --console-bg:#14201C; --console-fg:#D7E4DE; --console-dim:#84988F;
+  --off:#A9B6B0;
+  --lv-debug:#6B7886; --lv-info:#2A68D1; --lv-warn:#E2A008; --lv-error:#D23838; --lv-fatal:#8F1630;
+  --on-debug:#FFFFFF; --on-info:#FFFFFF; --on-warn:#241800; --on-error:#FFFFFF; --on-fatal:#FFFFFF;
+  --font-display:"Barlow Condensed","Arial Narrow","Noto Sans TC",sans-serif;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans TC",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1311; --surface:#141C19; --surface-2:#1B2521; --line:#2C3934;
+    --fg:#E2EBE7; --muted:#93A49D;
+    --accent:#38D0A3; --accent-ink:#9DEFD4; --accent-soft:#12352B; --on-accent:#04261C;
+    --console-bg:#080D0B; --console-fg:#D7E4DE; --console-dim:#6E8279;
+    --off:#4A5853;
+    --lv-debug:#8E9CAA; --lv-info:#5E9BFF; --lv-warn:#F3B92E; --lv-error:#FF6A6A; --lv-fatal:#E0577A;
+    --on-debug:#0B1116; --on-info:#04112A; --on-warn:#241800; --on-error:#2A0505; --on-fatal:#2A0510;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1311; --surface:#141C19; --surface-2:#1B2521; --line:#2C3934;
+  --fg:#E2EBE7; --muted:#93A49D;
+  --accent:#38D0A3; --accent-ink:#9DEFD4; --accent-soft:#12352B; --on-accent:#04261C;
+  --console-bg:#080D0B; --console-fg:#D7E4DE; --console-dim:#6E8279;
+  --off:#4A5853;
+  --lv-debug:#8E9CAA; --lv-info:#5E9BFF; --lv-warn:#F3B92E; --lv-error:#FF6A6A; --lv-fatal:#E0577A;
+  --on-debug:#0B1116; --on-info:#04112A; --on-warn:#241800; --on-error:#2A0505; --on-fatal:#2A0510;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 16px/1.75 var(--font-body);-webkit-font-smoothing:antialiased}
+a{color:var(--accent-ink);text-underline-offset:3px}
+code{font-family:var(--font-mono)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:28px 56px}
+@media (min-width:600px){.page{padding-inline:24px}}
+@media (min-width:1080px){.page{padding-inline:32px}}
+
+/* level colour pairs, shared by HTML chips and SVG */
+.lv-DEBUG{--c:var(--lv-debug);--on:var(--on-debug)}
+.lv-INFO{--c:var(--lv-info);--on:var(--on-info)}
+.lv-WARN{--c:var(--lv-warn);--on:var(--on-warn)}
+.lv-ERROR{--c:var(--lv-error);--on:var(--on-error)}
+.lv-FATAL{--c:var(--lv-fatal);--on:var(--on-fatal)}
+.chip{display:inline-flex;align-items:center;font:700 .9rem/1 var(--font-display);letter-spacing:.06em;padding:4px 8px;border-radius:999px;background:var(--c);color:var(--on);white-space:nowrap}
+
+/* masthead */
+.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px;font-size:.82rem;color:var(--muted)}
+.kicker .tag{font:700 .98rem/1.2 var(--font-display);letter-spacing:.08em;color:var(--accent-ink);background:var(--accent-soft);padding:2px 8px;border-radius:6px}
+h1{margin:0 0 10px;font-weight:900;font-size:clamp(1.65rem,1.1rem + 2.4vw,2.6rem);line-height:1.22;letter-spacing:.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--accent-ink)}
+.lede{margin:0;max-width:40em;color:var(--muted);font-size:1.02rem}
+h2,h3{text-wrap:balance}
+.eyebrow{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:.78rem;font-weight:700;letter-spacing:.14em;color:var(--accent-ink)}
+.eyebrow::before{content:"";width:18px;height:2px;background:var(--accent)}
+
+/* top grid */
+.top{display:grid;gap:40px;margin-top:28px}
+.col{display:grid;gap:22px;min-width:0}
+@media (min-width:1080px){
+  .top{grid-template-columns:minmax(330px,390px) minmax(0,1fr);align-items:start;gap:44px}
+  .dsec{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+}
+
+/* question */
+.q h2{margin:0 0 6px;font-size:1.18rem;line-height:1.5}
+.q-text{margin:0}
+.need{display:grid;gap:8px;margin:12px 0 16px}
+.need-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.need-src{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.ico{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);color:var(--fg);font:700 12px var(--font-mono)}
+.ico svg{width:18px;height:18px}
+.gt{fill:none;stroke:currentColor;stroke-width:2.6;stroke-dasharray:2.6 2.58}
+.gb{fill:currentColor}
+.gh{fill:var(--surface-2)}
+.need-src b{display:block;line-height:1.3}
+.need-src small{display:block;color:var(--muted);font-size:.78rem;line-height:1.35}
+.need-goal{flex:none;display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+.opts-h{margin:0 0 6px;font-size:.85rem;color:var(--muted)}
+.opts{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.opt{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 12px;text-align:left;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:12px;font:400 .93rem/1.5 var(--font-body);cursor:pointer}
+.opt:hover{background:var(--surface);border-color:var(--fg)}
+.opt-k{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);font:700 17px/1 var(--font-display)}
+.opt-go{font-size:.75rem;color:var(--accent-ink);white-space:nowrap}
+.fine{margin:10px 0 0;font-size:.78rem;color:var(--muted);line-height:1.6}
+
+/* answer */
+.ans{background:var(--surface);border:1.5px solid var(--accent);border-radius:16px;padding:16px}
+.ans-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start}
+.ans-k{width:64px;height:76px;border-radius:12px;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font:700 3.6rem/1 var(--font-display)}
+.ans h2{margin:0 0 4px;font-size:1.16rem;line-height:1.45}
+.ans p{margin:0;color:var(--muted);font-size:.93rem}
+
+/* diagram section */
+.dsec{min-width:0}
+.dsec h2{margin:0 0 4px;font-size:1.18rem;line-height:1.45}
+.ctl{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;margin-top:6px}
+@media (min-width:1080px){.ctl{position:static}}
+.seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:4px;background:var(--surface-2);border-radius:14px}
+.seg button{min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;background:transparent;border:0;border-radius:10px;color:var(--fg);font-family:var(--font-body);cursor:pointer}
+.seg b{font:700 1.15rem/1 var(--font-display);letter-spacing:.04em}
+.seg span{font-size:.7rem;line-height:1.2;color:var(--muted);white-space:nowrap}
+.seg button:hover{background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button[aria-pressed="true"] span{color:inherit;opacity:.8}
+.seg .is-answer b::after{content:"";display:inline-block;width:6px;height:6px;margin-left:3px;border-radius:50%;background:var(--accent);vertical-align:.32em}
+.tourbar{height:3px;margin-top:6px;background:var(--surface-2);border-radius:2px;overflow:hidden}
+.tourbar i{display:block;height:100%;background:var(--accent);transform-origin:left center;transform:scaleX(0)}
+.banner{display:grid;gap:4px;margin:6px 0 12px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;font-size:.93rem;line-height:1.6}
+.banner-tag{justify-self:start;padding:1px 9px;border-radius:999px;background:var(--fg);color:var(--bg);font-size:.78rem;font-weight:700}
+.banner-t{min-height:3.2em}
+@media (max-width:599px){.banner-t{min-height:4.8em}}
+.banner[data-kind="base"] .banner-tag{background:var(--surface-2);color:var(--muted)}
+.banner[data-kind="half"] .banner-tag{background:var(--lv-warn);color:var(--on-warn)}
+.banner[data-kind="ok"]{background:var(--accent-soft);border-color:var(--accent)}
+.banner[data-kind="ok"] .banner-tag{background:var(--accent);color:var(--on-accent)}
+.flow-fig{margin:0}
+.flow{width:100%}
+.flow.is-portrait .dg{max-width:440px;margin-inline:auto}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:.82rem;color:var(--muted)}
+.legend .chip{font-size:.8rem;padding:3px 7px}
+.legend-t{flex-basis:100%;line-height:1.6}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:999px;font:600 .86rem/1.3 var(--font-body);cursor:pointer}
+.btn:hover{border-color:var(--fg)}
+.btn svg{width:14px;height:14px;flex:none}
+.btn-s{padding:4px 10px;font-size:.8rem}
+
+/* SVG diagram */
+.dg{display:block;width:100%;height:auto;font-family:var(--font-body)}
+.dg .lam,.dg .cw{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.dg .badge{fill:var(--accent)}
+.dg .badge-t{fill:var(--on-accent);font:700 15px var(--font-body)}
+.dg .t{fill:var(--fg)}
+.dg .t-m{fill:var(--muted)}
+.dg .t-h{font-size:14px;font-weight:700}
+.dg .t-h2{font-size:13px;font-weight:700}
+.dg .t-n{font-size:12.5px;font-weight:700}
+.dg .t-s{font-size:10.5px}
+.dg .t-xs{font-size:10px}
+.dg .t-cap{font-size:11px;font-weight:700}
+.dg .t-mono{font-family:var(--font-mono);font-size:10px}
+.dg .panel{fill:var(--surface-2);stroke:var(--line);stroke-width:1.2;stroke-dasharray:5 4}
+.dg .node-r{fill:var(--surface);stroke:var(--fg);stroke-opacity:.45;stroke-width:1.4}
+.dg .ico-code{fill:var(--fg);font:700 12px var(--font-mono)}
+.dg .gear-t{fill:none;stroke:var(--fg);stroke-width:2.6;stroke-dasharray:2.9 2.91}
+.dg .gear-b{fill:var(--fg)}
+.dg .gear-h{fill:var(--surface)}
+.dg .pipe{fill:none;stroke:var(--muted);stroke-width:2;stroke-opacity:.75}
+.dg .arw{fill:var(--muted)}
+.dg .pill-r{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.dg .pill-k{fill:var(--muted);transition:transform .45s cubic-bezier(.3,.7,.2,1),fill .3s}
+.dg.st-json .pill-k{fill:var(--accent)}
+.dg .pill-t{fill:var(--muted);font:700 12px var(--font-display);letter-spacing:.05em}
+.dg .pill-text{fill:var(--surface)}
+.dg.st-json .pill-text{fill:var(--muted)}
+.dg.st-json .pill-json{fill:var(--on-accent)}
+.dg .gate-r{fill:var(--surface);stroke:var(--off);stroke-width:1.6;stroke-dasharray:4 3}
+.dg.st-json .gate-r{stroke:var(--accent);stroke-width:2.2;stroke-dasharray:none}
+.dg .gl-sh{fill:none;stroke:var(--off);stroke-width:2}
+.dg .gl-bd{fill:var(--off)}
+.dg .gi-filter path{fill:var(--accent)}
+.dg .gi-filter{display:none}
+.dg.st-json .gi-filter{display:inline}
+.dg.st-json .gi-lock{display:none}
+.dg .gl-v{fill:var(--muted);font-size:12.5px;font-weight:700}
+.dg.st-json .gl-v{fill:var(--accent-ink)}
+.dg .iam-r{fill:var(--surface);stroke:var(--line);stroke-width:1.3}
+.dg .iam-t{fill:var(--muted);font-size:10.5px;font-weight:700}
+.dg .key circle,.dg .key path{fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linecap:round}
+.dg.st-iam .iam-r{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.dg.st-iam .iam-t{fill:var(--accent-ink)}
+.dg.st-iam .key circle,.dg.st-iam .key path{stroke:var(--accent-ink)}
+.dg.st-code #n-app .node-r{stroke:var(--accent);stroke-opacity:1;stroke-width:2.2}
+.dg.st-code #nsub-app{fill:var(--accent-ink);font-family:var(--font-mono);font-weight:600}
+.dg.st-group #cw-grp{fill:var(--accent-ink);font-weight:700}
+.dg .cwi rect{fill:var(--accent-soft);stroke:var(--accent)}
+.dg .cwi path{stroke:var(--accent-ink);stroke-width:1.5}
+.dg .req-r{fill:var(--surface-2);stroke:var(--line);stroke-width:1.2}
+.dg .req-t{fill:var(--muted);font-size:10.5px;font-weight:700}
+.dg .req-x{fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
+.dg .req-ok{display:none;fill:none;stroke:var(--accent-ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.dg .req.ok .req-r{fill:var(--accent-soft);stroke:var(--accent)}
+.dg .req.ok .req-t{fill:var(--accent-ink)}
+.dg .req.ok .req-x{display:none}
+.dg .req.ok .req-ok{display:inline}
+.dg .con{fill:var(--console-bg)}
+.dg .cl.off{display:none}
+.dg .cl-chip{fill:var(--c)}
+.dg .cl-lv{fill:var(--on);font:700 9.5px var(--font-display);letter-spacing:.05em}
+.dg .cl-src{fill:var(--console-dim);font:600 9.5px var(--font-mono)}
+.dg .cl-msg{fill:var(--console-fg);font:400 10.5px var(--font-mono)}
+.dg .con-ph{fill:var(--console-dim);font:400 11px var(--font-body)}
+.dg .pt-r{fill:var(--c)}
+.dg .pt-t{fill:var(--on);font:700 10.5px var(--font-display);letter-spacing:.05em}
+.dg .pt-b{fill:var(--accent);font:700 14px var(--font-mono);opacity:0}
+.dg.st-json .pt-b{opacity:1}
+.dg .pt-x{stroke:var(--fg);stroke-width:2.2;stroke-linecap:round;opacity:0}
+.dg .pt.rej .pt-x{opacity:1}
+.dg .pt.rej .pt-r{fill:var(--off)}
+.dg .pt.rej .pt-t{opacity:.3}
+.dg .pt.rej .pt-b{opacity:0}
+
+/* why */
+.why{margin-top:60px}
+.why > h2{margin:0;font-size:1.3rem;line-height:1.45}
+.steps{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:30px}
+@media (min-width:900px){.steps{grid-template-columns:1fr 1fr;gap:30px 40px}.step-wide{grid-column:1/-1}}
+.step{min-width:0;padding-top:16px;border-top:1px solid var(--line)}
+.step-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.step-n{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--fg);color:var(--bg);font:700 15px/1 var(--font-display)}
+.step h3{margin:0;font-size:1.08rem;line-height:1.4}
+.step-note{margin:12px 0 0;max-width:42em;color:var(--muted);font-size:.93rem}
+.step-note code{font-size:.85em;color:var(--fg)}
+.srcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.src{min-width:0;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.src-k{display:flex;align-items:center;gap:8px;margin:0;font-weight:700}
+.src-k .ico{width:26px;height:26px}
+.src-w{margin:4px 0 8px;color:var(--muted);font-size:.84rem;line-height:1.5}
+.snip{display:block;margin-bottom:8px;padding:6px 8px;border-radius:8px;background:var(--console-bg);color:var(--console-fg);font:500 .78rem/1.5 var(--font-mono);overflow-x:auto;white-space:nowrap}
+.evs{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.evs li{display:flex;align-items:center;gap:8px;min-width:0}
+.evs code{font-size:.8rem;overflow-wrap:anywhere}
+.axis{margin:0 0 8px;font-size:.8rem;color:var(--muted)}
+.ladders{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.ladder{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ladder-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 4px;font-weight:700;font-size:.88rem}
+.rung{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font:700 .95rem/1.4 var(--font-display);letter-spacing:.06em}
+.rung small{font:500 .72rem var(--font-body);letter-spacing:0}
+.rung.keep{background:var(--c);color:var(--on)}
+.rung.drop{color:var(--muted);border:1px dashed var(--line)}
+.rung.drop span{text-decoration:line-through}
+.cut{display:flex;align-items:center;gap:6px;color:var(--accent-ink);font-size:.74rem;font-weight:700}
+.cut::before,.cut::after{content:"";flex:1;border-top:2px solid var(--accent)}
+.fmt{display:grid;gap:8px}
+.fmt-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.fmt-row.is-json{border-color:var(--accent)}
+.fmt-k{padding:2px 8px;border-radius:6px;background:var(--surface-2);font:700 .85rem/1.3 var(--font-display);letter-spacing:.06em}
+.fmt-row.is-json .fmt-k{background:var(--accent);color:var(--on-accent)}
+.fmt-row code{font-size:.8rem;line-height:1.6;overflow-wrap:anywhere}
+.fmt-row mark{background:var(--accent-soft);color:var(--accent-ink);padding:0 2px;border-radius:3px}
+.howto{display:grid;gap:14px;margin-top:14px}
+@media (min-width:900px){.howto{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:start}}
+.cm{min-width:0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.cm-h{margin:0 0 6px;display:flex;flex-direction:column;font-weight:700;font-size:.9rem}
+.cm-h span{font:400 .74rem/1.5 var(--font-mono);color:var(--muted)}
+.cm-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 10px;padding:8px 0;border-top:1px solid var(--line)}
+.cm-l{font:500 .8rem var(--font-mono)}
+.cm-v{display:flex;gap:12px}
+.rd{display:inline-flex;align-items:center;gap:5px;font-size:.85rem;color:var(--muted)}
+.rd::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--muted)}
+.rd.on{color:var(--fg);font-weight:700}
+.rd.on::before{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 2.5px,transparent 3px)}
+.sel{display:inline-flex;align-items:center;gap:8px;padding:2px 10px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font:700 .92rem/1.5 var(--font-display);letter-spacing:.06em}
+.sel::after{content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg)}
+.cli{min-width:0;padding:10px 12px;background:var(--console-bg);color:var(--console-fg);border-radius:12px}
+.cli-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:.82rem;color:var(--console-dim)}
+.cli .btn{background:transparent;color:var(--console-fg);border-color:var(--console-dim)}
+.cli pre{margin:0;overflow-x:auto;font:500 .8rem/1.6 var(--font-mono)}
+.cli-note{margin:8px 0 0;font-size:.78rem;color:var(--console-dim)}
+.cli-note code{color:var(--console-fg)}
+.others{margin-top:36px}
+.others h3{margin:0 0 10px;font-size:1.05rem}
+.nope{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.nope li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.nope-k{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);color:var(--muted);font:700 18px/1 var(--font-display)}
+.nope-t{display:flex;flex-direction:column;line-height:1.5}
+.nope-t span{color:var(--muted);font-size:.88rem}
+@media (max-width:440px){.nope li{grid-template-columns:auto minmax(0,1fr)}.nope li .btn{grid-column:2;justify-self:start}}
+
+/* footer */
+.foot{display:grid;gap:18px;margin-top:52px}
+@media (min-width:900px){.foot{grid-template-columns:1.3fr 1fr;align-items:start}}
+.remember{padding:18px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:16px}
+.remember-t{margin:0;font-size:1.12rem;font-weight:700;line-height:1.65}
+.sources{font-size:.88rem}
+.sources p{margin:0 0 4px;font-weight:700}
+.sources ul{margin:0;padding-left:1.2em;color:var(--muted)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+
+</head>
+<body>
+<main class="page" lang="zh-Hant-TW">
+  <header class="mast">
+    <p class="kicker"><span class="tag">DEA-C01</span>AWS Certified Data Engineer – Associate 題庫・第 342 題</p>
+    <h1>兩種 log 要分開過濾，先把格式改成 <em>JSON</em></h1>
+    <p class="lede">題目要 Lambda 的 App logs 只顯示 ERROR、System logs 只顯示 WARN。四個選項裡只有 C 做得到：把 Log format 設成 JSON。</p>
+  </header>
+
+  <div class="top">
+    <div class="col">
+      <section class="q" aria-labelledby="q-h">
+        <p class="eyebrow">題目</p>
+        <h2 id="q-h">要怎麼讓兩種 log 各自只顯示指定層級？</h2>
+        <p class="q-text">一支用 managed runtime 執行的 Lambda 函式，log 都寫進 CloudWatch Logs。現在要：</p>
+        <div class="need">
+          <div class="need-row">
+            <div class="need-src"><span class="ico" aria-hidden="true">&lt;/&gt;</span><div><b>App logs</b><small>你的程式碼印出來的</small></div></div>
+            <div class="need-goal">只顯示 <span class="chip lv-ERROR">ERROR</span></div>
+          </div>
+          <div class="need-row">
+            <div class="need-src"><span class="ico" aria-hidden="true"><svg viewBox="-10 -10 20 20"><circle class="gt" r="6.6"/><circle class="gb" r="4.4"/><circle class="gh" r="1.8"/></svg></span><div><b>System logs</b><small>Lambda 平台自己產生的</small></div></div>
+            <div class="need-goal">只顯示 <span class="chip lv-WARN">WARN</span></div>
+          </div>
+        </div>
+        <p class="opts-h">選項（點一下，到動態圖看效果）</p>
+        <ol class="opts">
+          <li><button type="button" class="opt" data-go="A"><span class="opt-k">A</span><span>提高 Lambda 執行角色（execution role）的權限</span><span class="opt-go" aria-hidden="true">看圖 →</span></button></li>
+          <li><button type="button" class="opt" data-go="B"><span class="opt-k">B</span><span>在函式程式碼裡把 log 層級設成 ERROR</span><span class="opt-go" aria-hidden="true">看圖 →</span></button></li>
+          <li><button type="button" class="opt" data-go="C"><span class="opt-k">C</span><span>把 Lambda 函式設定成使用 JSON log format</span><span class="opt-go" aria-hidden="true">看圖 →</span></button></li>
+          <li><button type="button" class="opt" data-go="D"><span class="opt-k">D</span><span>把 log 改送到自訂的 CloudWatch log group</span><span class="opt-go" aria-hidden="true">看圖 →</span></button></li>
+        </ol>
+        <p class="fine">題目與選項依 Notion 題庫筆記的題意整理，不是英文原文。</p>
+      </section>
+
+      <section class="ans" aria-labelledby="ans-h">
+        <p class="eyebrow">正確答案</p>
+        <div class="ans-main">
+          <span class="ans-k" aria-hidden="true">C</span>
+          <div>
+            <h2 id="ans-h">把 Lambda 函式的 Log format 設成 JSON</h2>
+            <p>JSON 格式才有兩個各自獨立的門檻：Application log level 設 ERROR、System log level 設 WARN。預設的 Text 格式不能做層級過濾。</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="dsec" id="diagram" aria-labelledby="d-h">
+      <p class="eyebrow">動態架構圖</p>
+      <h2 id="d-h">切換選項，看 log 怎麼流進 CloudWatch</h2>
+      <div class="ctl">
+        <div class="seg" id="seg" role="group" aria-label="選擇要看的選項">
+          <button type="button" data-state="base" aria-pressed="true"><b>原狀</b><span>還沒改</span></button>
+          <button type="button" data-state="A" aria-pressed="false"><b>A</b><span>加權限</span></button>
+          <button type="button" data-state="B" aria-pressed="false"><b>B</b><span>改程式</span></button>
+          <button type="button" data-state="C" aria-pressed="false" class="is-answer"><b>C</b><span>改 JSON</span></button>
+          <button type="button" data-state="D" aria-pressed="false"><b>D</b><span>換 group</span></button>
+        </div>
+        <div class="tourbar" id="tourbar" hidden><i id="tourfill"></i></div>
+      </div>
+      <div class="banner" id="banner" data-kind="base" aria-live="polite">
+        <span class="banner-tag" id="banner-tag">原狀</span>
+        <span class="banner-t" id="banner-t">Log format 是預設的 Text，兩個門檻都鎖住，每一種層級的 log 都直接進 CloudWatch。</span>
+      </div>
+      <figure class="flow-fig">
+        <div class="flow" id="flow"></div>
+        <figcaption class="legend">
+          <span class="chip lv-DEBUG">DEBUG</span><span class="chip lv-INFO">INFO</span><span class="chip lv-WARN">WARN</span><span class="chip lv-ERROR">ERROR</span>
+          <span class="legend-t">由左到右越來越嚴重。每個小方塊是一筆 log；被門檻擋下的會打叉彈回。改成 JSON 後，log 會帶上 <code>{ }</code>。</span>
+        </figcaption>
+      </figure>
+      <div class="actions">
+        <button type="button" class="btn" id="btn-play"></button>
+        <button type="button" class="btn" id="btn-tour"></button>
+      </div>
+    </section>
+  </div>
+
+  <section class="why" aria-labelledby="why-h">
+    <p class="eyebrow">理由</p>
+    <h2 id="why-h">為什麼是 C：三件事接起來就懂</h2>
+    <ol class="steps">
+      <li class="step">
+        <div class="step-h"><span class="step-n">1</span><h3>兩種 log，來源不同</h3></div>
+        <div class="srcs">
+          <div class="src">
+            <p class="src-k"><span class="ico" aria-hidden="true">&lt;/&gt;</span>App logs</p>
+            <p class="src-w">Application logs，你的程式碼印出來的</p>
+            <code class="snip">logger.error("連線失敗")</code>
+            <span class="chip lv-ERROR">ERROR</span>
+          </div>
+          <div class="src">
+            <p class="src-k"><span class="ico" aria-hidden="true"><svg viewBox="-10 -10 20 20"><circle class="gt" r="6.6"/><circle class="gb" r="4.4"/><circle class="gh" r="1.8"/></svg></span>System logs</p>
+            <p class="src-w">Lambda 平台自己產生的事件</p>
+            <ul class="evs">
+              <li><span class="chip lv-INFO">INFO</span><code>start</code></li>
+              <li><span class="chip lv-INFO">INFO</span><code>report</code></li>
+              <li><span class="chip lv-WARN">WARN</span><code>logsDropped</code></li>
+            </ul>
+          </div>
+        </div>
+        <p class="step-note">程式碼只管得到 App logs；System logs 要在 Lambda 的日誌設定裡調。所以 B 只對一半。</p>
+      </li>
+      <li class="step">
+        <div class="step-h"><span class="step-n">2</span><h3>設定的是「門檻」</h3></div>
+        <p class="axis">↑ 越往上越嚴重、筆數越少</p>
+        <div class="ladders">
+          <div class="ladder" role="img" aria-label="App logs 門檻設 ERROR：FATAL 和 ERROR 留下，WARN、INFO、DEBUG、TRACE 擋下">
+            <p class="ladder-h">App 門檻 <span class="chip lv-ERROR">ERROR</span></p>
+            <div class="rung keep lv-FATAL"><span>FATAL</span><small>留下</small></div>
+            <div class="rung keep lv-ERROR"><span>ERROR</span><small>留下</small></div>
+            <div class="cut">門檻</div>
+            <div class="rung drop"><span>WARN</span><small>擋下</small></div>
+            <div class="rung drop"><span>INFO</span><small>擋下</small></div>
+            <div class="rung drop"><span>DEBUG</span><small>擋下</small></div>
+            <div class="rung drop"><span>TRACE</span><small>擋下</small></div>
+          </div>
+          <div class="ladder" role="img" aria-label="System logs 門檻設 WARN：WARN 留下，INFO、DEBUG 擋下">
+            <p class="ladder-h">System 門檻 <span class="chip lv-WARN">WARN</span></p>
+            <div class="rung keep lv-WARN"><span>WARN</span><small>留下</small></div>
+            <div class="cut">門檻</div>
+            <div class="rung drop"><span>INFO</span><small>擋下</small></div>
+            <div class="rung drop"><span>DEBUG</span><small>擋下</small></div>
+          </div>
+        </div>
+        <p class="step-note">選一個層級，就是「這一級和更嚴重的」會留下，所以 App 選 ERROR 時 FATAL 也會留下。兩種 log 的預設門檻都是 INFO。</p>
+      </li>
+      <li class="step step-wide">
+        <div class="step-h"><span class="step-n">3</span><h3>這兩個門檻，只有 JSON 格式才能設</h3></div>
+        <div class="fmt">
+          <div class="fmt-row"><span class="fmt-k">Text</span><code>[ERROR] 2026-10-09T11:55:02Z 資料庫連線失敗</code></div>
+          <div class="fmt-row is-json"><span class="fmt-k">JSON</span><code>{"timestamp":"…", <mark>"level":"ERROR"</mark>, "message":"資料庫連線失敗"}</code></div>
+        </div>
+        <p class="step-note">Text 只是一行字；JSON 讓每筆 log 都有固定的 <code>level</code> 欄位，Lambda 才能照門檻過濾。AWS 官方文件寫明：要用 log-level filtering，函式必須設成 JSON log format，而 managed runtime 預設是 Text。用 AWS 支援的 runtime 和 logging 方法時，不用改程式碼。</p>
+        <div class="howto">
+          <div class="cm" role="img" aria-label="Lambda 主控台日誌設定示意：Log format 選 JSON，Application log level 選 ERROR，System log level 選 WARN">
+            <p class="cm-h">主控台設定示意<span>Monitoring and operations tools → Logging configuration → Edit</span></p>
+            <div class="cm-row"><span class="cm-l">Log format</span><span class="cm-v"><span class="rd">Text</span><span class="rd on">JSON</span></span></div>
+            <div class="cm-row"><span class="cm-l">Application log level</span><span class="sel">ERROR</span></div>
+            <div class="cm-row"><span class="cm-l">System log level</span><span class="sel">WARN</span></div>
+          </div>
+          <div class="cli">
+            <div class="cli-h"><span>用 AWS CLI 一個指令設定</span><button type="button" class="btn btn-s" id="btn-copy">複製</button></div>
+            <pre id="cli"><code>aws lambda update-function-configuration \
+  --function-name my-function \
+  --logging-config LogFormat=JSON,ApplicationLogLevel=ERROR,SystemLogLevel=WARN</code></pre>
+            <p class="cli-note">把 <code>my-function</code> 換成你的函式名稱。</p>
+          </div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="others">
+      <h3>其他選項卡在哪</h3>
+      <ul class="nope">
+        <li><span class="nope-k">A</span><div class="nope-t"><b>加 IAM 權限</b><span>權限管「能不能寫進 CloudWatch」，不管「寫哪些層級」。</span></div><button type="button" class="btn btn-s" data-go="A">在圖上看</button></li>
+        <li><span class="nope-k">B</span><div class="nope-t"><b>程式碼設 ERROR</b><span>只管得到自己印的 App logs；System logs 照樣全部進來。</span></div><button type="button" class="btn btn-s" data-go="B">在圖上看</button></li>
+        <li><span class="nope-k">D</span><div class="nope-t"><b>換 log group</b><span>只換存放位置，沒有任何過濾。</span></div><button type="button" class="btn btn-s" data-go="D">在圖上看</button></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="remember">
+      <p class="eyebrow">一句話記住</p>
+      <p class="remember-t">看到「App logs、System logs 要設不同層級」，就想到先開 JSON log format（選 C）。</p>
+    </div>
+    <div class="sources">
+      <p>來源</p>
+      <ul>
+        <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs-log-level.html" target="_blank" rel="noopener">AWS Lambda 開發人員指南：Log-level filtering</a></li>
+        <li><a href="https://www.notion.so/202b8283a9c14fcfaab090f17715c20b" target="_blank" rel="noopener">Notion：DEA 題庫 Q342 筆記</a></li>
+      </ul>
+    </div>
+  </footer>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const reduced = !!(mq && mq.matches);
+
+  const RANK = { DEBUG: 1, INFO: 2, WARN: 3, ERROR: 4 };
+  const THRESH = { app: 'ERROR', sys: 'WARN' };
+  const STATES = {
+    base: { json: false, iam: false, code: false, group: false },
+    A:    { json: false, iam: true,  code: false, group: false },
+    B:    { json: false, iam: false, code: true,  group: false },
+    C:    { json: true,  iam: false, code: false, group: false },
+    D:    { json: false, iam: false, code: false, group: true  }
+  };
+  const INFO = {
+    base: { tag: '原狀（還沒改）', kind: 'base', text: 'Log format 是預設的 Text，兩個門檻都鎖住，每一種層級的 log 都直接進 CloudWatch。題目的兩個條件都沒達成。' },
+    A:    { tag: '✕ A 不行', kind: 'no', text: 'IAM 執行角色只決定 Lambda「能不能寫進」CloudWatch，不決定「要寫哪些層級」。權限加再多，log 還是全部進來。' },
+    B:    { tag: '✕ B 只對一半', kind: 'half', text: '程式碼的 logger 只印 ERROR，App logs 這條顧好了；但 System logs 是 Lambda 平台產生的，程式碼管不到，start、report 這些 INFO 照樣進來。' },
+    C:    { tag: '✓ C 正解', kind: 'ok', text: '改成 JSON 後兩個門檻解鎖：App 設 ERROR、System 設 WARN，各自只放行門檻以上的 log。兩個條件一次達成。' },
+    D:    { tag: '✕ D 不行', kind: 'no', text: '自訂 log group 只是換一個存放的位置，門檻還是鎖住，所有層級的 log 照樣全部進來。' }
+  };
+  /* [level, message, weight]; system events follow AWS "System log level event mapping" */
+  const POOL = {
+    app: [
+      ['DEBUG', '讀取設定檔', 3], ['DEBUG', '進入 parse()', 3], ['DEBUG', 'x = 42', 2],
+      ['INFO', '開始轉檔', 3], ['INFO', '處理 50 筆訂單', 4], ['INFO', '寫入 S3 完成', 3],
+      ['WARN', '重試第 2 次', 2], ['WARN', '欄位缺值，用預設', 2],
+      ['ERROR', '資料庫連線失敗', 4], ['ERROR', 'JSON 解析失敗', 3]
+    ],
+    sys: [
+      ['INFO', 'start 開始執行', 4], ['INFO', 'report 執行報告', 4], ['INFO', 'initStart 初始化', 2],
+      ['DEBUG', 'runtimeDone 完成', 3],
+      ['WARN', 'logsDropped 遺失 log', 3], ['WARN', 'runtimeDone 執行失敗', 2], ['WARN', 'report 執行失敗', 1]
+    ]
+  };
+  const RATE = { app: 0.62, sys: 0.86 };
+  const REJ_DUR = 0.65;
+  const GEO = {
+    portrait: {
+      speed: 100, dir: [0, 1], side: { app: [-1, 0], sys: [1, 0] },
+      start: { app: [70, 92], sys: [290, 92] },
+      srcCheck: 44, gateCheck: 138.5, end: 301.5, minGap: 40,
+      con: { n: 6, y0: 470, dy: 21, chipX: 26, chipW: 42, srcX: 74, msgX: 100 }
+    },
+    landscape: {
+      speed: 135, dir: [1, 0], side: { app: [0, -1], sys: [0, -1] },
+      start: { app: [78, 110], sys: [78, 270] },
+      srcCheck: 81, gateCheck: 146, end: 429, minGap: 68,
+      con: { n: 11, y0: 76, dy: 21, chipX: 502, chipW: 40, srcX: 548, msgX: 572 }
+    }
+  };
+  const TOUR = ['base', 'A', 'B', 'D', 'C'];
+  const TOUR_DUR = 7;
+
+  /* ---------- SVG pieces ---------- */
+  const DEFS = '<defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="arw" d="M0,1 L9,5 L0,9 Z"/></marker></defs>';
+  const gearSVG = (cx, cy) => `<g transform="translate(${cx} ${cy})"><circle class="gear-t" r="7.4"/><circle class="gear-b" r="5"/><circle class="gear-h" r="2"/></g>`;
+  const keySVG = (cx, cy) => `<g class="key" transform="translate(${cx} ${cy})"><circle cx="-3.5" cy="0" r="3.6"/><path d="M0.1 0 H8.5 M5.6 0 V3.2 M8.1 0 V2.6"/></g>`;
+  const cwIconSVG = (x, y) => `<g class="cwi" transform="translate(${x} ${y})"><rect width="18" height="16" rx="3"/><path d="M4 5 H14 M4 8.5 H11 M4 12 H13"/></g>`;
+  const pillSVG = (x, y) => `<g><rect class="pill-r" x="${x}" y="${y}" width="128" height="26" rx="13"/><rect class="pill-k" id="pill-k" x="${x + 2}" y="${y + 2}" width="62" height="22" rx="11"/><text class="pill-t pill-text" x="${x + 33}" y="${y + 17.6}" text-anchor="middle">Text</text><text class="pill-t pill-json" x="${x + 95}" y="${y + 17.6}" text-anchor="middle">JSON</text></g>`;
+  const gateSVG = (id, x, y, w, h) => {
+    const cx = x + w / 2, cy = y + h / 2;
+    return `<g id="g-${id}"><rect class="gate-r" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>` +
+      `<g class="gi-lock" transform="translate(${cx} ${cy + 1})"><path class="gl-sh" d="M-4 -2 V-5 A4 4 0 0 1 4 -5 V-2"/><rect class="gl-bd" x="-6.5" y="-2" width="13" height="10" rx="2"/></g>` +
+      `<g class="gi-filter" transform="translate(${cx} ${cy})"><path d="M-9 -7 H9 L2.5 0.5 V7 L-2.5 9 V0.5 Z"/></g></g>`;
+  };
+  const gateLabelSVG = (id, x, anchor, y) =>
+    `<g><text class="t-m t-s" x="${x}" y="${y}" text-anchor="${anchor}">${id === 'app' ? 'App 門檻' : 'System 門檻'}</text>` +
+    `<text class="gl-v" id="glv-${id}" x="${x}" y="${y + 18}" text-anchor="${anchor}">鎖住</text>` +
+    `<text class="t-m t-xs" id="glc-${id}" x="${x}" y="${y + 34}" text-anchor="${anchor}">全部放行</text></g>`;
+  const reqSVG = (id, x, y, w) =>
+    `<g class="req" id="rq-${id}"><rect class="req-r" x="${x}" y="${y}" width="${w}" height="24" rx="12"/>` +
+    `<g transform="translate(${x + 14} ${y + 12})"><path class="req-x" d="M-3.4 -3.4 L3.4 3.4 M3.4 -3.4 L-3.4 3.4"/><path class="req-ok" d="M-4.6 0.2 L-1.4 3.3 L4.6 -3.4"/></g>` +
+    `<text class="req-t" x="${x + 26}" y="${y + 16}">${id === 'app' ? 'App 只顯示 ERROR' : 'System 只顯示 WARN'}</text></g>`;
+  const conLinesSVG = (c) => {
+    let s = '';
+    for (let i = 0; i < c.n; i++) {
+      const cy = c.y0 + i * c.dy;
+      s += `<g class="cl off"><rect class="cl-chip" x="${c.chipX}" y="${cy - 7.5}" width="${c.chipW}" height="15" rx="7.5"/>` +
+        `<text class="cl-lv" x="${c.chipX + c.chipW / 2}" y="${cy + 3.5}" text-anchor="middle"></text>` +
+        `<text class="cl-src" x="${c.srcX}" y="${cy + 3.4}"></text><text class="cl-msg" x="${c.msgX}" y="${cy + 3.6}"></text></g>`;
+    }
+    return s;
+  };
+
+  const svgPortrait = () => `<svg class="dg" viewBox="0 0 360 600" role="img" aria-labelledby="dg-t" xmlns="${NS}"><title id="dg-t">動態架構圖</title>${DEFS}
+<rect class="lam" x="6" y="6" width="348" height="336" rx="16"/>
+<rect class="badge" x="18" y="15" width="22" height="22" rx="6"/><text class="badge-t" x="29" y="31.5" text-anchor="middle">λ</text>
+<text class="t t-h" x="48" y="31">Lambda 函式</text><text class="t-m t-s" x="342" y="31" text-anchor="end">managed runtime</text>
+<rect class="panel" x="16" y="138" width="328" height="192" rx="12"/>
+<text class="t-m t-cap" x="180" y="158" text-anchor="middle">日誌設定 Logging config</text>
+<line class="pipe" x1="70" y1="124" x2="70" y2="382" marker-end="url(#arw)"/>
+<line class="pipe" x1="290" y1="124" x2="290" y2="382" marker-end="url(#arw)"/>
+<g id="pl"></g>
+<g id="n-app"><rect class="node-r" x="16" y="48" width="108" height="76" rx="12"/><text class="ico-code" x="70" y="73" text-anchor="middle">&lt;/&gt;</text><text class="t t-n" x="70" y="96" text-anchor="middle">你的程式碼</text><text class="t-m t-s" id="nsub-app" x="70" y="113" text-anchor="middle">App logs</text></g>
+<g id="n-sys"><rect class="node-r" x="236" y="48" width="108" height="76" rx="12"/>${gearSVG(290, 69)}<text class="t t-n" x="290" y="96" text-anchor="middle">Lambda 平台</text><text class="t-m t-s" x="290" y="113" text-anchor="middle">System logs</text></g>
+${pillSVG(116, 170)}<text class="t-m t-xs" x="180" y="211" text-anchor="middle">Log format</text>
+${gateSVG('app', 44, 240, 52, 44)}${gateSVG('sys', 264, 240, 52, 44)}
+${gateLabelSVG('app', 104, 'start', 252)}${gateLabelSVG('sys', 256, 'end', 252)}
+<text class="t-m t-xs" x="78" y="366">寫入</text><text class="t-m t-xs" x="282" y="366" text-anchor="end">寫入</text>
+<g><rect class="iam-r" x="124" y="351" width="112" height="24" rx="12"/>${keySVG(141, 363)}<text class="iam-t" id="iam-t" x="154" y="367">IAM 執行角色</text></g>
+<rect class="cw" x="6" y="384" width="348" height="208" rx="16"/>
+${cwIconSVG(18, 395)}<text class="t t-h2" x="44" y="409">CloudWatch Logs</text><text class="t-mono t-m" id="cw-grp" x="342" y="409" text-anchor="end">/aws/lambda/order-etl</text>
+${reqSVG('app', 18, 421, 158)}${reqSVG('sys', 184, 421, 158)}
+<rect class="con" x="18" y="453" width="324" height="131" rx="8"/>
+<g id="con">${conLinesSVG(GEO.portrait.con)}</g>
+<text class="con-ph" id="con-ph" x="180" y="522" text-anchor="middle">等待新的 log…</text>
+</svg>`;
+
+  const svgLandscape = () => `<svg class="dg" viewBox="0 0 720 368" role="img" aria-labelledby="dg-t" xmlns="${NS}"><title id="dg-t">動態架構圖</title>${DEFS}
+<rect class="lam" x="6" y="6" width="394" height="356" rx="16"/>
+<rect class="badge" x="18" y="15" width="22" height="22" rx="6"/><text class="badge-t" x="29" y="31.5" text-anchor="middle">λ</text>
+<text class="t t-h" x="48" y="31">Lambda 函式</text><text class="t-m t-s" x="388" y="31" text-anchor="end">managed runtime</text>
+<rect class="panel" x="150" y="48" width="238" height="308" rx="12"/>
+<text class="t-m t-cap" x="164" y="69">日誌設定 Logging config</text>
+<line class="pipe" x1="134" y1="110" x2="482" y2="110" marker-end="url(#arw)"/>
+<line class="pipe" x1="134" y1="270" x2="482" y2="270" marker-end="url(#arw)"/>
+<g id="pl"></g>
+<g id="n-app"><rect class="node-r" x="16" y="71" width="118" height="78" rx="12"/><text class="ico-code" x="75" y="97" text-anchor="middle">&lt;/&gt;</text><text class="t t-n" x="75" y="120" text-anchor="middle">你的程式碼</text><text class="t-m t-s" id="nsub-app" x="75" y="137" text-anchor="middle">App logs</text></g>
+<g id="n-sys"><rect class="node-r" x="16" y="231" width="118" height="78" rx="12"/>${gearSVG(75, 253)}<text class="t t-n" x="75" y="280" text-anchor="middle">Lambda 平台</text><text class="t-m t-s" x="75" y="297" text-anchor="middle">System logs</text></g>
+${pillSVG(205, 196)}<text class="t-m t-xs" x="269" y="237" text-anchor="middle">Log format</text>
+${gateSVG('app', 247, 88, 44, 44)}${gateSVG('sys', 247, 248, 44, 44)}
+${gateLabelSVG('app', 164, 'start', 152)}${gateLabelSVG('sys', 164, 'start', 312)}
+<text class="t-m t-xs" x="442" y="101" text-anchor="middle">寫入</text><text class="t-m t-xs" x="442" y="261" text-anchor="middle">寫入</text>
+<g><rect class="iam-r" x="408" y="166" width="68" height="48" rx="12"/>${keySVG(444, 183)}<text class="iam-t" id="iam-t" x="442" y="205" text-anchor="middle">IAM 角色</text></g>
+<rect class="cw" x="484" y="6" width="230" height="356" rx="16"/>
+${cwIconSVG(496, 17)}<text class="t t-h2" x="522" y="30">CloudWatch Logs</text><text class="t-mono t-m" id="cw-grp" x="498" y="50">/aws/lambda/order-etl</text>
+<rect class="con" x="496" y="60" width="206" height="236" rx="8"/>
+<g id="con">${conLinesSVG(GEO.landscape.con)}</g>
+<text class="con-ph" id="con-ph" x="599" y="182" text-anchor="middle">等待新的 log…</text>
+${reqSVG('app', 496, 304, 206)}${reqSVG('sys', 496, 332, 206)}
+</svg>`;
+
+  /* ---------- state ---------- */
+  const flowWrap = $('#flow');
+  const banner = $('#banner'), bannerTag = $('#banner-tag'), bannerText = $('#banner-t');
+  const segBtns = $$('#seg button');
+  const tourbar = $('#tourbar'), tourfill = $('#tourfill');
+  const btnPlay = $('#btn-play'), btnTour = $('#btn-tour');
+  const dsec = $('#diagram');
+
+  let layout = null, geo = null, svg = null, layer = null, conEls = [], refs = {};
+  let cur = reduced ? 'C' : 'base';
+  let particles = [], lines = [], cnt = { app: 0, sys: 0 }, spawnT = { app: 0.15, sys: 0.45 };
+  let dirtyCon = true, dirtyCnt = true, fresh = false;
+  let running = false, userPaused = reduced, visible = true, loopToken = 0, lastTs = 0;
+  let tour = { on: false, i: 0, t: 0 }, autoDone = false, interacted = false;
+
+  /* ---------- simulation ---------- */
+  function pick(stream) {
+    const pool = POOL[stream];
+    let tot = 0;
+    for (const it of pool) tot += it[2];
+    let r = Math.random() * tot;
+    for (const it of pool) { r -= it[2]; if (r <= 0) return it; }
+    return pool[pool.length - 1];
+  }
+  function minS(stream) {
+    let m = Infinity;
+    for (const p of particles) if (p.stream === stream && p.phase === 'move' && p.s < m) m = p.s;
+    return m;
+  }
+  function spawn(stream) {
+    const it = pick(stream);
+    particles.push({ stream, level: it[0], msg: it[1], s: 0, phase: 'move', t: 0, srcDone: false, gateDone: false, el: null, marked: false });
+  }
+  function step(dt) {
+    const st = STATES[cur];
+    for (const s of ['app', 'sys']) {
+      spawnT[s] -= dt;
+      if (spawnT[s] <= 0) {
+        if (minS(s) > geo.minGap) { spawn(s); spawnT[s] = RATE[s] * (0.8 + Math.random() * 0.5); }
+        else spawnT[s] = 0.05;
+      }
+    }
+    let dead = false;
+    for (const p of particles) {
+      if (p.phase === 'move') {
+        p.s += geo.speed * dt;
+        if (!p.srcDone && p.s >= geo.srcCheck) {
+          p.srcDone = true;
+          if (p.stream === 'app' && st.code && RANK[p.level] < RANK.ERROR) { p.s = geo.srcCheck; p.phase = 'rej'; p.t = 0; continue; }
+        }
+        if (!p.gateDone && p.s >= geo.gateCheck) {
+          p.gateDone = true;
+          if (st.json && RANK[p.level] < RANK[THRESH[p.stream]]) {
+            p.s = geo.gateCheck; p.phase = 'rej'; p.t = 0; cnt[p.stream] += 1; dirtyCnt = true; continue;
+          }
+        }
+        if (p.s >= geo.end) {
+          p.phase = 'dead'; dead = true;
+          lines.push({ level: p.level, stream: p.stream, msg: p.msg });
+          if (lines.length > 30) lines.shift();
+          dirtyCon = true; fresh = true;
+        }
+      } else if (p.phase === 'rej' || p.phase === 'vanish') {
+        p.t += dt;
+        if ((p.phase === 'rej' && p.t >= REJ_DUR) || (p.phase === 'vanish' && p.t >= 0.25)) { p.phase = 'dead'; dead = true; }
+      }
+    }
+    if (dead) {
+      particles = particles.filter((p) => {
+        if (p.phase !== 'dead') return true;
+        if (p.el) p.el.remove();
+        return false;
+      });
+    }
+  }
+  function warm(sec) {
+    const dt = 1 / 30;
+    for (let t = 0; t < sec; t += dt) step(dt);
+    fresh = false;
+  }
+
+  /* ---------- drawing ---------- */
+  function mkParticle(p) {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'pt lv-' + p.level);
+    g.innerHTML = '<rect class="pt-r" x="-22" y="-8.5" width="44" height="17" rx="8.5"/>' +
+      '<text class="pt-t" y="3.7" text-anchor="middle">' + p.level + '</text>' +
+      '<text class="pt-b" x="-28" y="4.6" text-anchor="middle">{</text>' +
+      '<text class="pt-b" x="28" y="4.6" text-anchor="middle">}</text>' +
+      '<path class="pt-x" d="M-5 -5 L5 5 M5 -5 L-5 5"/>';
+    return g;
+  }
+  function renderConsole() {
+    dirtyCon = false;
+    const n = conEls.length;
+    const view = lines.slice(-n);
+    for (let i = 0; i < n; i++) {
+      const g = conEls[i], it = view[i];
+      if (!it) { g.setAttribute('class', 'cl off'); continue; }
+      g.setAttribute('class', 'cl lv-' + it.level);
+      const k = g.children;
+      k[1].textContent = it.level;
+      k[2].textContent = it.stream === 'app' ? 'App' : 'Sys';
+      k[3].textContent = it.msg;
+    }
+    refs.ph.style.display = view.length ? 'none' : '';
+    if (fresh && view.length && !reduced) {
+      const g = conEls[view.length - 1];
+      if (g.animate) g.animate([{ opacity: 0.15 }, { opacity: 1 }], { duration: 450, easing: 'ease-out' });
+    }
+    fresh = false;
+  }
+  function renderCounters() {
+    dirtyCnt = false;
+    const json = STATES[cur].json;
+    refs.glcApp.textContent = json ? `擋下 ${cnt.app} 筆` : '全部放行';
+    refs.glcSys.textContent = json ? `擋下 ${cnt.sys} 筆` : '全部放行';
+  }
+  function render() {
+    if (!layer) return;
+    const d = geo.dir;
+    for (const p of particles) {
+      if (!p.el) { p.el = mkParticle(p); layer.appendChild(p.el); }
+      const st = geo.start[p.stream];
+      let x = st[0] + d[0] * p.s, y = st[1] + d[1] * p.s, op = 1, sc = 1;
+      if (p.phase === 'rej') {
+        const k = Math.min(1, p.t / REJ_DUR), e = 1 - (1 - k) * (1 - k), sd = geo.side[p.stream];
+        x += (-d[0] * 14 + sd[0] * 10) * e;
+        y += (-d[1] * 14 + sd[1] * 10) * e;
+        op = k < 0.3 ? 1 : 1 - (k - 0.3) / 0.7;
+        sc = 1 - 0.12 * k;
+        if (!p.marked) { p.el.classList.add('rej'); p.marked = true; }
+      } else if (p.phase === 'vanish') {
+        op = Math.max(0, 1 - p.t / 0.25);
+      }
+      p.el.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${sc.toFixed(3)})`);
+      p.el.setAttribute('opacity', op.toFixed(2));
+    }
+    if (dirtyCon) renderConsole();
+    if (dirtyCnt) renderCounters();
+  }
+  function applyState() {
+    if (!svg) return;
+    const st = STATES[cur], P = layout === 'portrait';
+    svg.classList.toggle('st-json', st.json);
+    svg.classList.toggle('st-iam', st.iam);
+    svg.classList.toggle('st-code', st.code);
+    svg.classList.toggle('st-group', st.group);
+    refs.knob.style.transform = st.json ? 'translateX(62px)' : 'translateX(0px)';
+    refs.glvApp.textContent = st.json ? 'ERROR 以上' : '鎖住';
+    refs.glvSys.textContent = st.json ? 'WARN 以上' : '鎖住';
+    refs.nsub.textContent = st.code ? 'logger = ERROR' : 'App logs';
+    refs.iamT.textContent = st.iam ? (P ? 'IAM 權限加大' : '權限加大') : (P ? 'IAM 執行角色' : 'IAM 角色');
+    refs.grp.textContent = st.group ? '/custom/order-etl' : '/aws/lambda/order-etl';
+    refs.rqApp.classList.toggle('ok', st.json || st.code);
+    refs.rqSys.classList.toggle('ok', st.json);
+    refs.title.textContent = `動態架構圖，目前：${INFO[cur].tag}。${INFO[cur].text}`;
+    dirtyCnt = true;
+  }
+  function mount() {
+    geo = GEO[layout];
+    flowWrap.innerHTML = layout === 'portrait' ? svgPortrait() : svgLandscape();
+    flowWrap.classList.toggle('is-portrait', layout === 'portrait');
+    svg = flowWrap.querySelector('svg');
+    layer = svg.querySelector('#pl');
+    conEls = Array.from(svg.querySelector('#con').children);
+    const q = (s) => svg.querySelector(s);
+    refs = {
+      knob: q('#pill-k'), glvApp: q('#glv-app'), glvSys: q('#glv-sys'), glcApp: q('#glc-app'), glcSys: q('#glc-sys'),
+      nsub: q('#nsub-app'), iamT: q('#iam-t'), grp: q('#cw-grp'), rqApp: q('#rq-app'), rqSys: q('#rq-sys'),
+      ph: q('#con-ph'), title: q('#dg-t')
+    };
+    particles = [];
+    dirtyCon = dirtyCnt = true;
+    applyState();
+  }
+
+  /* ---------- UI ---------- */
+  const ICON = {
+    pause: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2.5" width="3.6" height="11" rx="1" fill="currentColor"/><rect x="9.4" y="2.5" width="3.6" height="11" rx="1" fill="currentColor"/></svg>',
+    play: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5 L13.5 8 L4 13.5 Z" fill="currentColor"/></svg>',
+    tour: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5a5.5 5.5 0 1 1-5.2 3.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M1.8 2.6 L2.8 6.4 L6.6 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    stop: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5" fill="currentColor"/></svg>'
+  };
+  function updateUI() {
+    for (const b of segBtns) b.setAttribute('aria-pressed', String(b.dataset.state === cur));
+    const b = INFO[cur];
+    banner.dataset.kind = b.kind;
+    bannerTag.textContent = b.tag;
+    bannerText.textContent = b.text;
+  }
+  function updateButtons() {
+    btnPlay.innerHTML = userPaused ? ICON.play + '<span>播放動畫</span>' : ICON.pause + '<span>暫停動畫</span>';
+    btnTour.innerHTML = tour.on
+      ? ICON.stop + `<span>停止導覽（${tour.i + 1}/${TOUR.length}）</span>`
+      : ICON.tour + '<span>依序看：原狀 → A → B → D → C</span>';
+  }
+  function setState(next, opts = {}) {
+    if (!STATES[next]) return;
+    if (!opts.fromTour) stopTour();
+    if (next !== cur) {
+      cur = next;
+      for (const p of particles) if (p.phase === 'move') { p.phase = 'vanish'; p.t = 0; }
+      lines = []; cnt = { app: 0, sys: 0 }; spawnT = { app: 0.15, sys: 0.45 };
+      dirtyCon = dirtyCnt = true;
+      applyState();
+      warm(7);
+    }
+    updateUI();
+    render();
+  }
+  function startTour() {
+    tour = { on: true, i: 0, t: 0 };
+    setState(TOUR[0], { fromTour: true });
+    tourbar.hidden = false;
+    tourfill.style.transform = 'scaleX(0)';
+    userPaused = false;
+    updateButtons();
+    updateRunning();
+  }
+  function stopTour() {
+    if (!tour.on) return;
+    tour.on = false;
+    tourbar.hidden = true;
+    updateButtons();
+  }
+  function tourTick(dt) {
+    if (!tour.on) return;
+    tour.t += dt;
+    tourfill.style.transform = `scaleX(${Math.min(1, tour.t / TOUR_DUR).toFixed(3)})`;
+    if (tour.t >= TOUR_DUR) {
+      tour.i += 1; tour.t = 0;
+      setState(TOUR[tour.i], { fromTour: true });
+      if (tour.i >= TOUR.length - 1) stopTour(); else updateButtons();
+    }
+  }
+  function updateRunning() {
+    const should = !userPaused && visible && !document.hidden;
+    if (should && !running) {
+      running = true;
+      const token = ++loopToken;
+      lastTs = performance.now();
+      const frame = (ts) => {
+        if (!running || token !== loopToken) return;
+        let dt = (ts - lastTs) / 1000;
+        lastTs = ts;
+        if (!(dt > 0)) dt = 0; else if (dt > 0.05) dt = 0.05;
+        step(dt); tourTick(dt); render();
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    } else if (!should && running) {
+      running = false;
+    }
+  }
+  function reveal() {
+    const r = dsec.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    if (r.top < -40 || r.top > vh * 0.5) dsec.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  for (const b of segBtns) b.addEventListener('click', () => { interacted = true; autoDone = true; setState(b.dataset.state); });
+  for (const b of $$('[data-go]')) b.addEventListener('click', () => { interacted = true; autoDone = true; setState(b.dataset.go); reveal(); });
+  btnPlay.addEventListener('click', () => { userPaused = !userPaused; updateButtons(); updateRunning(); });
+  btnTour.addEventListener('click', () => { interacted = true; autoDone = true; if (tour.on) stopTour(); else startTour(); });
+
+  const btnCopy = $('#btn-copy'), cli = $('#cli');
+  const selectText = (el) => {
+    const r = document.createRange(); r.selectNodeContents(el);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  };
+  btnCopy.addEventListener('click', () => {
+    const done = (msg) => { btnCopy.textContent = msg; setTimeout(() => { btnCopy.textContent = '複製'; }, 1600); };
+    try {
+      navigator.clipboard.writeText(cli.textContent).then(() => done('已複製'), () => { selectText(cli); done('已選取'); });
+    } catch (e) { selectText(cli); done('已選取'); }
+  });
+
+  /* ---------- boot ---------- */
+  const pickLayout = () => ((flowWrap.clientWidth || 360) < 640 ? 'portrait' : 'landscape');
+  layout = pickLayout();
+  mount();
+  warm(4.5);
+  updateUI();
+  updateButtons();
+  render();
+
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(() => {
+      const l = pickLayout();
+      if (l !== layout) { layout = l; mount(); warm(3); render(); }
+    }).observe(flowWrap);
+  }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((es) => {
+      for (const e of es) {
+        visible = e.isIntersecting;
+        if (!autoDone && !interacted && !reduced && e.intersectionRatio >= 0.35) { autoDone = true; startTour(); }
+      }
+      updateRunning();
+    }, { threshold: [0, 0.35, 0.7] }).observe(flowWrap);
+  }
+  document.addEventListener('visibilitychange', updateRunning);
+  updateRunning();
+})();
+</script>
+
+</body>
+</html>
