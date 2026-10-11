@@ -170,7 +170,7 @@ body.show .btn{display:none}
 .ch{font-size:15px;margin:14px 2px 8px;padding:6px 8px;border-left:4px solid var(--acc);background:var(--card);border-radius:4px}
 .ch small{color:var(--sub);font-weight:400;margin-left:6px}
 body.num .ch{display:none}
-#weak{display:none;width:100%;max-height:60vh;overflow:auto;font-size:14px}
+#weak{display:none;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:0 0 10px}
 #weak.on{display:block}
 #weak div{display:flex;gap:6px;align-items:center;padding:5px 2px;border-top:1px solid var(--line);cursor:pointer}
 #weak div span:first-child{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -260,11 +260,11 @@ $('flt').onchange=apply;$('st').onchange=apply;
 $('ord').onchange=()=>{localStorage.setItem(LS+'ord',$('ord').value);rnd=false;layout();scrollTo(0,0)};
 $('go').onclick=resume;
 $('shuf').onclick=()=>{rnd=true;cards.forEach(c=>c.dataset.r=Math.random());layout();scrollTo(0,0)};
-$('wk').onclick=e=>{$('weak').classList.toggle('on');e.target.classList.toggle('on')};
+$('wk').onclick=e=>{const on=$('weak').classList.toggle('on');e.target.classList.toggle('on',on);if(on)scrollTo(0,0)};
 let so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),ss=localStorage.getItem(LS+'st');
 if(sf==='todo'){sf='all';ss='todo'}
 if(so)$('ord').value=so;
-if(ss)$('st').value=ss;
+if(ss&&[...$('st').options].some(o=>o.value===ss))$('st').value=ss;
 if(sf&&[...$('flt').options].some(o=>o.value===sf))$('flt').value=sf;
 layout();weak();apply();cards.forEach(mark);
 if(last)resume();
@@ -327,8 +327,8 @@ def render(data, meta):
 <option value="star">只看星號</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
 <optgroup label="題號">{ranges}</optgroup></select>
 <button id="go">接續</button><button id="wk">錯題・弱項</button><button id="show">全顯答案</button><button id="shuf">亂序</button><button id="reset">重作</button>
-<div id="stat"></div><div id="weak"></div></header>
-<main>{heads}{''.join(cards)}</main><script>{JS}</script></body></html>"""
+<div id="stat"></div></header>
+<main><div id="weak"></div>{heads}{''.join(cards)}</main><script>{JS}</script></body></html>"""
 
 
 if __name__ == "__main__":
