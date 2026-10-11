@@ -135,6 +135,10 @@ header a{font-size:13px;color:var(--acc);white-space:nowrap}
 #seen{font-size:12px;color:var(--sub);white-space:nowrap}
 #go{font-size:14px;padding:3px 10px;border:1px solid var(--acc);border-radius:6px;background:var(--acc);color:#000}
 #pg{position:absolute;left:0;bottom:-1px;height:3px;width:0;background:var(--ok);transition:width .3s}
+#sf{font-size:14px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);white-space:nowrap}
+#sf.on{background:var(--acc);border-color:var(--acc);color:#000}
+.star{margin-left:auto;cursor:pointer;font-size:22px;line-height:1;color:var(--line);padding:0 2px;user-select:none}
+.star.on{color:var(--acc)}
 main{padding:6px 4px}
 .c{background:var(--card);border-radius:10px;padding:8px 8px;margin:0 0 10px;border:1px solid var(--line)}
 .h{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--sub);margin-bottom:4px}
@@ -185,6 +189,9 @@ function prog(){$('seen').textContent=`已看 ${seen.size}`;$('pg').style.width=
 function saveSeen(){localStorage.setItem(LS+'seen',JSON.stringify([...seen]));last?localStorage.setItem(LS+'last',last):localStorage.removeItem(LS+'last');prog()}
 function mark(c){const n=c.dataset.n,s=seen.has(n);c.classList.toggle('seen',s);c.classList.toggle('last',n===last);
   c.querySelector('.sn').textContent=s?'✓ 已看過（再點取消）':'看過，下一題 ↓'}
+// 星號（速讀版自己的，和練習版分開）：「★ N」切換只看星號，可和其他篩選同時使用
+const star=new Set(JSON.parse(localStorage.getItem(LS+'star')||'[]'));let starOnly=localStorage.getItem(LS+'sf')==='1';
+function starUI(){$('sc').textContent=star.size;$('sf').classList.toggle('on',starOnly);$('sf').setAttribute('aria-pressed',starOnly)}
 const visible=()=>[...main.querySelectorAll('.c')].filter(c=>c.style.display!=='none');
 function target(c){cards.forEach(x=>x.classList.toggle('go',x===c));go(c,true)}
 function resume(){const vis=visible(),i=vis.findIndex(c=>c.dataset.n===last),
@@ -203,6 +210,7 @@ function apply(){
     else if(v.includes('-')){const[a,b]=v.split('-').map(Number);s=+n>=a&&+n<=b}
     if(s&&k)s=('q'+n+' '+c.textContent).toLowerCase().includes(k);
     if(s&&st!=='all')s=(st==='seen')===seen.has(n);
+    if(s&&starOnly)s=star.has(n);
     c.style.display=s?'':'none'});
   heads.forEach(h=>h.style.display=cards.some(c=>c.dataset.c===h.dataset.c&&c.style.display!=='none')?'':'none');
   $('cnt').textContent=cards.filter(c=>c.style.display!=='none').length}
@@ -219,6 +227,10 @@ cards.forEach(c=>c.querySelector('.sn').onclick=()=>{const n=c.dataset.n;
   else{seen.add(n);last=n;const vis=visible(),nx=vis[vis.indexOf(c)+1];if(nx)target(nx)}
   cards.forEach(mark);saveSeen()});
 $('go').onclick=()=>{if(!resume())scrollTo(0,0)};
+cards.forEach(c=>{const b=c.querySelector('.star');b.classList.toggle('on',star.has(c.dataset.n));
+  b.onclick=()=>{const n=c.dataset.n;star.has(n)?star.delete(n):star.add(n);b.classList.toggle('on',star.has(n));
+    localStorage.setItem(LS+'star',JSON.stringify([...star]));starUI()}});
+$('sf').onclick=()=>{starOnly=!starOnly;localStorage.setItem(LS+'sf',starOnly?'1':'0');starUI();apply();scrollTo(0,0)};
 const so=localStorage.getItem(LS+'ord'),sf=localStorage.getItem(LS+'flt'),at=localStorage.getItem(LS+'at'),ss=localStorage.getItem(LS+'st');
 if(so)$('ord').value=so;
 if(ss==='seen'||ss==='todo')$('st').value=ss;
@@ -229,7 +241,7 @@ function hashGo(){const m=location.hash.match(/^#q(\d+)$/),c=m&&cards.find(x=>x.
   if(c.style.display==='none'){$('kw').value='';$('flt').value='all';apply()}
   cards.forEach(x=>x.classList.toggle('hit',x===c));go(c);return true}
 addEventListener('hashchange',hashGo);
-layout();apply();cards.forEach(mark);prog();
+layout();apply();cards.forEach(mark);prog();starUI();
 if(!hashGo()&&!LIST&&!(last&&resume())){const c0=cards.find(c=>c.dataset.n===at&&c.style.display!=='none');if(c0)go(c0)}
 """
 
@@ -285,12 +297,12 @@ def render(data, meta):
         note = f'<div class="n">{"<br>".join(notes)}</div>' if notes else ""
         cards.append(
             f'<div class="c" data-n="{n}" data-a="{a}" data-c="{s.split(".")[0]}" data-o="{rank[n]}"{dis}>'
-            f'<div class="h"><b>Q{n}</b>{tag}<span class="tag l">上次</span></div><p class="q">{html.escape(it["q"])}</p>{ans}'
+            f'<div class="h"><b>Q{n}</b>{tag}<span class="tag l">上次</span><span class="star" role="button" aria-label="星號">★</span></div><p class="q">{html.escape(it["q"])}</p>{ans}'
             f'<p class="y">{html.escape(it["why"])}</p>{flow_html(it["flow"])}{note}<button class="sn">看過，下一題 ↓</button></div>')
     return f"""<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DEA-C01 答案速讀</title><style>{CSS}</style></head><body>
-<header><b>答案速讀 <span id="cnt">342</span> 題</b><span id="seen"></span><button id="go">接續</button><a href="Short_ZH.html">練習版</a>
+<header><b>答案速讀 <span id="cnt">342</span> 題</b><span id="seen"></span><button id="sf" aria-label="只看星號" aria-pressed="false">★ <span id="sc">0</span></button><button id="go">接續</button><a href="Short_ZH.html">練習版</a>
 <div style="width:100%;display:flex;gap:6px"><select id="ord"><option value="topic">依主題</option><option value="num">依題號</option></select>
 <select id="flt"><option value="all">全部</option><optgroup label="主題">{ch_opts}</optgroup>
 <optgroup label="篩選"><option value="wrong">只看練習版錯題</option><option value="multi">只看複選</option><option value="dis">只看爭議題</option></optgroup>
